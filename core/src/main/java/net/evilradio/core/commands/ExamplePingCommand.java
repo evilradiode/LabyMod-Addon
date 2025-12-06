@@ -1,4 +1,4 @@
-package org.example.core.commands;
+package net.evilradio.core.commands;
 
 import net.labymod.api.client.chat.command.Command;
 import net.labymod.api.client.component.Component;
@@ -23,3 +23,6 @@ public class ExamplePingCommand extends Command {
     return true;
   }
 }
+
+
+

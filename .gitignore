@@ -76,3 +76,6 @@ build-data.txt
 
 # Don't ignore libraries
 !libs/*.jar
+
+#MM addon
+other_addon_as_template/

@@ -1,0 +1,35 @@
+.wheel RadioSegment {
+  width: 9%;
+  height: 22.5%;
+}
+
+RadioSegment Icon {
+  top: 50%;
+  left: 50%;
+  alignment-x: center;
+  alignment-y: center;
+  width: 120%;
+  height: 120%;
+}
+
+RadioSegment .radio-segment-icon {
+  width: 100%;
+  height: width;
+  alignment-x: center;
+  alignment-y: center;
+}
+
+RadioSegment .radio-segment-name {
+  left: 50%;
+  top: 90%;
+  width: 500%;
+  alignment-x: center;
+  alignment-y: center;
+  font-size: 0.7;
+  text-color: white;
+}
+
+.coming-soon {
+  opacity: 0.7;
+}
+

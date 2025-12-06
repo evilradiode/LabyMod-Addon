@@ -1,0 +1,238 @@
+package net.evilradio.core.ui;
+
+import net.evilradio.core.ExampleAddon;
+import net.evilradio.core.ExampleConfiguration;
+import net.evilradio.core.api.RadioApiService;
+import net.evilradio.core.radio.RadioManager;
+import net.evilradio.core.radio.RadioStream;
+import net.labymod.api.Laby;
+import net.labymod.api.client.component.Component;
+import net.labymod.api.client.gui.screen.Parent;
+import net.labymod.api.client.gui.screen.activity.AutoActivity;
+import net.labymod.api.client.gui.screen.activity.Link;
+import net.labymod.api.client.gui.screen.activity.Links;
+import net.labymod.api.client.gui.screen.activity.types.SimpleActivity;
+import net.labymod.api.client.gui.screen.key.Key;
+import net.labymod.api.client.gui.screen.key.InputType;
+import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
+import net.labymod.api.client.component.format.NamedTextColor;
+import net.labymod.api.client.gui.icon.Icon;
+import net.labymod.api.client.resources.ResourceLocation;
+import net.labymod.api.configuration.loader.property.ConfigProperty;
+
+@AutoActivity
+@Links({@Link("radio-menu.lss")})
+public class RadioMenuActivity extends SimpleActivity {
+
+  private RadioManager radioManager;
+  private ExampleAddon addon;
+
+  public RadioMenuActivity(ExampleAddon addon) {
+    this.addon = addon;
+    this.radioManager = addon.getRadioManager();
+  }
+
+  @Override
+  public void initialize(Parent parent) {
+    super.initialize(parent);
+
+    // Titel "Unsere Sender"
+    ComponentWidget titleWidget = ComponentWidget.component(
+        Component.text("Unsere Sender", NamedTextColor.WHITE)
+    );
+    titleWidget.addId("title");
+    this.document.addChild(titleWidget);
+
+    // Beschreibungstext
+    ComponentWidget descriptionWidget = ComponentWidget.component(
+        Component.text("Du möchtest ein Lied hören, aber es ist kein Moderator live? Kein Problem!", NamedTextColor.GRAY)
+            .append(Component.text("\n", NamedTextColor.GRAY))
+            .append(Component.text("Klicke auf den Sender und wünsche dir dein Lied. Warte kurz, und es wird gespielt.", NamedTextColor.GRAY))
+    );
+    descriptionWidget.addId("description");
+    this.document.addChild(descriptionWidget);
+
+    // Hole aktuellen Stream für Song-Anzeige
+    RadioStream currentStream = radioManager.getCurrentStream();
+
+    // Container für Play/Pause und Volume Controls (oberhalb des stations-container)
+    DivWidget controlsContainer = new DivWidget();
+    controlsContainer.addId("controls-container");
+    
+    // Aktueller Song-Anzeige
+    ComponentWidget currentSongWidget = ComponentWidget.component(
+        Component.text("Kein Song", NamedTextColor.GRAY)
+    );
+    currentSongWidget.addId("current-song");
+    controlsContainer.addChild(currentSongWidget);
+    
+    // Lade aktuellen Song, falls ein Stream aktiv ist
+    if (currentStream != null && radioManager.isPlaying()) {
+      String category = currentStream.getCategory();
+      if (category != null && !category.isEmpty()) {
+        String internalName = RadioApiService.getInternalName(category);
+        RadioApiService.fetchCurrentSong(internalName, (response) -> {
+          if (response != null && response.getCurrent() != null) {
+            String songText = response.getCurrent().getFormatted();
+            if (songText.isEmpty()) {
+              songText = response.getCurrentSong();
+            }
+            if (songText.isEmpty()) {
+              songText = "Kein Song";
+            }
+            final String finalSongText = songText;
+            Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
+              currentSongWidget.setComponent(Component.text(finalSongText, NamedTextColor.WHITE));
+            });
+          }
+        });
+      }
+    }
+    
+    // Play/Pause Button
+    boolean isPaused = radioManager.isPaused();
+    boolean isPlaying = radioManager.isPlaying() && !isPaused;
+    String playPauseText = isPlaying ? "⏸" : "▶";
+    ButtonWidget playPauseButton = ButtonWidget.component(
+        Component.text(playPauseText, NamedTextColor.WHITE)
+    );
+    playPauseButton.addId("play-pause-button");
+    playPauseButton.setPressable(() -> {
+      radioManager.togglePlayPause();
+      this.reload();
+    });
+    controlsContainer.addChild(playPauseButton);
+    
+    // Volume Slider - verwende ConfigProperty aus der Konfiguration
+    ExampleConfiguration config = addon.configuration();
+    ConfigProperty<Integer> volumeProperty = config.volume();
+    
+    // Synchronisiere den aktuellen Volume-Wert mit der ConfigProperty
+    int currentVolumePercent = (int) (radioManager.getVolume() * 100);
+    if (volumeProperty.get() != currentVolumePercent) {
+      volumeProperty.set(currentVolumePercent);
+    }
+    
+    // Volume Label - muss aktualisiert werden können
+    ComponentWidget volumeLabel = ComponentWidget.component(
+        Component.text(volumeProperty.get() + "%", NamedTextColor.GRAY)
+    );
+    volumeLabel.addId("volume-label");
+    
+    // Listener für Volume-Änderungen - aktualisiere auch das Label
+    volumeProperty.addChangeListener((type, oldValue, newValue) -> {
+      float volume = newValue / 100.0f;
+      radioManager.setVolume(volume);
+      // Aktualisiere das Label
+      volumeLabel.setComponent(Component.text(newValue + "%", NamedTextColor.GRAY));
+    });
+    
+    // Erstelle SliderWidget - in Activities muss die Property manuell verbunden werden
+    // Da SliderWidget normalerweise nur in Config-Screens mit @SliderSetting funktioniert,
+    // müssen wir die Property manuell aktualisieren, wenn der Slider geändert wird
+    
+    // Erstelle den SliderWidget - er sollte die Property automatisch verwenden
+    // wenn sie mit @SliderSetting annotiert ist, aber das funktioniert nur in Config-Screens
+    // Für Activities: Wir müssen die Property manuell verbinden über einen Workaround
+    
+    SliderWidget volumeSlider = new SliderWidget();
+    volumeSlider.addId("volume-slider");
+    
+    // Versuche, die Property über Reflection zu setzen
+    try {
+      java.lang.reflect.Field propertyField = SliderWidget.class.getDeclaredField("property");
+      propertyField.setAccessible(true);
+      propertyField.set(volumeSlider, volumeProperty);
+    } catch (Exception e) {
+      // Fallback: Wenn Reflection nicht funktioniert, müssen wir einen anderen Ansatz verwenden
+      // Der SliderWidget wird die Property automatisch verwenden, wenn sie mit @SliderSetting annotiert ist
+      // Aber das funktioniert nur in Config-Screens, nicht in Activities
+    }
+    
+    controlsContainer.addChild(volumeSlider);
+    controlsContainer.addChild(volumeLabel);
+    
+    this.document.addChild(controlsContainer);
+
+    // Container für die Station-Buttons
+    DivWidget stationsContainer = new DivWidget();
+    stationsContainer.addId("stations-container");
+    
+    // Erstelle Buttons für jeden Stream in einem 2x4 Grid
+    java.util.List<RadioStream> streams = radioManager.getStreams();
+    
+    for (int i = 0; i < streams.size() && i < 8; i++) {
+      RadioStream stream = streams.get(i);
+      boolean isActive = currentStream != null && currentStream.equals(stream) && radioManager.isPlaying();
+      boolean isComingSoon = stream.getUrl() == null || stream.getUrl().isEmpty();
+      
+      // Button als DivWidget - direkt zum Container hinzufügen
+      DivWidget stationButton = new DivWidget();
+      stationButton.addId("station-button-" + i);
+      
+      if (isActive) {
+        stationButton.addId("active");
+      }
+      
+      if (isComingSoon) {
+        stationButton.addId("coming-soon");
+      }
+      
+      // Icon für den Button
+      Icon buttonIcon = stream.getIcon();
+      if (buttonIcon == null) {
+        buttonIcon = Icon.texture(ResourceLocation.create("evilradio", "textures/stations/comingsoon.png"));
+      }
+      
+      // IconWidget als Hintergrund
+      IconWidget iconWidget = new IconWidget(buttonIcon);
+      iconWidget.addId("station-icon-" + i);
+      stationButton.addChild(iconWidget);
+      
+      // Click-Handler
+      if (!isComingSoon) {
+        final RadioStream selectedStream = stream;
+        stationButton.setPressable(() -> {
+          radioManager.playStream(selectedStream);
+          Laby.labyAPI().minecraft().chatExecutor().displayClientMessage(
+              Component.text("Stream gestartet: " + selectedStream.getDisplayName(), NamedTextColor.GREEN)
+          );
+          // Menü neu laden, um aktiven Status zu aktualisieren
+          this.reload();
+        });
+      }
+      
+      // Direkt zum Container hinzufügen
+      stationsContainer.addChild(stationButton);
+    }
+
+    this.document.addChild(stationsContainer);
+
+    // Schließen-Button
+    ButtonWidget closeButton = ButtonWidget.component(
+        Component.text("Schließen", NamedTextColor.RED)
+    );
+    closeButton.addId("close-button");
+    closeButton.setPressable(() -> {
+      Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
+        Laby.labyAPI().minecraft().minecraftWindow().closeScreen();
+      });
+    });
+    this.document.addChild(closeButton);
+  }
+
+  @Override
+  public boolean keyPressed(Key key, InputType type) {
+    if (key == Key.ESCAPE) {
+      Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
+        Laby.labyAPI().minecraft().minecraftWindow().closeScreen();
+      });
+      return true;
+    }
+    return super.keyPressed(key, type);
+  }
+}
