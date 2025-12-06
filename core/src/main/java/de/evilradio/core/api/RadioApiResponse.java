@@ -1,4 +1,4 @@
-package net.evilradio.core.api;
+package de.evilradio.core.api;
 
 import com.google.gson.JsonObject;
 

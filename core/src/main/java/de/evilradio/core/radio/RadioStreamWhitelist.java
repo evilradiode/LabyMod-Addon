@@ -1,4 +1,4 @@
-package net.evilradio.core.radio;
+package de.evilradio.core.radio;
 
 import java.util.Arrays;
 import java.util.HashSet;

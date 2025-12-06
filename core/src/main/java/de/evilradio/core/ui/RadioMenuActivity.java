@@ -1,10 +1,10 @@
-package net.evilradio.core.ui;
+package de.evilradio.core.ui;
 
-import net.evilradio.core.ExampleAddon;
-import net.evilradio.core.ExampleConfiguration;
-import net.evilradio.core.api.RadioApiService;
-import net.evilradio.core.radio.RadioManager;
-import net.evilradio.core.radio.RadioStream;
+import de.evilradio.core.EvilRadioAddon;
+import de.evilradio.core.EvilRadioConfiguration;
+import de.evilradio.core.api.RadioApiService;
+import de.evilradio.core.radio.RadioManager;
+import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.gui.screen.Parent;
@@ -29,9 +29,9 @@ import net.labymod.api.configuration.loader.property.ConfigProperty;
 public class RadioMenuActivity extends SimpleActivity {
 
   private RadioManager radioManager;
-  private ExampleAddon addon;
+  private EvilRadioAddon addon;
 
-  public RadioMenuActivity(ExampleAddon addon) {
+  public RadioMenuActivity(EvilRadioAddon addon) {
     this.addon = addon;
     this.radioManager = addon.getRadioManager();
   }
@@ -108,7 +108,7 @@ public class RadioMenuActivity extends SimpleActivity {
     controlsContainer.addChild(playPauseButton);
     
     // Volume Slider - verwende ConfigProperty aus der Konfiguration
-    ExampleConfiguration config = addon.configuration();
+    EvilRadioConfiguration config = addon.configuration();
     ConfigProperty<Integer> volumeProperty = config.volume();
     
     // Synchronisiere den aktuellen Volume-Wert mit der ConfigProperty

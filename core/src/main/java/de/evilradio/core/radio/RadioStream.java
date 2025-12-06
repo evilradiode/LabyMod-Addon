@@ -1,4 +1,4 @@
-package net.evilradio.core.radio;
+package de.evilradio.core.radio;
 
 import net.labymod.api.client.gui.icon.Icon;
 

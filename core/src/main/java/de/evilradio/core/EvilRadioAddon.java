@@ -1,13 +1,12 @@
-package net.evilradio.core;
+package de.evilradio.core;
 
-import net.evilradio.core.commands.ExamplePingCommand;
-import net.evilradio.core.radio.RadioManager;
+import de.evilradio.core.radio.RadioManager;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.models.addon.annotation.AddonMain;
 
 @AddonMain
-public class ExampleAddon extends LabyAddon<ExampleConfiguration> {
+public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   private RadioManager radioManager;
   private Key radioMenuKeybind;
@@ -20,7 +19,7 @@ public class ExampleAddon extends LabyAddon<ExampleConfiguration> {
     this.radioManager = new RadioManager();
     
     // Initialisiere Standard-Streams in der Konfiguration, falls leer
-    ExampleConfiguration config = this.configuration();
+    EvilRadioConfiguration config = this.configuration();
     if (config != null) {
       config.initializeDefaultStreams();
       
@@ -35,15 +34,12 @@ public class ExampleAddon extends LabyAddon<ExampleConfiguration> {
     // Keybind Listener registrieren (als Game-Keybind, reagiert nur im Spiel)
     this.logger().info("Radio-Wheel Keybind Listener registriert als Game-Keybind");
 
-    // Registriere nur den Wheel-Listener
-    this.registerCommand(new ExamplePingCommand());
-
     this.logger().info("Enabled the Addon");
   }
 
   @Override
-  protected Class<ExampleConfiguration> configurationClass() {
-    return ExampleConfiguration.class;
+  protected Class<EvilRadioConfiguration> configurationClass() {
+    return EvilRadioConfiguration.class;
   }
 
   public RadioManager getRadioManager() {

@@ -1,4 +1,4 @@
-package net.evilradio.core;
+package de.evilradio.core;
 
 import net.labymod.api.configuration.loader.Config;
 import net.labymod.api.configuration.loader.property.ConfigProperty;

@@ -1,8 +1,8 @@
-package net.evilradio.core.radio;
+package de.evilradio.core.radio;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.evilradio.core.RadioStreamConfig;
+import de.evilradio.core.RadioStreamConfig;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.resources.ResourceLocation;
 

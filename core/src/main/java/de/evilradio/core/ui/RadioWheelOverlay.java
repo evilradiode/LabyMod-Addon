@@ -1,12 +1,12 @@
-package net.evilradio.core.ui;
+package de.evilradio.core.ui;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.util.List;
-import net.evilradio.core.ExampleAddon;
-import net.evilradio.core.radio.RadioManager;
-import net.evilradio.core.radio.RadioStream;
-import net.evilradio.core.ui.widget.RadioSegmentWidget;
-import net.evilradio.core.ui.widget.RadioWheelWidget;
+import de.evilradio.core.EvilRadioAddon;
+import de.evilradio.core.radio.RadioManager;
+import de.evilradio.core.radio.RadioStream;
+import de.evilradio.core.ui.widget.RadioSegmentWidget;
+import de.evilradio.core.ui.widget.RadioWheelWidget;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
@@ -24,10 +24,10 @@ import net.labymod.api.util.math.MathHelper;
 @AutoActivity
 public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
-  private final ExampleAddon addon;
+  private final EvilRadioAddon addon;
   private final RadioManager radioManager;
 
-  public RadioWheelOverlay(ExampleAddon addon) {
+  public RadioWheelOverlay(EvilRadioAddon addon) {
     this.addon = addon;
     this.radioManager = addon.getRadioManager();
   }
@@ -68,8 +68,9 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
       RadioSegmentWidget segment = new RadioSegmentWidget(stream, isActive);
       segment.addId("radio-wrapper");
+      // Die Selektierbarkeit wird bereits im RadioSegmentWidget-Konstruktor gesetzt
+      // basierend auf der konsistenten "Coming Soon"-Logik
       boolean isComingSoon = stream.getUrl() == null || stream.getUrl().isEmpty();
-      segment.setSelectable(!isComingSoon);
       
       if (isComingSoon) {
         segment.addId("coming-soon");

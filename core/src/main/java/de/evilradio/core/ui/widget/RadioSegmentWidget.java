@@ -1,6 +1,6 @@
-package net.evilradio.core.ui.widget;
+package de.evilradio.core.ui.widget;
 
-import net.evilradio.core.radio.RadioStream;
+import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.lss.property.annotation.AutoWidget;
@@ -21,7 +21,10 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
 
   public RadioSegmentWidget(RadioStream stream, boolean isActive) {
     this.stream = stream;
-    this.setSelectable(stream != null && (stream.getUrl() == null || !stream.getUrl().isEmpty()));
+    // Ein Stream ist nur selektierbar, wenn er eine gültige (nicht-null und nicht-leere) URL hat
+    // Dies ist konsistent mit der "Coming Soon"-Logik in RadioMenuActivity und RadioWheelOverlay
+    boolean isComingSoon = stream == null || stream.getUrl() == null || stream.getUrl().isEmpty();
+    this.setSelectable(!isComingSoon);
 
     if (stream != null) {
       Icon icon = stream.getIcon();

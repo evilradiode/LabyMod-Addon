@@ -1,11 +1,11 @@
-package net.evilradio.core.ui.widget;
+package de.evilradio.core.ui.widget;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
-import net.evilradio.core.radio.RadioStream;
+import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.client.gui.lss.property.annotation.AutoWidget;
 import net.labymod.api.client.gui.screen.Parent;
 import net.labymod.api.client.gui.screen.activity.Link;
@@ -52,7 +52,7 @@ public class RadioWheelWidget extends WheelWidget {
       int segmentCount = this.segmentCountSupplier.getAsInt();
 
       for (int i = 0; i < segmentCount; ++i) {
-        int index = (i + 1) % segmentCount + page * segmentCount;
+        int index = page * segmentCount + i;
         RadioStream stream = index >= 0 && index < size ? filteredStreams.get(index) : null;
 
         WheelWidget.Segment segment = this.segmentSupplier.get(index, i, stream);

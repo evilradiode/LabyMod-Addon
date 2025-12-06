@@ -1,4 +1,4 @@
-package net.evilradio.core.radio;
+package de.evilradio.core.radio;
 
 import java.io.BufferedInputStream;
 import java.io.InputStream;
