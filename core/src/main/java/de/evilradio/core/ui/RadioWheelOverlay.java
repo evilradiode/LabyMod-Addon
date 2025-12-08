@@ -7,7 +7,6 @@ import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.ui.widget.RadioSegmentWidget;
 import de.evilradio.core.ui.widget.RadioWheelWidget;
-import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.screen.Parent;
@@ -67,7 +66,6 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
       return CharSequences.isEmpty(searchText) ? null : searchText;
     });
 
-    // Setze die Streams
     wheel.setStreams(this.addon.radioStreamService().streams());
 
     wheel.segmentSupplier((index, wheelIndex, stream) -> {
@@ -80,10 +78,8 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
       RadioStream currentStream = this.radioManager.getCurrentStream();
       boolean isActive = currentStream != null && currentStream.equals(stream) && this.radioManager.isPlaying();
 
-      RadioSegmentWidget segment = new RadioSegmentWidget(stream, isActive);
+      RadioSegmentWidget segment = new RadioSegmentWidget(this.addon, stream, isActive);
       segment.addId("radio-wrapper");
-      // Die Selektierbarkeit wird bereits im RadioSegmentWidget-Konstruktor gesetzt
-      // basierend auf der konsistenten "Coming Soon"-Logik
       boolean isComingSoon = stream.getUrl() == null || stream.getUrl().isEmpty();
       
       if (isComingSoon) {
@@ -167,8 +163,9 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     }
     if (stream != null && stream.getUrl() != null && !stream.getUrl().isEmpty()) {
       this.radioManager.playStream(stream);
-      Laby.labyAPI().minecraft().chatExecutor().displayClientMessage(
-          Component.text("Stream gestartet: " + stream.getDisplayName(), NamedTextColor.GREEN)
+      this.addon.notification(
+          Component.translatable("evilradio.notification.streamSelected.title"),
+          Component.translatable("evilradio.notification.StreamSelected.text")
       );
     }
 

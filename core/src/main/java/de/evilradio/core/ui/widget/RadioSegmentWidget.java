@@ -1,5 +1,6 @@
 package de.evilradio.core.ui.widget;
 
+import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
@@ -16,10 +17,12 @@ import net.labymod.api.client.resources.ResourceLocation;
 @Link("widget/radio-segment.lss")
 public class RadioSegmentWidget extends WheelWidget.Segment {
 
+  private final EvilRadioAddon addon;
   private final RadioStream stream;
   private ComponentWidget nameWidget;
 
-  public RadioSegmentWidget(RadioStream stream, boolean isActive) {
+  public RadioSegmentWidget(EvilRadioAddon addon, RadioStream stream, boolean isActive) {
+    this.addon = addon;
     this.stream = stream;
 
     if (stream != null) {
@@ -30,8 +33,6 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
 
       IconWidget iconWidget = new IconWidget(icon);
       iconWidget.addId("radio-segment-icon");
-      // Setze die Größe direkt, um Verzerrung zu vermeiden
-      // Die Größe wird hauptsächlich über CSS gesteuert, aber wir setzen hier eine Basis
       this.addChild(iconWidget);
 
       TextColor color = isActive
@@ -45,7 +46,9 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
 
   @Override
   public boolean isSelectable() {
-    return !(stream == null || stream.getUrl() == null || stream.getUrl().isEmpty());
+    if(stream == null || stream.getUrl() == null || stream.getUrl().isEmpty()) return false;
+    if(this.addon.radioManager().getCurrentStream() != null && this.addon.radioManager().getCurrentStream() == stream) return false;
+    return true;
   }
 
   public RadioStream getStream() {
