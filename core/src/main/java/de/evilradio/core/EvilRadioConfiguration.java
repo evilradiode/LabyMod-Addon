@@ -22,8 +22,8 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SwitchSetting
   private final ConfigProperty<Boolean> ignoreWhitelist = new ConfigProperty<>(false);
   
-  @SliderSetting(min = 0, max = 100, steps = 1)
-  private final ConfigProperty<Integer> volume = new ConfigProperty<>(50);
+  @SliderSetting(min = 0, max = 1, steps = 0.01f)
+  private final ConfigProperty<Float> volume = new ConfigProperty<>(0.25f);
   
   // Liste der Radio-Stream-Konfigurationen
   private final List<RadioStreamConfig> radioStreams = new ArrayList<>();
@@ -45,7 +45,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.ignoreWhitelist;
   }
   
-  public ConfigProperty<Integer> volume() {
+  public ConfigProperty<Float> volume() {
     return this.volume;
   }
   
