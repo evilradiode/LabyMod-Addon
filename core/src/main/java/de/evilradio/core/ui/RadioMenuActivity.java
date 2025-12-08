@@ -23,6 +23,7 @@ import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.resources.ResourceLocation;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
+import java.util.List;
 
 @AutoActivity
 @Links({@Link("radio-menu.lss")})
@@ -33,7 +34,7 @@ public class RadioMenuActivity extends SimpleActivity {
 
   public RadioMenuActivity(EvilRadioAddon addon) {
     this.addon = addon;
-    this.radioManager = addon.getRadioManager();
+    this.radioManager = addon.radioManager();
   }
 
   @Override
@@ -72,25 +73,21 @@ public class RadioMenuActivity extends SimpleActivity {
     
     // Lade aktuellen Song, falls ein Stream aktiv ist
     if (currentStream != null && radioManager.isPlaying()) {
-      String category = currentStream.getCategory();
-      if (category != null && !category.isEmpty()) {
-        String internalName = RadioApiService.getInternalName(category);
-        RadioApiService.fetchCurrentSong(internalName, (response) -> {
-          if (response != null && response.getCurrent() != null) {
-            String songText = response.getCurrent().getFormatted();
-            if (songText.isEmpty()) {
-              songText = response.getCurrentSong();
-            }
-            if (songText.isEmpty()) {
-              songText = "Kein Song";
-            }
-            final String finalSongText = songText;
-            Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
-              currentSongWidget.setComponent(Component.text(finalSongText, NamedTextColor.WHITE));
-            });
+      RadioApiService.fetchCurrentSong(currentStream.getName(), (response) -> {
+        if (response != null && response.getCurrent() != null) {
+          String songText = response.getCurrent().getFormatted();
+          if (songText.isEmpty()) {
+            songText = response.getCurrentSong();
           }
-        });
-      }
+          if (songText.isEmpty()) {
+            songText = "Kein Song";
+          }
+          final String finalSongText = songText;
+          Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
+            currentSongWidget.setComponent(Component.text(finalSongText, NamedTextColor.WHITE));
+          });
+        }
+      });
     }
     
     // Play/Pause Button
@@ -163,7 +160,7 @@ public class RadioMenuActivity extends SimpleActivity {
     stationsContainer.addId("stations-container");
     
     // Erstelle Buttons für jeden Stream in einem 2x4 Grid
-    java.util.List<RadioStream> streams = radioManager.getStreams();
+    List<RadioStream> streams = this.addon.radioStreamService().streams();
     
     for (int i = 0; i < streams.size() && i < 8; i++) {
       RadioStream stream = streams.get(i);

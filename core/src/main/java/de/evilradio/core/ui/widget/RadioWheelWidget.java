@@ -85,12 +85,9 @@ public class RadioWheelWidget extends WheelWidget {
     this.streams.addAll(streams);
   }
 
-  public List<RadioStream> getStreams() {
-    return new ArrayList<>(this.streams);
-  }
-
   public interface SegmentSupplier {
     WheelWidget.Segment get(int index, int wheelIndex, RadioStream stream);
   }
+
 }
 

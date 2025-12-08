@@ -10,6 +10,7 @@ import de.evilradio.core.ui.widget.RadioWheelWidget;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
+import net.labymod.api.client.gui.screen.Parent;
 import net.labymod.api.client.gui.screen.ScreenContext;
 import net.labymod.api.client.gui.screen.activity.AutoActivity;
 import net.labymod.api.client.gui.screen.activity.Link;
@@ -19,6 +20,7 @@ import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.client.gui.screen.widget.AbstractWidget;
 import net.labymod.api.event.client.input.KeyEvent;
 import net.labymod.api.client.gui.screen.widget.widgets.WheelWidget;
+import net.labymod.api.util.CharSequences;
 import net.labymod.api.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +33,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
   public RadioWheelOverlay(EvilRadioAddon addon) {
     this.addon = addon;
-    this.radioManager = addon.getRadioManager();
+    this.radioManager = addon.radioManager();
   }
 
   @Override
@@ -43,26 +45,30 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   @Override
   protected Component createTitleComponent() {
     if (!this.hasEntries()) {
-      return Component.text("Keine Sender verfügbar", NamedTextColor.RED);
+      return Component.text("Keine Sender verfügbar", NamedTextColor.DARK_RED);
     } else {
-      return Component.text("Wähle einen Sender", NamedTextColor.WHITE);
+      return Component.text("Wähle einen Evil-Radio Sender", NamedTextColor.RED);
     }
   }
 
   @Override
   protected boolean hasEntries() {
-    return !this.radioManager.getStreams().isEmpty();
+    return !this.addon.radioStreamService().streams().isEmpty();
   }
 
   @Override
   protected WheelWidget createWheelWidget() {
     RadioWheelWidget wheel = new RadioWheelWidget(
         () -> this.pageNavigator().getCurrentPage(),
-        () -> this.getSegmentCount()
+        this::getSegmentCount
     );
+    wheel.querySupplier(() -> {
+      CharSequence searchText = this.getSearchText();
+      return CharSequences.isEmpty(searchText) ? null : searchText;
+    });
 
     // Setze die Streams
-    wheel.setStreams(this.radioManager.getStreams());
+    wheel.setStreams(this.addon.radioStreamService().streams());
 
     wheel.segmentSupplier((index, wheelIndex, stream) -> {
       if (stream == null) {
@@ -134,14 +140,14 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   }
 
   @Override
-  public void initialize(net.labymod.api.client.gui.screen.Parent parent) {
+  public void initialize(Parent parent) {
     this.refreshStreams();
     super.initialize(parent);
   }
 
 
   private void refreshStreams() {
-    int maxPages = MathHelper.ceil((float) this.radioManager.getStreams().size() / (float) this.getSegmentCount()) - 1;
+    int maxPages = MathHelper.ceil((float) this.addon.radioStreamService().streams().size() / (float) this.getSegmentCount()) - 1;
     PageNavigator pageNavigator = this.pageNavigator();
     pageNavigator.setMaximumPage(maxPages);
     pageNavigator.setMinimumPage(0);
@@ -150,7 +156,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   private RadioStream findStreamByPosition(int position) {
     int currentPage = this.pageNavigator().getCurrentPage();
     int pagePosition = currentPage * this.getSegmentCount() + position;
-    List<RadioStream> streams = this.radioManager.getStreams();
+    List<RadioStream> streams = this.addon.radioStreamService().streams();
     return pagePosition >= streams.size() ? null : streams.get(pagePosition);
   }
 

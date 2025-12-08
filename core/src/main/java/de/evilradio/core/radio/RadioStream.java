@@ -1,34 +1,47 @@
 package de.evilradio.core.radio;
 
 import net.labymod.api.client.gui.icon.Icon;
+import net.labymod.api.client.resources.ResourceLocation;
 
 public class RadioStream {
+
+  private final int id;
   private final String url;
   private final String name;
-  private final String genre;
-  private final String country;
-  private final int bitrate;
-  private final Icon icon;
+  private final String iconPath;
   private final String displayName;
-  private final String category;
 
-  public RadioStream(String url, String name, String genre, String country, int bitrate) {
-    this(url, name, genre, country, bitrate, null, name, "");
-  }
+  private Icon icon;
 
-  public RadioStream(String url, String name, String genre, String country, int bitrate, Icon icon, String displayName) {
-    this(url, name, genre, country, bitrate, icon, displayName, "");
-  }
-
-  public RadioStream(String url, String name, String genre, String country, int bitrate, Icon icon, String displayName, String category) {
-    this.url = url;
+  public RadioStream(int id, String name, String displayName, String streamUrl, String iconPath) {
+    this.id = id;
     this.name = name;
-    this.genre = genre;
-    this.country = country;
-    this.bitrate = bitrate;
-    this.icon = icon;
     this.displayName = displayName;
-    this.category = category;
+    this.url = streamUrl;
+    this.iconPath = iconPath;
+  }
+
+  public RadioStream initialize() {
+    if (this.iconPath != null && !this.iconPath.isEmpty()) {
+      try {
+        // Parse ResourceLocation aus String (Format: "namespace:path")
+        String[] parts = this.iconPath.split(":", 2);
+        if (parts.length == 2) {
+          this.icon = Icon.texture(ResourceLocation.create(parts[0], parts[1]));
+        } else {
+          // Fallback: verwende als direkten Pfad
+          this.icon = Icon.texture(ResourceLocation.create("evilradio", this.iconPath));
+        }
+      } catch (Exception e) {
+        // Bei Fehler: verwende Standard-Icon
+        this.icon = Icon.texture(ResourceLocation.create("evilradio", "textures/stations/default.png"));
+      }
+    }
+    return this;
+  }
+
+  public int getId() {
+    return id;
   }
 
   public String getUrl() {
@@ -39,28 +52,12 @@ public class RadioStream {
     return name;
   }
 
-  public String getGenre() {
-    return genre;
-  }
-
-  public String getCountry() {
-    return country;
-  }
-
-  public int getBitrate() {
-    return bitrate;
-  }
-
   public Icon getIcon() {
     return icon;
   }
 
   public String getDisplayName() {
     return displayName;
-  }
-
-  public String getCategory() {
-    return category;
   }
 
   @Override

@@ -34,15 +34,10 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
       // Die Größe wird hauptsächlich über CSS gesteuert, aber wir setzen hier eine Basis
       this.addChild(iconWidget);
 
-      String displayName = stream.getDisplayName();
-      if (displayName == null || displayName.isEmpty()) {
-        displayName = stream.getName();
-      }
-
       TextColor color = isActive
           ? NamedTextColor.GREEN 
           : NamedTextColor.WHITE;
-      this.nameWidget = ComponentWidget.component(Component.text(displayName, color));
+      this.nameWidget = ComponentWidget.component(Component.text(stream.getDisplayName(), color));
       this.nameWidget.addId("radio-segment-name");
       this.addChild(this.nameWidget);
     }
@@ -62,11 +57,7 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
       TextColor color = isActive
           ? NamedTextColor.GREEN 
           : NamedTextColor.WHITE;
-      String displayName = this.stream.getDisplayName();
-      if (displayName == null || displayName.isEmpty()) {
-        displayName = this.stream.getName();
-      }
-      this.nameWidget.setComponent(Component.text(displayName, color));
+      this.nameWidget.setComponent(Component.text(stream.getDisplayName(), color));
     }
   }
 }
