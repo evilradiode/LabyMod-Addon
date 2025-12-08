@@ -16,9 +16,11 @@ import net.labymod.api.client.gui.screen.activity.Link;
 import net.labymod.api.client.gui.screen.activity.types.AbstractWheelInteractionOverlayActivity;
 import net.labymod.api.client.gui.screen.activity.util.PageNavigator;
 import net.labymod.api.client.gui.screen.key.Key;
+import net.labymod.api.client.gui.screen.widget.AbstractWidget;
 import net.labymod.api.event.client.input.KeyEvent;
 import net.labymod.api.client.gui.screen.widget.widgets.WheelWidget;
 import net.labymod.api.util.math.MathHelper;
+import org.jetbrains.annotations.Nullable;
 
 @Link("activity/radio-wheel.lss")
 @AutoActivity
@@ -30,6 +32,12 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   public RadioWheelOverlay(EvilRadioAddon addon) {
     this.addon = addon;
     this.radioManager = addon.getRadioManager();
+  }
+
+  @Override
+  protected void closeInteractionOverlay() {
+    this.playStream(null, false);
+    super.closeInteractionOverlay();
   }
 
   @Override
@@ -146,7 +154,11 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     return pagePosition >= streams.size() ? null : streams.get(pagePosition);
   }
 
-  private void playStream(RadioStream stream, boolean closeMenu) {
+  private void playStream(RadioStream forcedStream, boolean closeMenu) {
+    RadioStream stream = forcedStream;
+    if(forcedStream == null) {
+      stream = this.findSelectedStream();
+    }
     if (stream != null && stream.getUrl() != null && !stream.getUrl().isEmpty()) {
       this.radioManager.playStream(stream);
       Laby.labyAPI().minecraft().chatExecutor().displayClientMessage(
@@ -157,6 +169,18 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     if (closeMenu) {
       this.closeInteraction();
     }
+  }
+
+  private @Nullable RadioStream findSelectedStream() {
+    for(AbstractWidget<?> child : this.wheelWidget().getChildren()) {
+      if (child instanceof RadioSegmentWidget radioSegmentWidget) {
+        if (radioSegmentWidget.isSelectable() && radioSegmentWidget.isSegmentSelected()) {
+          return radioSegmentWidget.getStream();
+        }
+      }
+    }
+
+    return null;
   }
 
 }

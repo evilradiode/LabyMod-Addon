@@ -60,7 +60,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     // POP & RAP
     RadioStreamConfig popRap = new RadioStreamConfig();
     popRap.url().set("https://stream.laut.fm/evil-radio-popundrap");
-    popRap.name().set("Evil-Radio Pop und Rap");
+    popRap.name().set("POP");
     popRap.displayName().set("Evil-Radio Pop und Rap");
     popRap.genre().set("Radio");
     popRap.country().set("DE");
@@ -72,8 +72,8 @@ public class EvilRadioConfiguration extends AddonConfig {
     // MASHUP (Platzhalter - noch kein Stream verfügbar)
     RadioStreamConfig mashup = new RadioStreamConfig();
     mashup.url().set("https://stream.laut.fm/evil-radio");
-    mashup.name().set("MASHUP");
-    mashup.displayName().set("MASHUP");
+    mashup.name().set("Mashup");
+    mashup.displayName().set("Evil-Radio Mashup");
     mashup.genre().set("Radio");
     mashup.country().set("DE");
     mashup.bitrate().set(128);
@@ -84,7 +84,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     // SCHLAGER
     RadioStreamConfig schlager = new RadioStreamConfig();
     schlager.url().set("https://stream.laut.fm/er-schlager");
-    schlager.name().set("Evil-Radio Schlager");
+    schlager.name().set("Schlager");
     schlager.displayName().set("Evil-Radio Schlager");
     schlager.genre().set("Radio");
     schlager.country().set("DE");
@@ -96,7 +96,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     // XMAS
     RadioStreamConfig xmas = new RadioStreamConfig();
     xmas.url().set("https://stream.laut.fm/evil-radiox-mas");
-    xmas.name().set("Evil-Radio X-Mas");
+    xmas.name().set("Xmas");
     xmas.displayName().set("Evil-Radio X-Mas");
     xmas.genre().set("Radio");
     xmas.country().set("DE");
@@ -108,7 +108,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     // OLDIE
     RadioStreamConfig oldie = new RadioStreamConfig();
     oldie.url().set("https://stream.laut.fm/er-oldie");
-    oldie.name().set("Evil-Radio Oldie");
+    oldie.name().set("Oldie");
     oldie.displayName().set("Evil-Radio Oldie");
     oldie.genre().set("Radio");
     oldie.country().set("DE");
@@ -120,7 +120,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     // SOMMER
     RadioStreamConfig sommer = new RadioStreamConfig();
     sommer.url().set("https://stream.laut.fm/summer-time");
-    sommer.name().set("Evil-Radio Sommer-Time");
+    sommer.name().set("Summer");
     sommer.displayName().set("Evil-Radio Sommer-Time");
     sommer.genre().set("Radio");
     sommer.country().set("DE");
@@ -132,7 +132,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     // ANIME
     RadioStreamConfig anime = new RadioStreamConfig();
     anime.url().set("https://stream.laut.fm/evil-animefm");
-    anime.name().set("Evil Anime FM");
+    anime.name().set("Anime");
     anime.displayName().set("Evil Anime FM");
     anime.genre().set("Radio");
     anime.country().set("DE");

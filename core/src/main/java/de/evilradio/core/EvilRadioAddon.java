@@ -1,6 +1,7 @@
 package de.evilradio.core;
 
 import de.evilradio.core.radio.RadioManager;
+import de.evilradio.core.ui.RadioWheelOverlay;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.models.addon.annotation.AddonMain;
@@ -31,10 +32,12 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
           (ignoreWhitelist ? " (Whitelist deaktiviert)" : " (Whitelist aktiviert)"));
     }
 
-    // Keybind Listener registrieren (als Game-Keybind, reagiert nur im Spiel)
-    this.logger().info("Radio-Wheel Keybind Listener registriert als Game-Keybind");
+    this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
 
     this.logger().info("Enabled the Addon");
+
+    configuration().volume().addChangeListener((volume) -> this.radioManager.setVolume(volume));
+
   }
 
   @Override
@@ -45,17 +48,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   public RadioManager getRadioManager() {
     return radioManager;
   }
-
-  public Key getRadioMenuKeybind() {
-    return radioMenuKeybind;
-  }
-
-  public void setRadioMenuKeybind(Key key) {
-    this.radioMenuKeybind = key;
-    this.logger().info("Radio-Menü Keybind geändert zu: " + (key != null ? key.getName() : "null"));
-  }
-
-
 }
 
 
