@@ -7,6 +7,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.KeybindWidget.KeyB
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
+import net.labymod.api.configuration.loader.annotation.Exclude;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ public class EvilRadioConfiguration extends AddonConfig {
   private final ConfigProperty<Boolean> autoStartLastStream = new ConfigProperty<>(false);
   
   // ID des letzten gestarteten Streams
+  @Exclude
   private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
   
   // Nutzungsstatistiken: Map von Stream-ID zu Nutzungsanzahl
