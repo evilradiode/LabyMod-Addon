@@ -1,6 +1,5 @@
 package de.evilradio.core;
 
-import de.evilradio.core.i18n.TranslationService;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStreamService;
 import de.evilradio.core.ui.RadioWheelOverlay;
@@ -24,9 +23,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   protected void enable() {
     this.registerSettingCategory();
     instance = this;
-    
-    // Initialisiere Translation Service
-    TranslationService.initialize(this);
 
     this.radioManager = new RadioManager(this);
 

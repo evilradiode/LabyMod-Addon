@@ -3,7 +3,6 @@ package de.evilradio.core.ui;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.util.List;
 import de.evilradio.core.EvilRadioAddon;
-import de.evilradio.core.i18n.TranslationService;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.ui.widget.RadioSegmentWidget;
@@ -44,11 +43,10 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
   @Override
   protected Component createTitleComponent() {
-    TranslationService translationService = TranslationService.getInstance();
     if (!this.hasEntries()) {
-      return Component.text(translationService.translate("evilradio.wheel.noStationsAvailable"), NamedTextColor.DARK_RED);
+      return Component.translatable("evilradio.wheel.noStationsAvailable").color(NamedTextColor.DARK_RED);
     } else {
-      return Component.text(translationService.translate("evilradio.wheel.selectStation"), NamedTextColor.RED);
+      return Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
     }
   }
 
@@ -165,10 +163,9 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     }
     if (stream != null && stream.getUrl() != null && !stream.getUrl().isEmpty()) {
       this.radioManager.playStream(stream);
-      TranslationService translationService = TranslationService.getInstance();
       this.addon.notification(
-          Component.text(translationService.translate("evilradio.notification.streamSelected.title")),
-          Component.text(translationService.translate("evilradio.notification.streamSelected.text"))
+          Component.translatable("evilradio.notification.streamSelected.title"),
+          Component.translatable("evilradio.notification.streamSelected.text")
       );
     }
 
