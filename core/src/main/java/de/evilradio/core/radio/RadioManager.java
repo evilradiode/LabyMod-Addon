@@ -1,12 +1,16 @@
 package de.evilradio.core.radio;
 
+import de.evilradio.core.EvilRadioAddon;
+
 public class RadioManager {
 
   private RadioStream currentStream;
   private boolean isPlaying;
   private RadioPlayer radioPlayer;
+  private EvilRadioAddon addon;
 
-  public RadioManager() {
+  public RadioManager(EvilRadioAddon addon) {
+    this.addon = addon;
     this.isPlaying = false;
     this.radioPlayer = new RadioPlayer();
   }
@@ -39,6 +43,11 @@ public class RadioManager {
     stopStream();
     currentStream = stream;
     isPlaying = true;
+    
+    // Tracke die Nutzung des Streams (nur wenn Usage-Tracking aktiviert ist)
+    if (stream != null && addon != null && addon.configuration().usageBasedSorting().get()) {
+      addon.configuration().incrementStreamUsage(stream.getId());
+    }
     
     // Starte die Wiedergabe des Streams
     if (radioPlayer != null && stream != null) {

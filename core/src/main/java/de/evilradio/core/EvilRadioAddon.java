@@ -20,9 +20,9 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.registerSettingCategory();
     instance = this;
 
-    this.radioManager = new RadioManager();
+    this.radioManager = new RadioManager(this);
 
-    this.radioStreamService = new RadioStreamService();
+    this.radioStreamService = new RadioStreamService(this);
     this.radioStreamService.loadStreams();
 
     this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
