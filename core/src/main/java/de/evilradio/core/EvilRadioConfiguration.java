@@ -8,7 +8,6 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.Slide
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
-import net.labymod.api.configuration.settings.annotation.SettingOrder;
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +37,14 @@ public class EvilRadioConfiguration extends AddonConfig {
   @ButtonSetting
   public void reloadStreams() {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
+  }
+
+  @MethodOrder(after = "reloadStreams")
+  @ButtonSetting
+  public void resetStreamUsageCount() {
+    if (streamUsageCount != null) {
+      streamUsageCount.clear();
+    }
   }
 
   @Override
