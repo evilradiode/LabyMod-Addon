@@ -12,6 +12,9 @@ import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.resources.ResourceLocation;
 import net.labymod.api.models.addon.annotation.AddonMain;
 import net.labymod.api.notification.Notification;
+import net.labymod.api.event.Subscribe;
+import net.labymod.api.util.concurrent.task.Task;
+import java.util.concurrent.TimeUnit;
 
 @AddonMain
 public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
@@ -37,19 +40,15 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
     this.radioStreamService = new RadioStreamService(this);
     this.radioStreamService.loadStreams(() -> {
-      // Nach dem Laden der Streams: Prüfe, ob Auto-Start aktiviert ist
-      if (configuration().autoStartLastStream().get()) {
-        int lastStreamId = configuration().lastStreamId().get();
-        if (lastStreamId >= 0) {
-          RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
-          if (lastStream != null && lastStream.getUrl() != null && !lastStream.getUrl().isEmpty()) {
-            this.radioManager.playStream(lastStream);
-            this.currentSongService.fetchCurrentSong();
-            this.logger().info("Auto-started last stream: " + lastStream.getDisplayName());
-          }
-        }
+      // Nach dem Laden der Streams: Prüfe, ob Auto-Start beim Spielstart aktiviert ist
+      AutoStartMode mode = configuration().getAutoStartMode();
+      if (mode.shouldStartOnGameStart()) {
+        this.startLastStreamWithDelay("game start");
       }
     });
+    
+    // Event-Bus registrieren für Event-Handler
+    this.labyAPI().eventBus().registerListener(this);
 
     this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
 
@@ -100,6 +99,78 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   public CurrentSongHudWidget currentSongHudWidget() {
     return currentSongHudWidget;
+  }
+  
+  /**
+   * Event-Handler für Server-Beitritt
+   * Wird aufgerufen, wenn der Spieler einem Server beitritt
+   */
+  @Subscribe
+  public void onServerJoin(Object event) {
+    // Prüfe, ob es ein ServerJoinEvent ist (dynamische Prüfung, da Event-Typ variieren kann)
+    AutoStartMode mode = configuration().getAutoStartMode();
+    if (mode.shouldStartOnServerJoin()) {
+      this.startLastStreamWithDelay("server join");
+    }
+  }
+  
+  /**
+   * Event-Handler für World-Beitritt (Singleplayer/Multiplayer)
+   * Wird aufgerufen, wenn der Spieler einer Welt beitritt
+   */
+  @Subscribe
+  public void onWorldJoin(Object event) {
+    AutoStartMode mode = configuration().getAutoStartMode();
+    if (mode.shouldStartOnServerJoin()) {
+      this.startLastStreamWithDelay("world join");
+    }
+  }
+  
+  /**
+   * Startet den letzten Stream mit konfigurierter Verzögerung
+   * @param context Kontext für Logging (z.B. "game start", "server join")
+   */
+  private void startLastStreamWithDelay(String context) {
+    if (!configuration().autoStartLastStream().get()) {
+      return;
+    }
+    
+    int lastStreamId = configuration().lastStreamId().get();
+    if (lastStreamId < 0) {
+      return;
+    }
+    
+    RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
+    if (lastStream == null || lastStream.getUrl() == null || lastStream.getUrl().isEmpty()) {
+      return;
+    }
+    
+    float delaySeconds = configuration().autoStartDelay().get();
+    
+    if (delaySeconds > 0) {
+      // Starte mit Verzögerung
+      Task.builder(() -> {
+        this.startLastStream(lastStream, context);
+      }).delay((long)(delaySeconds * 1000), TimeUnit.MILLISECONDS).build().execute();
+    } else {
+      // Starte sofort
+      this.startLastStream(lastStream, context);
+    }
+  }
+  
+  /**
+   * Startet den letzten Stream
+   * @param stream Der zu startende Stream
+   * @param context Kontext für Logging
+   */
+  private void startLastStream(RadioStream stream, String context) {
+    if (stream == null || stream.getUrl() == null || stream.getUrl().isEmpty()) {
+      return;
+    }
+    
+    this.radioManager.playStream(stream);
+    this.currentSongService.fetchCurrentSong();
+    this.logger().info("Auto-started last stream on " + context + ": " + stream.getDisplayName());
   }
 
 }

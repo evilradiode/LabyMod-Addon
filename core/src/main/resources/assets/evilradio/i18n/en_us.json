@@ -53,7 +53,20 @@
       },
       "autoStartLastStream": {
         "name": "Auto-start Last Stream",
-        "description": "Automatically starts the last played stream when the addon starts"
+        "description": "Enable automatic start of the last played stream"
+      },
+      "autoStartMode": {
+        "name": "Auto-Start Mode",
+        "description": "Choose when the stream should automatically start",
+        "type": {
+          "disabled": "Disabled",
+          "onGameStart": "On Game Start",
+          "onServerJoin": "On Server Join"
+        }
+      },
+      "autoStartDelay": {
+        "name": "Auto-Start Delay",
+        "description": "Delay in seconds before automatically starting the stream (0-10 seconds)"
       },
       "reloadStreams": {
         "name": "Reload Streams",

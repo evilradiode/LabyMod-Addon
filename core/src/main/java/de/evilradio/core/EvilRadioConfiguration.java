@@ -6,6 +6,8 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.Butto
 import net.labymod.api.client.gui.screen.widget.widgets.input.KeybindWidget.KeyBindSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
@@ -32,6 +34,13 @@ public class EvilRadioConfiguration extends AddonConfig {
   
   @SwitchSetting
   private final ConfigProperty<Boolean> autoStartLastStream = new ConfigProperty<>(false);
+  
+  @DropdownSetting
+  @DropdownEntryTranslationPrefix("evilradio.settings.autoStartMode.type")
+  private final ConfigProperty<AutoStartMode> autoStartMode = new ConfigProperty<>(AutoStartMode.DISABLED);
+  
+  @SliderSetting(min = 0, max = 10, steps = 0.5f)
+  private final ConfigProperty<Float> autoStartDelay = new ConfigProperty<>(2.0f);
   
   // ID des letzten gestarteten Streams
   @Exclude
@@ -74,6 +83,22 @@ public class EvilRadioConfiguration extends AddonConfig {
   
   public ConfigProperty<Boolean> autoStartLastStream() {
     return this.autoStartLastStream;
+  }
+  
+  public ConfigProperty<AutoStartMode> autoStartMode() {
+    return this.autoStartMode;
+  }
+  
+  public ConfigProperty<Float> autoStartDelay() {
+    return this.autoStartDelay;
+  }
+  
+  // Hilfsmethode, um den AutoStartMode zu bestimmen (berücksichtigt auch autoStartLastStream)
+  public AutoStartMode getAutoStartMode() {
+    if (!autoStartLastStream.get()) {
+      return AutoStartMode.DISABLED;
+    }
+    return autoStartMode.get();
   }
   
   public ConfigProperty<Integer> lastStreamId() {
