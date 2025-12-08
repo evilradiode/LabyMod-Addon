@@ -27,7 +27,7 @@ public class CurrentSongService {
         fetchCurrentSong();
         this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
       }
-    }).repeat(3, TimeUnit.MINUTES).build();
+    }).repeat(1, TimeUnit.MINUTES).build();
     this.updaterTask.execute();
   }
 

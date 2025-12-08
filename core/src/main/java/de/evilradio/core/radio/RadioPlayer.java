@@ -99,16 +99,16 @@ public class RadioPlayer {
 
         // Wiedergabe-Loop für MP3-Stream
         byte[] buffer = new byte[4096];
-        while (!shouldStop) {
+        while (!shouldStop && audioLine != null && audioLine.isOpen()) {
           // Pause-Handling
           if (isPaused) {
-            if (audioLine != null) {
+            if (audioLine != null && audioLine.isOpen()) {
               audioLine.stop();
             }
-            while (isPaused && !shouldStop) {
+            while (isPaused && !shouldStop && audioLine != null && audioLine.isOpen()) {
               Thread.sleep(100);
             }
-            if (!shouldStop && audioLine != null) {
+            if (!shouldStop && audioLine != null && audioLine.isOpen()) {
               audioLine.start();
             }
           }
@@ -120,20 +120,22 @@ public class RadioPlayer {
             
             // Konvertiere 16-bit Samples zu Bytes
             int sampleIndex = 0;
-            for (int i = 0; i < samples.length && !shouldStop; i++) {
+            for (int i = 0; i < samples.length && !shouldStop && audioLine != null && audioLine.isOpen(); i++) {
               short sample = samples[i];
               buffer[sampleIndex++] = (byte) (sample & 0xFF);
               buffer[sampleIndex++] = (byte) ((sample >> 8) & 0xFF);
               
               // Wenn Buffer voll ist, schreibe ihn
               if (sampleIndex >= buffer.length) {
-                audioLine.write(buffer, 0, sampleIndex);
+                if (audioLine != null && audioLine.isOpen()) {
+                  audioLine.write(buffer, 0, sampleIndex);
+                }
                 sampleIndex = 0;
               }
             }
             
             // Schreibe verbleibende Samples
-            if (sampleIndex > 0) {
+            if (sampleIndex > 0 && audioLine != null && audioLine.isOpen()) {
               audioLine.write(buffer, 0, sampleIndex);
             }
             

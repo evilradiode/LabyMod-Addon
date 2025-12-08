@@ -16,7 +16,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalList
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
 import net.labymod.api.client.resources.ResourceLocation;
 
-@Link("song-widget.lss")
+@Link("widget/song-widget.lss")
 @AutoWidget
 public class CurrentSongWidget extends FlexibleContentWidget implements Updatable {
 
@@ -43,7 +43,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     boolean leftAligned = this.hudWidget.anchor().isLeft();
     this.addId(leftAligned ? "left" : "right");
 
-    this.coverWidget = new IconWidget(Icon.texture(ResourceLocation.create("evilradio", "texture/log.png")));
+    this.coverWidget = new IconWidget(Icon.texture(ResourceLocation.create("evilradio", "textures/logo.png")));
     this.coverWidget.addId("cover");
 
     // add cover if the hud widget is left-aligned
