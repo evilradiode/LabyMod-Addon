@@ -6,7 +6,8 @@
       "description2": "Click on the station and request your song. Wait a moment, and it will be played.",
       "noSong": "No Song",
       "close": "Close",
-      "streamStarted": "Stream started: %s"
+      "streamStarted": "Stream started: %s",
+      "streamStartedWithSong": "Stream started: %s\nCurrent song: %s"
     },
     "wheel": {
       "noStationsAvailable": "No stations available",
@@ -15,7 +16,22 @@
     "notification": {
       "streamSelected": {
         "title": "Stream selected",
-        "text": "The stream has been started successfully."
+        "text": "The stream has been started successfully.",
+        "titleWithStation": "Stream selected: %s",
+        "textWithSong": "Current song: %s"
+      }
+    },
+    "widget": {
+      "loading": "Loading...",
+      "fetchingSongInfo": "Fetching song info...",
+      "notPlaying": "Not playing",
+      "clickToRetry": "Click to retry"
+    },
+    "hudWidget": {
+      "evilraio_full_wdiget": {
+        "showCover": {
+          "name": "Show Cover"
+        }
       }
     },
     "settings": {

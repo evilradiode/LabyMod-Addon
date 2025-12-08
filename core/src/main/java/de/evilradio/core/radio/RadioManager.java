@@ -58,6 +58,10 @@ public class RadioManager {
     // Starte die Wiedergabe des Streams
     if (radioPlayer != null && stream != null) {
       radioPlayer.play(stream.getUrl());
+      // Lade den aktuellen Song, wenn das Addon verfügbar ist
+      if (addon != null && addon.currentSongService() != null) {
+        addon.currentSongService().fetchCurrentSong();
+      }
     }
   }
 

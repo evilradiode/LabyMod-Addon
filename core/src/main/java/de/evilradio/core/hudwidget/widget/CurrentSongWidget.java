@@ -139,10 +139,22 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       return;
     }
 
-    this.trackWidget.setComponent(Component.text(currentSong == null ? "Not playing" : currentSong.getTitle()));
-    this.artistWidget.setComponent(
-        Component.text(currentSong == null ? "Click to retry" : currentSong.getArtist())
-    );
+    // Prüfe, ob der Stream läuft, auch wenn currentSong noch null ist
+    boolean isPlaying = this.hudWidget.addon().radioManager().isPlaying();
+    
+    if (currentSong == null) {
+      // Wenn kein Song gefunden wurde, aber der Stream läuft, zeige "Loading..." an
+      if (isPlaying) {
+        this.trackWidget.setComponent(Component.translatable("evilradio.widget.loading"));
+        this.artistWidget.setComponent(Component.translatable("evilradio.widget.fetchingSongInfo"));
+      } else {
+        this.trackWidget.setComponent(Component.translatable("evilradio.widget.notPlaying"));
+        this.artistWidget.setComponent(Component.translatable("evilradio.widget.clickToRetry"));
+      }
+    } else {
+      this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
+      this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
+    }
 
     this.artistWidget.setVisible(true);
 

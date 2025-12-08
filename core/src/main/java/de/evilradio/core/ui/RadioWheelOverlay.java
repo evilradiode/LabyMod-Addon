@@ -3,6 +3,7 @@ package de.evilradio.core.ui;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.util.List;
 import de.evilradio.core.EvilRadioAddon;
+import de.evilradio.core.api.RadioApiService;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.ui.widget.RadioSegmentWidget;
@@ -161,13 +162,46 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     if(forcedStream == null) {
       stream = this.findSelectedStream();
     }
-    if (stream != null && stream.getUrl() != null && !stream.getUrl().isEmpty()) {
-      this.radioManager.playStream(stream);
+    final RadioStream finalStream = stream;
+    if (finalStream != null && finalStream.getUrl() != null && !finalStream.getUrl().isEmpty()) {
+      this.radioManager.playStream(finalStream);
       this.addon.currentSongService().fetchCurrentSong();
-      this.addon.notification(
-          Component.translatable("evilradio.notification.streamSelected.title"),
-          Component.translatable("evilradio.notification.streamSelected.text")
-      );
+      
+      // Hole Song-Informationen für die Notification
+      RadioApiService.fetchCurrentSong(finalStream.getName(), (response) -> {
+        Component notificationTitle;
+        Component notificationText;
+        
+        if (response != null && response.getCurrent() != null) {
+          String songText = response.getCurrent().getFormatted();
+          if (songText.isEmpty()) {
+            songText = response.getCurrentSong();
+          }
+          if (!songText.isEmpty()) {
+            // Zeige Sender im Titel und Song im Text an
+            notificationTitle = Component.translatable("evilradio.notification.streamSelected.titleWithStation", 
+                Component.text(finalStream.getDisplayName())
+            );
+            notificationText = Component.translatable("evilradio.notification.streamSelected.textWithSong", 
+                Component.text(songText)
+            );
+          } else {
+            // Nur Sender anzeigen, wenn kein Song verfügbar ist
+            notificationTitle = Component.translatable("evilradio.notification.streamSelected.titleWithStation", 
+                Component.text(finalStream.getDisplayName())
+            );
+            notificationText = Component.translatable("evilradio.notification.streamSelected.text");
+          }
+        } else {
+          // Nur Sender anzeigen, wenn keine Song-Informationen verfügbar sind
+          notificationTitle = Component.translatable("evilradio.notification.streamSelected.titleWithStation", 
+              Component.text(finalStream.getDisplayName())
+          );
+          notificationText = Component.translatable("evilradio.notification.streamSelected.text");
+        }
+        
+        this.addon.notification(notificationTitle, notificationText);
+      });
     }
 
     if (closeMenu) {

@@ -199,9 +199,39 @@ public class RadioMenuActivity extends SimpleActivity {
         stationButton.setPressable(() -> {
           radioManager.playStream(selectedStream);
           addon.currentSongService().fetchCurrentSong();
-          Laby.labyAPI().minecraft().chatExecutor().displayClientMessage(
-              Component.translatable("evilradio.menu.streamStarted", Component.text(selectedStream.getDisplayName())).color(NamedTextColor.GREEN)
-          );
+          
+          // Hole Song-Informationen für den Toast
+          RadioApiService.fetchCurrentSong(selectedStream.getName(), (response) -> {
+            Component toastMessage;
+            if (response != null && response.getCurrent() != null) {
+              String songText = response.getCurrent().getFormatted();
+              if (songText.isEmpty()) {
+                songText = response.getCurrentSong();
+              }
+              if (!songText.isEmpty()) {
+                // Zeige Sender und Song an
+                toastMessage = Component.translatable("evilradio.menu.streamStartedWithSong", 
+                    Component.text(selectedStream.getDisplayName()),
+                    Component.text(songText)
+                ).color(NamedTextColor.GREEN);
+              } else {
+                // Nur Sender anzeigen, wenn kein Song verfügbar ist
+                toastMessage = Component.translatable("evilradio.menu.streamStarted", 
+                    Component.text(selectedStream.getDisplayName())
+                ).color(NamedTextColor.GREEN);
+              }
+            } else {
+              // Nur Sender anzeigen, wenn keine Song-Informationen verfügbar sind
+              toastMessage = Component.translatable("evilradio.menu.streamStarted", 
+                  Component.text(selectedStream.getDisplayName())
+              ).color(NamedTextColor.GREEN);
+            }
+            
+            Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
+              Laby.labyAPI().minecraft().chatExecutor().displayClientMessage(toastMessage);
+            });
+          });
+          
           // Menü neu laden, um aktiven Status zu aktualisieren
           this.reload();
         });

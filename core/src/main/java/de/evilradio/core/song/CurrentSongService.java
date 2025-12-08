@@ -37,25 +37,63 @@ public class CurrentSongService {
   }
 
   public void fetchCurrentSong() {
+    // Hole den aktuellen Stream
+    de.evilradio.core.radio.RadioStream currentStream = this.addon.radioManager().getCurrentStream();
+    if (currentStream == null) {
+      logging.warn("No current stream found, cannot fetch song info");
+      this.currentSong = null;
+      this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      return;
+    }
+    
+    String streamName = currentStream.getName();
+    if (streamName == null || streamName.isEmpty()) {
+      logging.warn("Current stream has no name, cannot fetch song info");
+      this.currentSong = null;
+      this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      return;
+    }
+    
+    String apiUrl = "https://api.evil-radio.de/?radioInfo=" + streamName;
+    
     Request.ofGson(JsonObject.class)
-        .url("https://api.evil-radio.de/laby-addon/")
+        .url(apiUrl)
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
-        .addHeader("User-Agent", "EvilRadio LabyMod 4 Addon")
+        .userAgent("EvilRadio LabyMod 4 Addon")
         .execute(response -> {
-          if(response.hasException()) {
-            logging.error("Failed to load streams", response.exception());
+          if(response.hasException() || response.getStatusCode() != 200) {
+            logging.error("Failed to load current song", response.hasException() ? response.exception() : new Exception("HTTP " + response.getStatusCode()));
+            this.currentSong = null;
+            this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
             return;
           }
+          
           JsonObject object = response.get();
+          
           if(object.has("current") && object.get("current").isJsonObject()) {
             JsonObject currentSongObject = object.get("current").getAsJsonObject();
-            this.currentSong = new CurrentSong(
-                currentSongObject.get("title").getAsString(),
-                currentSongObject.get("artist").getAsString(),
-                currentSongObject.get("image").getAsString()
-            );
+            
+            // Prüfe, ob alle benötigten Felder vorhanden sind
+            if (!currentSongObject.has("title") || !currentSongObject.has("artist") || !currentSongObject.has("image")) {
+              logging.warn("API response missing required fields. Available keys: " + currentSongObject.keySet());
+              this.currentSong = null;
+              this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+              return;
+            }
+            
+            String title = currentSongObject.get("title").getAsString();
+            String artist = currentSongObject.get("artist").getAsString();
+            String image = currentSongObject.get("image").getAsString();
+            
+            this.currentSong = new CurrentSong(title, artist, image);
+            // Aktualisiere das Widget nach dem Setzen des aktuellen Songs
+            this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+          } else {
+            // Wenn kein Song gefunden wurde, setze currentSong auf null
+            this.currentSong = null;
+            this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
           }
         });
   }
