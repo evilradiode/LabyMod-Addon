@@ -44,6 +44,11 @@ public class RadioManager {
     currentStream = stream;
     isPlaying = true;
     
+    // Speichere die ID des letzten gestarteten Streams
+    if (stream != null && addon != null) {
+      addon.configuration().lastStreamId().set(stream.getId());
+    }
+    
     // Tracke die Nutzung des Streams (nur wenn Usage-Tracking aktiviert ist)
     if (stream != null && addon != null && addon.configuration().usageBasedSorting().get()) {
       addon.configuration().incrementStreamUsage(stream.getId());

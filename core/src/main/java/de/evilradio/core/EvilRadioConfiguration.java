@@ -30,6 +30,12 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SwitchSetting
   private final ConfigProperty<Boolean> usageBasedSorting = new ConfigProperty<>(true);
   
+  @SwitchSetting
+  private final ConfigProperty<Boolean> autoStartLastStream = new ConfigProperty<>(false);
+  
+  // ID des letzten gestarteten Streams
+  private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
+  
   // Nutzungsstatistiken: Map von Stream-ID zu Nutzungsanzahl
   private Map<Integer, Integer> streamUsageCount = new HashMap<>();
 
@@ -66,6 +72,14 @@ public class EvilRadioConfiguration extends AddonConfig {
   
   public ConfigProperty<Boolean> usageBasedSorting() {
     return this.usageBasedSorting;
+  }
+  
+  public ConfigProperty<Boolean> autoStartLastStream() {
+    return this.autoStartLastStream;
+  }
+  
+  public ConfigProperty<Integer> lastStreamId() {
+    return this.lastStreamId;
   }
   
   public Map<Integer, Integer> streamUsageCount() {

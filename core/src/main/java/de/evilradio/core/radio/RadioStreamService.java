@@ -19,6 +19,10 @@ public class RadioStreamService {
   }
 
   public void loadStreams() {
+    loadStreams(null);
+  }
+
+  public void loadStreams(Runnable callback) {
     streams.clear();
     Request.ofGson(JsonObject.class)
         .url("https://api.evil-radio.de/laby-addon/")
@@ -29,6 +33,9 @@ public class RadioStreamService {
         .execute(response -> {
           if(response.hasException()) {
             logging.error("Failed to load streams", response.exception());
+            if (callback != null) {
+              callback.run();
+            }
             return;
           }
           JsonObject object = response.get();
@@ -51,6 +58,9 @@ public class RadioStreamService {
             sortStreamsByUsage();
           }
           logging.info("Loaded " + streams.size() + " radio streams");
+          if (callback != null) {
+            callback.run();
+          }
         });
   }
 
@@ -58,6 +68,13 @@ public class RadioStreamService {
     // Sortiere Streams nach Nutzung, bevor sie zurückgegeben werden
     sortStreamsByUsage();
     return streams;
+  }
+  
+  public RadioStream findStreamById(int id) {
+    return streams.stream()
+        .filter(stream -> stream.getId() == id)
+        .findFirst()
+        .orElse(null);
   }
   
   private void sortStreamsByUsage() {

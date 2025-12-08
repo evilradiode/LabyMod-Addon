@@ -23,7 +23,19 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.radioManager = new RadioManager(this);
 
     this.radioStreamService = new RadioStreamService(this);
-    this.radioStreamService.loadStreams();
+    this.radioStreamService.loadStreams(() -> {
+      // Nach dem Laden der Streams: Prüfe, ob Auto-Start aktiviert ist
+      if (configuration().autoStartLastStream().get()) {
+        int lastStreamId = configuration().lastStreamId().get();
+        if (lastStreamId >= 0) {
+          de.evilradio.core.radio.RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
+          if (lastStream != null && lastStream.getUrl() != null && !lastStream.getUrl().isEmpty()) {
+            this.radioManager.playStream(lastStream);
+            this.logger().info("Auto-started last stream: " + lastStream.getDisplayName());
+          }
+        }
+      }
+    });
 
     this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
 
