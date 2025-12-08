@@ -1,0 +1,55 @@
+{
+  "evilradio": {
+    "menu": {
+      "title": "Unsere Sender",
+      "description": "Du möchtest ein Lied hören, aber es ist kein Moderator live? Kein Problem!",
+      "description2": "Klicke auf den Sender und wünsche dir dein Lied. Warte kurz, und es wird gespielt.",
+      "noSong": "Kein Song",
+      "close": "Schließen",
+      "streamStarted": "Stream gestartet: %s"
+    },
+    "wheel": {
+      "noStationsAvailable": "Keine Sender verfügbar",
+      "selectStation": "Wähle einen Evil-Radio Sender"
+    },
+    "notification": {
+      "streamSelected": {
+        "title": "Stream ausgewählt",
+        "text": "Der Stream wurde erfolgreich gestartet."
+      }
+    },
+    "settings": {
+      "enabled": {
+        "name": "Addon aktivieren",
+        "description": "Aktiviere oder deaktiviere das EvilRadio Addon"
+      },
+      "radioMenuKeybind": {
+        "name": "Radio-Menü Tastenkürzel",
+        "description": "Taste zum Öffnen des Radio-Menüs"
+      },
+      "volume": {
+        "name": "Lautstärke",
+        "description": "Die Lautstärke des Radio-Streams (0-100%)"
+      },
+      "usageBasedSorting": {
+        "name": "Nutzungsbasierte Sortierung",
+        "description": "Sortiere Sender basierend auf der Nutzungshäufigkeit"
+      },
+      "autoStartLastStream": {
+        "name": "Letzten Stream automatisch starten",
+        "description": "Startet automatisch den zuletzt abgespielten Stream beim Start des Addons"
+      },
+      "reloadStreams": {
+        "name": "Streams neu laden",
+        "text": "neu laden",
+        "description": "Lädt die Stream-Liste vom Server neu"
+      },
+      "resetStreamUsageCount": {
+        "name": "Nutzungsstatistiken zurücksetzen",
+        "text": "zurücksetzen",
+        "description": "Setzt die Nutzungsstatistiken der Streams zurück"
+      }
+    }
+  }
+}
+

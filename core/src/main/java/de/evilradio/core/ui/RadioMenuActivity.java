@@ -3,6 +3,7 @@ package de.evilradio.core.ui;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilRadioConfiguration;
 import de.evilradio.core.api.RadioApiService;
+import de.evilradio.core.i18n.TranslationService;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.Laby;
@@ -41,18 +42,19 @@ public class RadioMenuActivity extends SimpleActivity {
   public void initialize(Parent parent) {
     super.initialize(parent);
 
-    // Titel "Unsere Sender"
+    // Titel
+    TranslationService translationService = TranslationService.getInstance();
     ComponentWidget titleWidget = ComponentWidget.component(
-        Component.text("Unsere Sender", NamedTextColor.WHITE)
+        Component.text(translationService.translate("evilradio.menu.title"), NamedTextColor.WHITE)
     );
     titleWidget.addId("title");
     this.document.addChild(titleWidget);
 
     // Beschreibungstext
     ComponentWidget descriptionWidget = ComponentWidget.component(
-        Component.text("Du möchtest ein Lied hören, aber es ist kein Moderator live? Kein Problem!", NamedTextColor.GRAY)
+        Component.text(translationService.translate("evilradio.menu.description"), NamedTextColor.GRAY)
             .append(Component.text("\n", NamedTextColor.GRAY))
-            .append(Component.text("Klicke auf den Sender und wünsche dir dein Lied. Warte kurz, und es wird gespielt.", NamedTextColor.GRAY))
+            .append(Component.text(translationService.translate("evilradio.menu.description2"), NamedTextColor.GRAY))
     );
     descriptionWidget.addId("description");
     this.document.addChild(descriptionWidget);
@@ -66,7 +68,7 @@ public class RadioMenuActivity extends SimpleActivity {
     
     // Aktueller Song-Anzeige
     ComponentWidget currentSongWidget = ComponentWidget.component(
-        Component.text("Kein Song", NamedTextColor.GRAY)
+        Component.text(translationService.translate("evilradio.menu.noSong"), NamedTextColor.GRAY)
     );
     currentSongWidget.addId("current-song");
     controlsContainer.addChild(currentSongWidget);
@@ -80,7 +82,7 @@ public class RadioMenuActivity extends SimpleActivity {
             songText = response.getCurrentSong();
           }
           if (songText.isEmpty()) {
-            songText = "Kein Song";
+            songText = translationService.translate("evilradio.menu.noSong");
           }
           final String finalSongText = songText;
           Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
@@ -196,7 +198,7 @@ public class RadioMenuActivity extends SimpleActivity {
         stationButton.setPressable(() -> {
           radioManager.playStream(selectedStream);
           Laby.labyAPI().minecraft().chatExecutor().displayClientMessage(
-              Component.text("Stream gestartet: " + selectedStream.getDisplayName(), NamedTextColor.GREEN)
+              Component.text(translationService.translate("evilradio.menu.streamStarted", selectedStream.getDisplayName()), NamedTextColor.GREEN)
           );
           // Menü neu laden, um aktiven Status zu aktualisieren
           this.reload();
@@ -211,7 +213,7 @@ public class RadioMenuActivity extends SimpleActivity {
 
     // Schließen-Button
     ButtonWidget closeButton = ButtonWidget.component(
-        Component.text("Schließen", NamedTextColor.RED)
+        Component.text(translationService.translate("evilradio.menu.close"), NamedTextColor.RED)
     );
     closeButton.addId("close-button");
     closeButton.setPressable(() -> {
