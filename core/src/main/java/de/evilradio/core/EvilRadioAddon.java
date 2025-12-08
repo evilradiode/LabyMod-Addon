@@ -4,7 +4,11 @@ import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStreamService;
 import de.evilradio.core.ui.RadioWheelOverlay;
 import net.labymod.api.addon.LabyAddon;
+import net.labymod.api.client.component.Component;
+import net.labymod.api.client.gui.icon.Icon;
+import net.labymod.api.client.resources.ResourceLocation;
 import net.labymod.api.models.addon.annotation.AddonMain;
+import net.labymod.api.notification.Notification;
 
 @AddonMain
 public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
@@ -35,6 +39,15 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   @Override
   protected Class<EvilRadioConfiguration> configurationClass() {
     return EvilRadioConfiguration.class;
+  }
+
+  public void notification(Component title, Component text) {
+    this.labyAPI().notificationController().push(Notification.builder()
+        .title(title)
+        .text(text)
+            .icon(Icon.texture(ResourceLocation.create("evilradio", "textures/logo.png")))
+        .build()
+    );
   }
 
   public static EvilRadioAddon instance() {
