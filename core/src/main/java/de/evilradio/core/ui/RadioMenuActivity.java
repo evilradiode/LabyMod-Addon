@@ -112,8 +112,10 @@ public class RadioMenuActivity extends SimpleActivity {
     ConfigProperty<Float> volumeProperty = config.volume();
     
     // Synchronisiere den aktuellen Volume-Wert mit der ConfigProperty
-    float currentVolumePercent = radioManager.getVolume();
-    if (volumeProperty.get() != currentVolumePercent) {
+    // radioManager.getVolume() gibt 0.0-1.0 zurück, Property erwartet 0-100
+    float currentVolume = radioManager.getVolume();
+    float currentVolumePercent = currentVolume * 100.0f;
+    if (Math.abs(volumeProperty.get() - currentVolumePercent) > 0.01f) {
       volumeProperty.set(currentVolumePercent);
     }
     

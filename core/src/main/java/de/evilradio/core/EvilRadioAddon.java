@@ -13,6 +13,8 @@ import net.labymod.api.client.resources.ResourceLocation;
 import net.labymod.api.models.addon.annotation.AddonMain;
 import net.labymod.api.notification.Notification;
 import net.labymod.api.event.Subscribe;
+import net.labymod.api.event.client.network.server.ServerJoinEvent;
+import net.labymod.api.event.client.world.WorldLeaveEvent;
 import net.labymod.api.util.concurrent.task.Task;
 import java.util.concurrent.TimeUnit;
 
@@ -41,8 +43,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.radioStreamService = new RadioStreamService(this);
     this.radioStreamService.loadStreams(() -> {
       // Nach dem Laden der Streams: Prüfe, ob Auto-Start beim Spielstart aktiviert ist
+      if (!configuration().autoStart().enabled().get()) {
+        return;
+      }
       AutoStartMode mode = configuration().getAutoStartMode();
-      if (mode.shouldStartOnGameStart()) {
+      if (mode != null && mode.shouldStartOnGameStart()) {
         this.startLastStreamWithDelay("game start");
       }
     });
@@ -56,7 +61,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
     this.logger().info("Enabled the Addon");
 
-    configuration().volume().addChangeListener((volume) -> this.radioManager.setVolume(volume));
+    configuration().volume().addChangeListener((volume) -> this.radioManager.setVolume(volume / 100.0f));
     
     // Stoppe den Stream, wenn das Addon deaktiviert wird
     configuration().enabled().addChangeListener((enabled) -> {
@@ -106,23 +111,36 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    * Wird aufgerufen, wenn der Spieler einem Server beitritt
    */
   @Subscribe
-  public void onServerJoin(Object event) {
-    // Prüfe, ob es ein ServerJoinEvent ist (dynamische Prüfung, da Event-Typ variieren kann)
+  public void onServerJoin(ServerJoinEvent event) {
+    // Prüfe, ob Auto-Start aktiviert ist
+    if (!configuration().autoStart().enabled().get()) {
+      return;
+    }
+    
     AutoStartMode mode = configuration().getAutoStartMode();
-    if (mode.shouldStartOnServerJoin()) {
+    if (mode != null && mode.shouldStartOnServerJoin()) {
       this.startLastStreamWithDelay("server join");
     }
   }
   
   /**
-   * Event-Handler für World-Beitritt (Singleplayer/Multiplayer)
-   * Wird aufgerufen, wenn der Spieler einer Welt beitritt
+   * Event-Handler für World-Verlassen
+   * Wird aufgerufen, wenn der Spieler eine Welt verlässt
+   * Stoppt den Stream, wenn Auto-Start auf "Beim Welt betreten" steht
    */
   @Subscribe
-  public void onWorldJoin(Object event) {
+  public void onWorldLeave(WorldLeaveEvent event) {
+    // Prüfe, ob Auto-Start aktiviert ist und auf "Beim Welt betreten" steht
+    if (!configuration().autoStart().enabled().get()) {
+      return;
+    }
+    
     AutoStartMode mode = configuration().getAutoStartMode();
-    if (mode.shouldStartOnServerJoin()) {
-      this.startLastStreamWithDelay("world join");
+    if (mode != null && mode.shouldStartOnServerJoin()) {
+      // Stoppe den Stream, wenn er läuft
+      if (this.radioManager != null && this.radioManager.isPlaying()) {
+        this.radioManager.stopStream();
+      }
     }
   }
   
@@ -131,8 +149,13 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    * @param context Kontext für Logging (z.B. "game start", "server join")
    */
   private void startLastStreamWithDelay(String context) {
+    // Prüfe zuerst, ob Auto-Start überhaupt aktiviert ist
+    if (!configuration().autoStart().enabled().get()) {
+      return;
+    }
+    
     AutoStartMode mode = configuration().getAutoStartMode();
-    if (mode == AutoStartMode.DISABLED) {
+    if (mode == null) {
       return;
     }
     
@@ -173,7 +196,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.currentSongService.fetchCurrentSong();
     this.logger().info("Auto-started last stream on " + context + ": " + stream.getDisplayName());
   }
-
+  
 }
 
 

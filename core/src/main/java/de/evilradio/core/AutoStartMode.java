@@ -1,7 +1,6 @@
 package de.evilradio.core;
 
 public enum AutoStartMode {
-  DISABLED("disabled"),
   ON_GAME_START("onGameStart"),
   ON_SERVER_JOIN("onServerJoin");
 

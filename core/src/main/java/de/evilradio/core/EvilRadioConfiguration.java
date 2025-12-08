@@ -6,11 +6,8 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.Butto
 import net.labymod.api.client.gui.screen.widget.widgets.input.KeybindWidget.KeyBindSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
-import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
-import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
-import net.labymod.api.configuration.loader.annotation.SettingSection;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
@@ -20,23 +17,24 @@ import java.util.Map;
 public class EvilRadioConfiguration extends AddonConfig {
 
   // Grundlegende Einstellungen
-  @SettingSection("basic")
   @SwitchSetting
   private final ConfigProperty<Boolean> enabled = new ConfigProperty<>(true);
 
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
   
-  @SliderSetting(min = 0, max = 1, steps = 0.01f)
-  private final ConfigProperty<Float> volume = new ConfigProperty<>(0.25f);
+  @SliderSetting(min = 0, max = 100, steps = 1f)
+  private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
   
-  // Erweiterte Einstellungen
-  @SettingSection("advanced")
+  // Nutzerbasierte Sortierung
   @SwitchSetting
   private final ConfigProperty<Boolean> usageBasedSorting = new ConfigProperty<>(true);
   
   // Auto-Start Sub-Settings
   private final AutoStartSubSettings autoStart = new AutoStartSubSettings();
+  
+  // Nutzungsstatistiken Sub-Settings
+  private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
   
   // ID des letzten gestarteten Streams
   @Exclude
@@ -46,15 +44,12 @@ public class EvilRadioConfiguration extends AddonConfig {
   private Map<Integer, Integer> streamUsageCount = new HashMap<>();
 
   // Aktionen
-  @SettingSection("actions")
-  @MethodOrder(after = "autoStart")
+  @MethodOrder(after = "usageStatistics")
   @ButtonSetting
   public void reloadStreams() {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
   }
 
-  @MethodOrder(after = "reloadStreams")
-  @ButtonSetting
   public void resetStreamUsageCount() {
     if (streamUsageCount != null) {
       streamUsageCount.clear();
@@ -74,12 +69,16 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.volume;
   }
   
-  public ConfigProperty<Boolean> usageBasedSorting() {
-    return this.usageBasedSorting;
-  }
-  
   public AutoStartSubSettings autoStart() {
     return this.autoStart;
+  }
+  
+  public UsageStatisticsSubSettings usageStatistics() {
+    return this.usageStatistics;
+  }
+  
+  public ConfigProperty<Boolean> usageBasedSorting() {
+    return this.usageBasedSorting;
   }
   
   // Hilfsmethode, um den AutoStartMode zu bestimmen
@@ -113,5 +112,6 @@ public class EvilRadioConfiguration extends AddonConfig {
   }
 
 }
+
 
 
