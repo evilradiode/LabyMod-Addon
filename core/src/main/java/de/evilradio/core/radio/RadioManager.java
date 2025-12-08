@@ -24,6 +24,10 @@ public class RadioManager {
   }
 
   public boolean isPlaying() {
+    // Synchronisiere mit dem tatsächlichen Status vom RadioPlayer
+    if (radioPlayer != null) {
+      isPlaying = radioPlayer.isPlaying();
+    }
     return isPlaying;
   }
 
@@ -43,7 +47,6 @@ public class RadioManager {
     // Wenn der Stream gestoppt wurde (isPlaying = false), starte ihn neu
     stopStream();
     currentStream = stream;
-    isPlaying = true;
     
     // Speichere die ID des letzten gestarteten Streams
     if (stream != null && addon != null) {
@@ -58,6 +61,10 @@ public class RadioManager {
     // Starte die Wiedergabe des Streams
     if (radioPlayer != null && stream != null) {
       radioPlayer.play(stream.getUrl());
+      // Warte kurz und prüfe dann, ob der Stream erfolgreich gestartet wurde
+      // Der Status wird vom RadioPlayer gesetzt, wenn der Stream erfolgreich startet
+      // isPlaying wird in isPlaying() vom RadioPlayer abgefragt
+      
       // Lade den aktuellen Song, wenn das Addon verfügbar ist
       if (addon != null && addon.currentSongService() != null) {
         addon.currentSongService().fetchCurrentSong();

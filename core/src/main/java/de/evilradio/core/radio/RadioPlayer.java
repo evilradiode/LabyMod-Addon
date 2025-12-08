@@ -46,7 +46,7 @@ public class RadioPlayer {
     }
 
     shouldStop = false;
-    isPlaying = true;
+    // isPlaying wird erst gesetzt, wenn der Stream erfolgreich gestartet wurde
 
     playbackTask = executorService.submit(() -> {
       try {
@@ -96,6 +96,9 @@ public class RadioPlayer {
         }
         
         audioLine.start();
+        
+        // Stream erfolgreich gestartet - jetzt isPlaying auf true setzen
+        isPlaying = true;
 
         // Wiedergabe-Loop für MP3-Stream
         byte[] buffer = new byte[4096];
@@ -188,8 +191,14 @@ public class RadioPlayer {
           System.err.println("Fehler beim Abspielen des Radio-Streams: " + e.getMessage());
           e.printStackTrace();
         }
+        // Bei Fehlern sicherstellen, dass isPlaying auf false gesetzt wird
+        isPlaying = false;
       } finally {
         cleanup();
+        // Sicherstellen, dass isPlaying korrekt ist, wenn der Stream beendet wird
+        if (shouldStop || !isPlaying) {
+          isPlaying = false;
+        }
       }
     });
   }
