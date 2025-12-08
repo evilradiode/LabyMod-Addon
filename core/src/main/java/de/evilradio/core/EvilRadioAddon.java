@@ -46,6 +46,14 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.logger().info("Enabled the Addon");
 
     configuration().volume().addChangeListener((volume) -> this.radioManager.setVolume(volume));
+    
+    // Stoppe den Stream, wenn das Addon deaktiviert wird
+    configuration().enabled().addChangeListener((enabled) -> {
+      if (!enabled && this.radioManager != null && this.radioManager.isPlaying()) {
+        this.radioManager.stopStream();
+        this.logger().info("Stream gestoppt, da Addon deaktiviert wurde");
+      }
+    });
   }
 
   @Override

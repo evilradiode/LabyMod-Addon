@@ -32,14 +32,15 @@ public class RadioManager {
   }
 
   public void playStream(RadioStream stream) {
+    // Wenn derselbe Stream bereits läuft und spielt, pausiere/starte ihn
     if (currentStream != null && currentStream.equals(stream) && isPlaying) {
-      // Wenn derselbe Stream bereits läuft, pausiere/starte ihn
       if (radioPlayer != null && radioPlayer.isPaused()) {
         resumeStream();
       }
       return;
     }
     
+    // Wenn der Stream gestoppt wurde (isPlaying = false), starte ihn neu
     stopStream();
     currentStream = stream;
     isPlaying = true;
@@ -62,6 +63,7 @@ public class RadioManager {
 
   public void stopStream() {
     isPlaying = false;
+    currentStream = null;
     
     // Stoppe die Wiedergabe
     if (radioPlayer != null) {

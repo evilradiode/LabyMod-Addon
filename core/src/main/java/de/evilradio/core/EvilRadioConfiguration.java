@@ -16,6 +16,7 @@ import java.util.Map;
 @ConfigName("settings")
 public class EvilRadioConfiguration extends AddonConfig {
 
+  // Grundlegende Einstellungen
   @SwitchSetting
   private final ConfigProperty<Boolean> enabled = new ConfigProperty<>(true);
 
@@ -25,6 +26,7 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SliderSetting(min = 0, max = 1, steps = 0.01f)
   private final ConfigProperty<Float> volume = new ConfigProperty<>(0.25f);
   
+  // Erweiterte Einstellungen
   @SwitchSetting
   private final ConfigProperty<Boolean> usageBasedSorting = new ConfigProperty<>(true);
   
@@ -38,7 +40,8 @@ public class EvilRadioConfiguration extends AddonConfig {
   // Nutzungsstatistiken: Map von Stream-ID zu Nutzungsanzahl
   private Map<Integer, Integer> streamUsageCount = new HashMap<>();
 
-  @MethodOrder(after = "volume")
+  // Aktionen
+  @MethodOrder(after = "autoStartLastStream")
   @ButtonSetting
   public void reloadStreams() {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
