@@ -11,6 +11,7 @@ import java.util.Set;
 public class RadioStreamWhitelist {
   
   private static final Set<String> ALLOWED_STREAM_NAMES = new HashSet<>(Arrays.asList(
+      "evil-radio",
       "evil-radio-popundrap",
       "er-schlager",
       "evil-radiox-mas",
@@ -33,15 +34,11 @@ public class RadioStreamWhitelist {
     }
     
     // Prüfe, ob es eine laut.fm URL ist
-    if (!url.startsWith("http://stream.laut.fm/") && !url.startsWith("https://stream.laut.fm/")) {
-      return false;
-    }
+    if (!url.startsWith("https://stream.laut.fm/")) return false;
     
     // Extrahiere den Stream-Namen aus der URL
     String streamName = extractStreamName(url);
-    if (streamName == null) {
-      return false;
-    }
+    if (streamName == null) return false;
     
     // Prüfe, ob der Stream-Name in der Whitelist ist
     return ALLOWED_STREAM_NAMES.contains(streamName);
@@ -50,7 +47,7 @@ public class RadioStreamWhitelist {
   /**
    * Extrahiert den Stream-Namen aus einer laut.fm URL.
    * 
-   * @param url Die URL (z.B. "http://stream.laut.fm/evil-radio-popundrap")
+   * @param url Die URL (z.B. "https://stream.laut.fm/evil-radio-popundrap")
    * @return Der Stream-Name (z.B. "evil-radio-popundrap") oder null, wenn die URL ungültig ist
    */
   public static String extractStreamName(String url) {
@@ -60,9 +57,7 @@ public class RadioStreamWhitelist {
     
     // Entferne Protokoll und Domain
     String path = url;
-    if (path.startsWith("http://stream.laut.fm/")) {
-      path = path.substring("http://stream.laut.fm/".length());
-    } else if (path.startsWith("https://stream.laut.fm/")) {
+    if (path.startsWith("https://stream.laut.fm/")) {
       path = path.substring("https://stream.laut.fm/".length());
     } else {
       return null;
