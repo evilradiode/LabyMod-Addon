@@ -21,9 +21,6 @@ public class EvilRadioConfiguration extends AddonConfig {
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
   
-  @SwitchSetting
-  private final ConfigProperty<Boolean> ignoreWhitelist = new ConfigProperty<>(false);
-  
   @SliderSetting(min = 0, max = 1, steps = 0.01f)
   private final ConfigProperty<Float> volume = new ConfigProperty<>(0.25f);
   
@@ -54,10 +51,6 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Key> radioMenuKeybind() {
     return this.radioMenuKeybind;
-  }
-  
-  public ConfigProperty<Boolean> ignoreWhitelist() {
-    return this.ignoreWhitelist;
   }
   
   public ConfigProperty<Float> volume() {
