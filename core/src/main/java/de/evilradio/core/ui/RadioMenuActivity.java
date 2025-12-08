@@ -109,10 +109,10 @@ public class RadioMenuActivity extends SimpleActivity {
     
     // Volume Slider - verwende ConfigProperty aus der Konfiguration
     EvilRadioConfiguration config = addon.configuration();
-    ConfigProperty<Integer> volumeProperty = config.volume();
+    ConfigProperty<Float> volumeProperty = config.volume();
     
     // Synchronisiere den aktuellen Volume-Wert mit der ConfigProperty
-    int currentVolumePercent = (int) (radioManager.getVolume() * 100);
+    float currentVolumePercent = radioManager.getVolume();
     if (volumeProperty.get() != currentVolumePercent) {
       volumeProperty.set(currentVolumePercent);
     }
