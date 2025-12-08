@@ -10,6 +10,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownW
 import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
+import net.labymod.api.configuration.loader.annotation.SettingSection;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ import java.util.Map;
 public class EvilRadioConfiguration extends AddonConfig {
 
   // Grundlegende Einstellungen
+  @SettingSection("basic")
   @SwitchSetting
   private final ConfigProperty<Boolean> enabled = new ConfigProperty<>(true);
 
@@ -29,18 +31,12 @@ public class EvilRadioConfiguration extends AddonConfig {
   private final ConfigProperty<Float> volume = new ConfigProperty<>(0.25f);
   
   // Erweiterte Einstellungen
+  @SettingSection("advanced")
   @SwitchSetting
   private final ConfigProperty<Boolean> usageBasedSorting = new ConfigProperty<>(true);
   
-  @SwitchSetting
-  private final ConfigProperty<Boolean> autoStartLastStream = new ConfigProperty<>(false);
-  
-  @DropdownSetting
-  @DropdownEntryTranslationPrefix("evilradio.settings.autoStartMode.type")
-  private final ConfigProperty<AutoStartMode> autoStartMode = new ConfigProperty<>(AutoStartMode.DISABLED);
-  
-  @SliderSetting(min = 0, max = 10, steps = 0.5f)
-  private final ConfigProperty<Float> autoStartDelay = new ConfigProperty<>(2.0f);
+  // Auto-Start Sub-Settings
+  private final AutoStartSubSettings autoStart = new AutoStartSubSettings();
   
   // ID des letzten gestarteten Streams
   @Exclude
@@ -50,7 +46,8 @@ public class EvilRadioConfiguration extends AddonConfig {
   private Map<Integer, Integer> streamUsageCount = new HashMap<>();
 
   // Aktionen
-  @MethodOrder(after = "autoStartLastStream")
+  @SettingSection("actions")
+  @MethodOrder(after = "autoStart")
   @ButtonSetting
   public void reloadStreams() {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
@@ -81,24 +78,13 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.usageBasedSorting;
   }
   
-  public ConfigProperty<Boolean> autoStartLastStream() {
-    return this.autoStartLastStream;
+  public AutoStartSubSettings autoStart() {
+    return this.autoStart;
   }
   
-  public ConfigProperty<AutoStartMode> autoStartMode() {
-    return this.autoStartMode;
-  }
-  
-  public ConfigProperty<Float> autoStartDelay() {
-    return this.autoStartDelay;
-  }
-  
-  // Hilfsmethode, um den AutoStartMode zu bestimmen (berücksichtigt auch autoStartLastStream)
+  // Hilfsmethode, um den AutoStartMode zu bestimmen
   public AutoStartMode getAutoStartMode() {
-    if (!autoStartLastStream.get()) {
-      return AutoStartMode.DISABLED;
-    }
-    return autoStartMode.get();
+    return autoStart.mode().get();
   }
   
   public ConfigProperty<Integer> lastStreamId() {

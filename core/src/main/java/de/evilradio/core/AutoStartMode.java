@@ -12,7 +12,7 @@ public enum AutoStartMode {
   }
 
   public String getTranslationKey() {
-    return "evilradio.settings.autoStartMode." + translationKey;
+    return "evilradio.settings.autoStart.mode.type." + translationKey;
   }
 
   public boolean shouldStartOnGameStart() {

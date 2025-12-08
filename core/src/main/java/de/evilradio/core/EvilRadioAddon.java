@@ -131,7 +131,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    * @param context Kontext für Logging (z.B. "game start", "server join")
    */
   private void startLastStreamWithDelay(String context) {
-    if (!configuration().autoStartLastStream().get()) {
+    AutoStartMode mode = configuration().getAutoStartMode();
+    if (mode == AutoStartMode.DISABLED) {
       return;
     }
     
@@ -145,7 +146,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       return;
     }
     
-    float delaySeconds = configuration().autoStartDelay().get();
+    float delaySeconds = configuration().autoStart().delay().get();
     
     if (delaySeconds > 0) {
       // Starte mit Verzögerung

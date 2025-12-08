@@ -35,6 +35,11 @@
       }
     },
     "settings": {
+      "section": {
+        "basic": "Basic Settings",
+        "advanced": "Advanced Settings",
+        "actions": "Actions"
+      },
       "enabled": {
         "name": "Enable Addon",
         "description": "Enable or disable the EvilRadio Addon"
@@ -51,22 +56,22 @@
         "name": "Usage-based Sorting",
         "description": "Sort stations based on usage frequency"
       },
-      "autoStartLastStream": {
-        "name": "Auto-start Last Stream",
-        "description": "Enable automatic start of the last played stream"
-      },
-      "autoStartMode": {
-        "name": "Auto-Start Mode",
-        "description": "Choose when the stream should automatically start",
-        "type": {
-          "disabled": "Disabled",
-          "onGameStart": "On Game Start",
-          "onServerJoin": "On Server Join"
+      "autoStart": {
+        "name": "Auto-Start Settings",
+        "description": "Configure automatic start of the last stream",
+        "mode": {
+          "name": "Auto-Start Mode",
+          "description": "Choose when the stream should automatically start",
+          "type": {
+            "disabled": "Disabled",
+            "onGameStart": "On Game Start",
+            "onServerJoin": "On Server Join"
+          }
+        },
+        "delay": {
+          "name": "Auto-Start Delay",
+          "description": "Delay in seconds before automatically starting the stream (0-10 seconds)"
         }
-      },
-      "autoStartDelay": {
-        "name": "Auto-Start Delay",
-        "description": "Delay in seconds before automatically starting the stream (0-10 seconds)"
       },
       "reloadStreams": {
         "name": "Reload Streams",
