@@ -198,6 +198,7 @@ public class RadioMenuActivity extends SimpleActivity {
         final RadioStream selectedStream = stream;
         stationButton.setPressable(() -> {
           radioManager.playStream(selectedStream);
+          addon.currentSongService().fetchCurrentSong();
           Laby.labyAPI().minecraft().chatExecutor().displayClientMessage(
               Component.translatable("evilradio.menu.streamStarted", Component.text(selectedStream.getDisplayName())).color(NamedTextColor.GREEN)
           );

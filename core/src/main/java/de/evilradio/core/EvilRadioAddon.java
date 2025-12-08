@@ -1,7 +1,10 @@
 package de.evilradio.core;
 
+import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioManager;
+import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
+import de.evilradio.core.song.CurrentSongService;
 import de.evilradio.core.ui.RadioWheelOverlay;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.component.Component;
@@ -18,6 +21,9 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private RadioManager radioManager;
 
   private RadioStreamService radioStreamService;
+  private CurrentSongService currentSongService;
+
+  private CurrentSongHudWidget currentSongHudWidget;
 
   @Override
   protected void enable() {
@@ -26,15 +32,19 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
     this.radioManager = new RadioManager(this);
 
+    this.currentSongService = new CurrentSongService(this);
+    this.currentSongService.startUpdater();
+
     this.radioStreamService = new RadioStreamService(this);
     this.radioStreamService.loadStreams(() -> {
       // Nach dem Laden der Streams: Prüfe, ob Auto-Start aktiviert ist
       if (configuration().autoStartLastStream().get()) {
         int lastStreamId = configuration().lastStreamId().get();
         if (lastStreamId >= 0) {
-          de.evilradio.core.radio.RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
+          RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
           if (lastStream != null && lastStream.getUrl() != null && !lastStream.getUrl().isEmpty()) {
             this.radioManager.playStream(lastStream);
+            this.currentSongService.fetchCurrentSong();
             this.logger().info("Auto-started last stream: " + lastStream.getDisplayName());
           }
         }
@@ -42,6 +52,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     });
 
     this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
+
+    this.labyAPI().hudWidgetRegistry().register(this.currentSongHudWidget = new CurrentSongHudWidget(this));
 
     this.logger().info("Enabled the Addon");
 
@@ -80,6 +92,14 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   public RadioStreamService radioStreamService() {
     return radioStreamService;
+  }
+
+  public CurrentSongService currentSongService() {
+    return currentSongService;
+  }
+
+  public CurrentSongHudWidget currentSongHudWidget() {
+    return currentSongHudWidget;
   }
 
 }

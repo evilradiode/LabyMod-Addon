@@ -163,6 +163,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     }
     if (stream != null && stream.getUrl() != null && !stream.getUrl().isEmpty()) {
       this.radioManager.playStream(stream);
+      this.addon.currentSongService().fetchCurrentSong();
       this.addon.notification(
           Component.translatable("evilradio.notification.streamSelected.title"),
           Component.translatable("evilradio.notification.streamSelected.text")

@@ -11,6 +11,8 @@ public class RadioStreamService {
 
   private final Logging logging = Logging.create("EvilRadio-RadioStreamService");
 
+  private RadioStream currentSelectedStream;
+
   private List<RadioStream> streams = new ArrayList<>();
   private EvilRadioAddon addon;
 
@@ -69,7 +71,15 @@ public class RadioStreamService {
     sortStreamsByUsage();
     return streams;
   }
-  
+
+  public RadioStream getCurrentSelectedStream() {
+    return currentSelectedStream;
+  }
+
+  public void setCurrentSelectedStream(RadioStream currentSelectedStream) {
+    this.currentSelectedStream = currentSelectedStream;
+  }
+
   public RadioStream findStreamById(int id) {
     return streams.stream()
         .filter(stream -> stream.getId() == id)
