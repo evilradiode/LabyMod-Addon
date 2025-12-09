@@ -194,7 +194,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     this.radioManager.playStream(stream);
     this.currentSongService.fetchCurrentSong();
-    this.logger().info("Auto-started last stream on " + context + ": " + stream.getDisplayName());
   }
   
 }

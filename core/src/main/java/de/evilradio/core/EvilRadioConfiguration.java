@@ -26,14 +26,10 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SliderSetting(min = 0, max = 100, steps = 1f)
   private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
   
-  // Nutzerbasierte Sortierung
-  @SwitchSetting
-  private final ConfigProperty<Boolean> usageBasedSorting = new ConfigProperty<>(true);
-  
   // Auto-Start Sub-Settings
   private final AutoStartSubSettings autoStart = new AutoStartSubSettings();
   
-  // Nutzungsstatistiken Sub-Settings
+  // Nutzerbasierte Sortierung Sub-Settings
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
   
   // ID des letzten gestarteten Streams
@@ -78,7 +74,7 @@ public class EvilRadioConfiguration extends AddonConfig {
   }
   
   public ConfigProperty<Boolean> usageBasedSorting() {
-    return this.usageBasedSorting;
+    return usageStatistics.enabled();
   }
   
   // Hilfsmethode, um den AutoStartMode zu bestimmen

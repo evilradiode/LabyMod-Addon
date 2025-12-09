@@ -47,10 +47,6 @@
         "name": "Volume",
         "description": "The volume of the radio stream (0-100%)"
       },
-      "usageBasedSorting": {
-        "name": "Usage-based Sorting",
-        "description": "Sort stations based on usage frequency"
-      },
       "autoStart": {
         "name": "Auto-Start Settings",
         "description": "Configure automatic start of the last stream",
@@ -72,8 +68,12 @@
         }
       },
       "usageStatistics": {
-        "name": "Usage Statistics",
-        "description": "Manage usage statistics of streams",
+        "name": "Usage-based Sorting",
+        "description": "Manage usage statistics and sorting of streams",
+        "enabled": {
+          "name": "Usage-based Sorting",
+          "description": "Sort stations based on usage frequency"
+        },
         "resetStatistics": {
           "name": "Reset Statistics",
           "text": "Reset",

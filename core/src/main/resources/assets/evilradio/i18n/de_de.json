@@ -47,10 +47,6 @@
         "name": "Lautstärke",
         "description": "Die Lautstärke des Radio-Streams (0-100%)"
       },
-      "usageBasedSorting": {
-        "name": "Nutzerbasierte Sortierung",
-        "description": "Sortiere Sender basierend auf der Nutzungshäufigkeit"
-      },
       "autoStart": {
         "name": "Auto-Start Einstellungen",
         "description": "Konfiguriere den automatischen Start des letzten Streams",
@@ -72,8 +68,12 @@
         }
       },
       "usageStatistics": {
-        "name": "Nutzungsstatistiken",
-        "description": "Verwalte die Nutzungsstatistiken der Streams",
+        "name": "Nutzerbasierte Sortierung",
+        "description": "Verwalte die Nutzungsstatistiken und Sortierung der Streams",
+        "enabled": {
+          "name": "Nutzerbasierte Sortierung",
+          "description": "Sortiere Sender basierend auf der Nutzungshäufigkeit"
+        },
         "resetStatistics": {
           "name": "Statistiken zurücksetzen",
           "text": "zurücksetzen",
