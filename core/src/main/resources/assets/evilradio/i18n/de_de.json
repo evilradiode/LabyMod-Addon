@@ -25,6 +25,7 @@
       "loading": "Lädt...",
       "fetchingSongInfo": "Lade Song-Informationen...",
       "notPlaying": "Wird nicht abgespielt",
+      "noStreamSelected": "Kein Sender ausgewählt",
       "clickToRetry": "Zum Wiederholen klicken"
     },
     "hudWidget": {

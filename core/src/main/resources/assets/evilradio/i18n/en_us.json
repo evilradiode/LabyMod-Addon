@@ -25,6 +25,7 @@
       "loading": "Loading...",
       "fetchingSongInfo": "Fetching song info...",
       "notPlaying": "Not playing",
+      "noStreamSelected": "No Stream selected",
       "clickToRetry": "Click to retry"
     },
     "hudWidget": {
