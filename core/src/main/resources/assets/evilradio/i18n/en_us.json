@@ -25,8 +25,7 @@
       "loading": "Loading...",
       "fetchingSongInfo": "Fetching song info...",
       "notPlaying": "Not playing",
-      "noStreamSelected": "No Stream selected",
-      "clickToRetry": "Click to retry"
+      "noStreamSelected": "No Stream selected"
     },
     "hudWidget": {
       "evilraio_full_wdiget": {
@@ -43,6 +42,10 @@
       "radioMenuKeybind": {
         "name": "Radio Menu Keybind",
         "description": "Key to open the radio menu"
+      },
+      "showSongChangeNotification": {
+        "name": "Song Change Notification",
+        "description": "Get a notification when the song changes"
       },
       "volume": {
         "name": "Volume",

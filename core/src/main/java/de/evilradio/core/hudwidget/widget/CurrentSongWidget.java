@@ -1,5 +1,6 @@
 package de.evilradio.core.hudwidget.widget;
 
+import de.evilradio.core.EvilTextures;
 import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.song.CurrentSong;
@@ -15,7 +16,6 @@ import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.FlexibleContentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
-import net.labymod.api.client.resources.ResourceLocation;
 
 @Link("widget/song-widget.lss")
 @AutoWidget
@@ -52,7 +52,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     boolean leftAligned = this.hudWidget.anchor().isLeft();
     this.addId(leftAligned ? "left" : "right");
 
-    this.coverWidget = new IconWidget(Icon.texture(ResourceLocation.create("evilradio", "textures/logo.png")));
+    this.coverWidget = new IconWidget(EvilTextures.LOGO);
     this.coverWidget.addId("cover");
 
     // add cover if the hud widget is left-aligned
@@ -190,7 +190,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     if(currentSong != null) {
       icon = Icon.url(currentSong.getImageUrl());
     } else {
-      icon = Icon.texture(ResourceLocation.create("evilradio", "texture/logo.png"));
+      icon = EvilTextures.LOGO;
     }
     this.coverWidget.icon().set(icon);
 

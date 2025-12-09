@@ -1,9 +1,13 @@
 package de.evilradio.core;
 
 import net.labymod.api.client.gui.icon.Icon;
+import net.labymod.api.client.resources.ResourceLocation;
 import net.labymod.api.client.resources.texture.ThemeTextureLocation;
 
 public class EvilTextures {
+
+  public static final Icon LOGO = Icon.texture(
+      ResourceLocation.create("evilradio", "textures/logo.png"));
 
   public static class SpriteControls {
 

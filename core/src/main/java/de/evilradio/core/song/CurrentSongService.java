@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
+import net.labymod.api.client.component.Component;
+import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.io.web.request.Request;
 import net.labymod.api.util.logging.Logging;
@@ -28,8 +30,19 @@ public class CurrentSongService {
   public void startUpdater() {
     this.updaterTask = Task.builder(() -> {
       if(this.addon.radioManager().isPlaying()) {
+        CurrentSong songBefore = this.currentSong;
         fetchCurrentSong();
         this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+        if(songBefore == null || songBefore != this.currentSong) {
+          this.addon.notification(
+              Component.translatable("evilradio.notification.streamSelected.titleWithStation",
+                  Component.text(this.addon.radioManager().getCurrentStream().getDisplayName())),
+              Component.translatable("evilradio.notification.streamSelected.textWithSong",
+                      Component.text(this.currentSong.getFormatted())),
+              Icon.url(this.currentSong.getImageUrl()),
+              this.addon.radioManager().getCurrentStream().getIcon()
+          );
+        }
       }
     }).repeat(1, TimeUnit.MINUTES).build();
     this.updaterTask.execute();

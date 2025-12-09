@@ -11,7 +11,6 @@ import de.evilradio.core.ui.RadioWheelOverlay;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.gui.icon.Icon;
-import net.labymod.api.client.resources.ResourceLocation;
 import net.labymod.api.models.addon.annotation.AddonMain;
 import net.labymod.api.notification.Notification;
 import net.labymod.api.event.Subscribe;
@@ -83,7 +82,23 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.labyAPI().notificationController().push(Notification.builder()
         .title(title)
         .text(text)
-            .icon(Icon.texture(ResourceLocation.create("evilradio", "textures/logo.png")))
+        .icon(EvilTextures.LOGO)
+        .build()
+    );
+  }
+
+  public void notification(Component title, Component text, Icon icon, Icon secondaryIcon) {
+    if(icon == null) {
+      icon = EvilTextures.LOGO;
+    }
+    if(secondaryIcon == null) {
+      secondaryIcon = EvilTextures.LOGO;
+    }
+    this.labyAPI().notificationController().push(Notification.builder()
+        .title(title)
+        .text(text)
+        .icon(icon)
+        .secondaryIcon(secondaryIcon)
         .build()
     );
   }

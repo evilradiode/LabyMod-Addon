@@ -9,6 +9,7 @@ import de.evilradio.core.ui.widget.RadioSegmentWidget;
 import de.evilradio.core.ui.widget.RadioWheelWidget;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
+import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.screen.Parent;
 import net.labymod.api.client.gui.screen.ScreenContext;
 import net.labymod.api.client.gui.screen.activity.AutoActivity;
@@ -170,6 +171,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
       this.addon.currentSongService().fetchCurrentSong(finalStream.getName(), (currentSong) -> {
         Component notificationTitle;
         Component notificationText;
+        Icon icon = null;
         
         if (currentSong != null) {
           String songText = currentSong.getFormatted();
@@ -181,6 +183,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
             notificationText = Component.translatable("evilradio.notification.streamSelected.textWithSong", 
                 Component.text(songText)
             );
+            icon = Icon.url(currentSong.getImageUrl());
           } else {
             // Nur Sender anzeigen, wenn kein Song verfügbar ist
             notificationTitle = Component.translatable("evilradio.notification.streamSelected.titleWithStation", 
@@ -196,7 +199,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
           notificationText = Component.translatable("evilradio.notification.streamSelected.text");
         }
         
-        this.addon.notification(notificationTitle, notificationText);
+        this.addon.notification(notificationTitle, notificationText, icon, finalStream.getIcon());
       });
     }
 

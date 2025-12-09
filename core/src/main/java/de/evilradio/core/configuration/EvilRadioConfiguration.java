@@ -17,30 +17,27 @@ import java.util.Map;
 @ConfigName("settings")
 public class EvilRadioConfiguration extends AddonConfig {
 
-  // Grundlegende Einstellungen
   @SwitchSetting
   private final ConfigProperty<Boolean> enabled = new ConfigProperty<>(true);
 
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
-  
-  @SliderSetting(min = 0, max = 100, steps = 1f)
+
+  @SwitchSetting
+  private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
+
+  @SliderSetting(min = 0, max = 100, steps = 2f)
   private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
-  
-  // Auto-Start Sub-Settings
+
   private final AutoStartSubSettings autoStart = new AutoStartSubSettings();
-  
-  // Nutzerbasierte Sortierung Sub-Settings
+
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
-  
-  // ID des letzten gestarteten Streams
+
   @Exclude
   private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
-  
-  // Nutzungsstatistiken: Map von Stream-ID zu Nutzungsanzahl
+
   private Map<Integer, Integer> streamUsageCount = new HashMap<>();
 
-  // Aktionen
   @MethodOrder(after = "usageStatistics")
   @ButtonSetting
   public void reloadStreams() {
@@ -53,6 +50,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     }
   }
 
+
   @Override
   public ConfigProperty<Boolean> enabled() {
     return this.enabled;
@@ -61,7 +59,11 @@ public class EvilRadioConfiguration extends AddonConfig {
   public ConfigProperty<Key> radioMenuKeybind() {
     return this.radioMenuKeybind;
   }
-  
+
+  public ConfigProperty<Boolean> showSongChangeNotification() {
+    return showSongChangeNotification;
+  }
+
   public ConfigProperty<Float> volume() {
     return this.volume;
   }
