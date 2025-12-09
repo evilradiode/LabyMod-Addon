@@ -62,6 +62,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
     this.logger().info("Enabled the Addon");
 
+    // Setze initiales Volume aus der Konfiguration
+    this.radioManager.setVolume(configuration().volume().get() / 100.0f);
+    
+    // Registriere Listener für Volume-Änderungen
     configuration().volume().addChangeListener((volume) -> this.radioManager.setVolume(volume / 100.0f));
     
     // Stoppe den Stream, wenn das Addon deaktiviert wird
