@@ -1,5 +1,6 @@
-package de.evilradio.core;
+package de.evilradio.core.configuration;
 
+import de.evilradio.core.EvilRadioAddon;
 import net.labymod.api.addon.AddonConfig;
 import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.ButtonSetting;
@@ -75,11 +76,6 @@ public class EvilRadioConfiguration extends AddonConfig {
   
   public ConfigProperty<Boolean> usageBasedSorting() {
     return usageStatistics.enabled();
-  }
-  
-  // Hilfsmethode, um den AutoStartMode zu bestimmen
-  public AutoStartMode getAutoStartMode() {
-    return autoStart.mode().get();
   }
   
   public ConfigProperty<Integer> lastStreamId() {

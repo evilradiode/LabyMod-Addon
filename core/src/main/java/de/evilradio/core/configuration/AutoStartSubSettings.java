@@ -1,4 +1,4 @@
-package de.evilradio.core;
+package de.evilradio.core.configuration;
 
 import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
 import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
@@ -33,6 +33,18 @@ public class AutoStartSubSettings extends Config {
 
   public ConfigProperty<Float> delay() {
     return this.delay;
+  }
+
+  public enum AutoStartMode {
+    ON_GAME_START, ON_SERVER_JOIN;
+
+    public boolean shouldStartOnGameStart() {
+      return this == ON_GAME_START;
+    }
+
+    public boolean shouldStartOnServerJoin() {
+      return this == ON_SERVER_JOIN;
+    }
   }
 
 }

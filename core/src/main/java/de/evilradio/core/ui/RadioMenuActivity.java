@@ -1,7 +1,7 @@
 package de.evilradio.core.ui;
 
 import de.evilradio.core.EvilRadioAddon;
-import de.evilradio.core.EvilRadioConfiguration;
+import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.Laby;

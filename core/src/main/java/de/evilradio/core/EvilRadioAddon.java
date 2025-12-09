@@ -1,5 +1,7 @@
 package de.evilradio.core;
 
+import de.evilradio.core.configuration.AutoStartSubSettings;
+import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
@@ -46,7 +48,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       if (!configuration().autoStart().enabled().get()) {
         return;
       }
-      AutoStartMode mode = configuration().getAutoStartMode();
+      AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
       if (mode != null && mode.shouldStartOnGameStart()) {
         this.startLastStreamWithDelay("game start");
       }
@@ -117,7 +119,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       return;
     }
     
-    AutoStartMode mode = configuration().getAutoStartMode();
+    AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode != null && mode.shouldStartOnServerJoin()) {
       this.startLastStreamWithDelay("server join");
     }
@@ -135,7 +137,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       return;
     }
     
-    AutoStartMode mode = configuration().getAutoStartMode();
+    AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode != null && mode.shouldStartOnServerJoin()) {
       // Stoppe den Stream, wenn er läuft
       if (this.radioManager != null && this.radioManager.isPlaying()) {
@@ -154,7 +156,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       return;
     }
     
-    AutoStartMode mode = configuration().getAutoStartMode();
+    AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode == null) {
       return;
     }

@@ -1,5 +1,6 @@
-package de.evilradio.core;
+package de.evilradio.core.configuration;
 
+import de.evilradio.core.EvilRadioAddon;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.ButtonSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.configuration.loader.Config;
