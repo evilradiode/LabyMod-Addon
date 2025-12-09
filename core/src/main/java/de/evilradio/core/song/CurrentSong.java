@@ -24,4 +24,8 @@ public class CurrentSong {
     return imageUrl;
   }
 
+  public String getFormatted() {
+    return String.format("%s - %s", title, artist);
+  }
+
 }

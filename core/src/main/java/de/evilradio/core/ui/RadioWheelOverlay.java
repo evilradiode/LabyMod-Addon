@@ -3,7 +3,6 @@ package de.evilradio.core.ui;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.util.List;
 import de.evilradio.core.EvilRadioAddon;
-import de.evilradio.core.api.RadioApiService;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.ui.widget.RadioSegmentWidget;
@@ -168,15 +167,12 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
       this.addon.currentSongService().fetchCurrentSong();
       
       // Hole Song-Informationen für die Notification
-      RadioApiService.fetchCurrentSong(finalStream.getName(), (response) -> {
+      this.addon.currentSongService().fetchCurrentSong(finalStream.getName(), (currentSong) -> {
         Component notificationTitle;
         Component notificationText;
         
-        if (response != null && response.getCurrent() != null) {
-          String songText = response.getCurrent().getFormatted();
-          if (songText.isEmpty()) {
-            songText = response.getCurrentSong();
-          }
+        if (currentSong != null) {
+          String songText = currentSong.getFormatted();
           if (!songText.isEmpty()) {
             // Zeige Sender im Titel und Song im Text an
             notificationTitle = Component.translatable("evilradio.notification.streamSelected.titleWithStation", 

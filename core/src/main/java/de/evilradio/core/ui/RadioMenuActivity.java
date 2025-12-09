@@ -2,7 +2,6 @@ package de.evilradio.core.ui;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilRadioConfiguration;
-import de.evilradio.core.api.RadioApiService;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.Laby;
@@ -73,12 +72,9 @@ public class RadioMenuActivity extends SimpleActivity {
     
     // Lade aktuellen Song, falls ein Stream aktiv ist
     if (currentStream != null && radioManager.isPlaying()) {
-      RadioApiService.fetchCurrentSong(currentStream.getName(), (response) -> {
-        if (response != null && response.getCurrent() != null) {
-          String songText = response.getCurrent().getFormatted();
-          if (songText.isEmpty()) {
-            songText = response.getCurrentSong();
-          }
+      this.addon.currentSongService().fetchCurrentSong(currentStream.getName(), (currentSong) -> {
+        if (currentSong != null) {
+          String songText = currentSong.getFormatted();
           if (songText.isEmpty()) {
             Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
               currentSongWidget.setComponent(Component.translatable("evilradio.menu.noSong").color(NamedTextColor.WHITE));
@@ -203,13 +199,10 @@ public class RadioMenuActivity extends SimpleActivity {
           addon.currentSongService().fetchCurrentSong();
           
           // Hole Song-Informationen für den Toast
-          RadioApiService.fetchCurrentSong(selectedStream.getName(), (response) -> {
+          this.addon.currentSongService().fetchCurrentSong(selectedStream.getName(), (currentSong) -> {
             Component toastMessage;
-            if (response != null && response.getCurrent() != null) {
-              String songText = response.getCurrent().getFormatted();
-              if (songText.isEmpty()) {
-                songText = response.getCurrentSong();
-              }
+            if (currentSong != null) {
+              String songText = currentSong.getFormatted();
               if (!songText.isEmpty()) {
                 // Zeige Sender und Song an
                 toastMessage = Component.translatable("evilradio.menu.streamStartedWithSong", 

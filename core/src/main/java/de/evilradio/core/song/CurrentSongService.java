@@ -3,12 +3,16 @@ package de.evilradio.core.song;
 import com.google.gson.JsonObject;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
+import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.io.web.request.Request;
 import net.labymod.api.util.logging.Logging;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class CurrentSongService {
+
+  private final String API_BASE_URL = "https://api.evil-radio.de/?radioInfo=";
 
   private final Logging logging = Logging.create("EvilRadio-CurrentSongService");
 
@@ -38,7 +42,7 @@ public class CurrentSongService {
 
   public void fetchCurrentSong() {
     // Hole den aktuellen Stream
-    de.evilradio.core.radio.RadioStream currentStream = this.addon.radioManager().getCurrentStream();
+    RadioStream currentStream = this.addon.radioManager().getCurrentStream();
     if (currentStream == null) {
       logging.warn("No current stream found, cannot fetch song info");
       this.currentSong = null;
@@ -54,10 +58,8 @@ public class CurrentSongService {
       return;
     }
     
-    String apiUrl = "https://api.evil-radio.de/?radioInfo=" + streamName;
-    
     Request.ofGson(JsonObject.class)
-        .url(apiUrl)
+        .url(API_BASE_URL + streamName)
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
@@ -95,6 +97,43 @@ public class CurrentSongService {
             this.currentSong = null;
             this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
           }
+        });
+  }
+
+  public void fetchCurrentSong(String streamName, Consumer<CurrentSong> callback) {
+    if (streamName == null || streamName.isEmpty()) {
+      callback.accept(null);
+      return;
+    }
+    Request.ofGson(JsonObject.class)
+        .url(API_BASE_URL + streamName)
+        .async()
+        .connectTimeout(5000)
+        .readTimeout(5000)
+        .userAgent("EvilRadio LabyMod 4 Addon")
+        .execute(response -> {
+          if (response.getStatusCode() != 200 || response.hasException()) {
+            callback.accept(null);
+            return;
+          }
+          JsonObject object = response.get();
+          if(!object.has("current")) {
+            callback.accept(null);
+            return;
+          }
+          if(!object.get("current").isJsonObject()) {
+            callback.accept(null);
+            return;
+          }
+          JsonObject currentSongObject = object.get("current").getAsJsonObject();
+          if (!currentSongObject.has("title") || !currentSongObject.has("artist") || !currentSongObject.has("image")) {
+            callback.accept(null);
+            return;
+          }
+          String title = currentSongObject.get("title").getAsString();
+          String artist = currentSongObject.get("artist").getAsString();
+          String image = currentSongObject.get("image").getAsString();
+          callback.accept(new CurrentSong(title, artist, image));
         });
   }
 
