@@ -30,19 +30,7 @@ public class CurrentSongService {
   public void startUpdater() {
     this.updaterTask = Task.builder(() -> {
       if(this.addon.radioManager().isPlaying()) {
-        CurrentSong songBefore = this.currentSong;
         fetchCurrentSong();
-        this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-        if(songBefore == null || songBefore != this.currentSong) {
-          this.addon.notification(
-              Component.translatable("evilradio.notification.streamSelected.titleWithStation",
-                  Component.text(this.addon.radioManager().getCurrentStream().getDisplayName())),
-              Component.translatable("evilradio.notification.streamSelected.textWithSong",
-                      Component.text(this.currentSong.getFormatted())),
-              Icon.url(this.currentSong.getImageUrl()),
-              this.addon.radioManager().getCurrentStream().getIcon()
-          );
-        }
       }
     }).repeat(1, TimeUnit.MINUTES).build();
     this.updaterTask.execute();
@@ -70,6 +58,9 @@ public class CurrentSongService {
       this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
       return;
     }
+    
+    // Speichere den Song vor dem Request, um später zu prüfen, ob er sich geändert hat
+    CurrentSong songBefore = this.currentSong;
     
     Request.ofGson(JsonObject.class)
         .url(API_BASE_URL + streamName)
@@ -102,9 +93,27 @@ public class CurrentSongService {
             String artist = currentSongObject.get("artist").getAsString();
             String image = currentSongObject.get("image").getAsString();
             
-            this.currentSong = new CurrentSong(title, artist, image);
+            CurrentSong newSong = new CurrentSong(title, artist, image);
+            
+            // Prüfe, ob sich der Song geändert hat (nur wenn bereits ein Song geladen war)
+            boolean songChanged = songBefore != null && 
+                (!songBefore.getTitle().equals(newSong.getTitle()) || 
+                 !songBefore.getArtist().equals(newSong.getArtist()));
+            
+            this.currentSong = newSong;
             // Aktualisiere das Widget nach dem Setzen des aktuellen Songs
             this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+            
+            // Zeige Notification nur, wenn sich der Song geändert hat (nicht beim ersten Laden)
+            if (songChanged && this.addon.configuration().showSongChangeNotification().get()) {
+              this.addon.notification(
+                  Component.translatable("evilradio.notification.songChanged.title"),
+                  Component.translatable("evilradio.notification.songChanged.text",
+                      Component.text(this.currentSong.getFormatted())),
+                  Icon.url(this.currentSong.getImageUrl()),
+                  this.addon.radioManager().getCurrentStream().getIcon()
+              );
+            }
           } else {
             // Wenn kein Song gefunden wurde, setze currentSong auf null
             this.currentSong = null;

@@ -19,6 +19,10 @@
         "text": "The stream has been started successfully.",
         "titleWithStation": "Stream selected: %s",
         "textWithSong": "Current song: %s"
+      },
+      "songChanged": {
+        "title": "New Song",
+        "text": "%s"
       }
     },
     "widget": {
