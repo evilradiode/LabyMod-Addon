@@ -26,6 +26,9 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SwitchSetting
   private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
 
+  @SwitchSetting
+  private final ConfigProperty<Boolean> useFourLines = new ConfigProperty<>(false);
+
   @SliderSetting(min = 0, max = 100, steps = 2f)
   private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
 
@@ -62,6 +65,10 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Boolean> showSongChangeNotification() {
     return showSongChangeNotification;
+  }
+
+  public ConfigProperty<Boolean> useFourLines() {
+    return this.useFourLines;
   }
 
   public ConfigProperty<Float> volume() {

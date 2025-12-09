@@ -51,6 +51,10 @@
         "name": "Song Änderung Benachrichtigung",
         "description": "Bekomme eine Benachrichtigung beim wechseln des Songs"
       },
+      "useFourLines": {
+        "name": "4 Zeilen verwenden",
+        "description": "Zeige das Widget mit 4 Zeilen statt 3 an"
+      },
       "volume": {
         "name": "Lautstärke",
         "description": "Die Lautstärke des Radio-Streams (0-100%)"

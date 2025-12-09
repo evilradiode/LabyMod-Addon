@@ -15,6 +15,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
   public static final String COVER_VISIBILITY_REASON = "cover_visibility";
   public static final String SONG_CHANGE_REASON = "song_change";
+  public static final String FOUR_LINES_REASON = "four_lines";
 
   private final EvilRadioAddon addon;
 
@@ -40,6 +41,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     config.showCover.addChangeListener(
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COVER_VISIBILITY_REASON))
+    );
+    this.addon.configuration().useFourLines().addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(FOUR_LINES_REASON))
     );
   }
 

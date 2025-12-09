@@ -73,6 +73,15 @@ CurrentSong {
     }
   }
 
+  &.four-lines {
+    height: 44;
+
+    .cover {
+      width: 44;
+      height: 44;
+    }
+  }
+
   &.maximized {
       background-color: #1a1a1a;
 

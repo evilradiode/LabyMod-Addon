@@ -6,6 +6,7 @@ import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.song.CurrentSong;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
+// import net.labymod.api.client.component.format.NamedTextColor; // TODO: Wird für OnAir Badge benötigt
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.lss.property.annotation.AutoWidget;
@@ -25,6 +26,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private ComponentWidget streamWidget;
   private ComponentWidget trackWidget;
   private ComponentWidget artistWidget;
+  private ComponentWidget fourthLineWidget;
   private IconWidget coverWidget;
   private DivWidget controlsWidget;
   private IconWidget playPauseWidget;
@@ -47,6 +49,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     if (!this.hudWidget.getConfig().showCover().get()) {
       this.addId("no-cover");
+    }
+
+    boolean useFourLines = this.hudWidget.addon().configuration().useFourLines().get();
+    if (useFourLines) {
+      this.addId("four-lines");
     }
 
     boolean leftAligned = this.hudWidget.anchor().isLeft();
@@ -78,6 +85,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     this.artistWidget = ComponentWidget.empty();
     text.addChild(this.artistWidget);
+
+    this.fourthLineWidget = ComponentWidget.empty();
+    if (useFourLines) {
+      text.addChild(this.fourthLineWidget);
+    }
 
     // Controls
     this.controlsWidget = new DivWidget();
@@ -156,12 +168,19 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         this.addId("no-cover");
       }
     }
+
+    if (reason.equals(CurrentSongHudWidget.FOUR_LINES_REASON)) {
+      this.reInitialize();
+      return;
+    }
   }
 
   private void updateTrack(CurrentSong currentSong) {
     if (this.trackWidget == null || this.artistWidget == null || this.streamWidget == null) {
       return;
     }
+
+    boolean useFourLines = this.hudWidget.addon().configuration().useFourLines().get();
 
     // Prüfe, ob der Stream läuft, auch wenn currentSong noch null ist
     boolean isPlaying = this.hudWidget.addon().radioManager().isPlaying();
@@ -172,19 +191,51 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         this.streamWidget.setComponent(Component.text("EvilRadio - " + this.hudWidget.addon().radioManager().getCurrentStream().getName()));
         this.trackWidget.setComponent(Component.translatable("evilradio.widget.loading"));
         this.artistWidget.setComponent(Component.translatable("evilradio.widget.fetchingSongInfo"));
+        if (useFourLines && this.fourthLineWidget != null) {
+          // TODO: OnAir Badge anzeigen wenn Stream läuft
+          // this.fourthLineWidget.setComponent(
+          //     Component.text("● ON AIR").color(NamedTextColor.RED)
+          // );
+          this.fourthLineWidget.setComponent(Component.text(""));
+          this.fourthLineWidget.setVisible(true);
+        }
       } else {
         this.streamWidget.setComponent(Component.translatable("evilradio.widget.noStreamSelected"));
         this.trackWidget.setComponent(Component.translatable("evilradio.widget.notPlaying"));
         this.artistWidget.setComponent(Component.translatable("evilradio.widget.notPlaying"));
+        if (useFourLines && this.fourthLineWidget != null) {
+          this.fourthLineWidget.setComponent(Component.text(""));
+          this.fourthLineWidget.setVisible(true);
+        }
       }
     } else {
       this.streamWidget.setComponent(Component.text("EvilRadio - " + this.hudWidget.addon().radioManager().getCurrentStream().getName()));
       this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
       this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
+      if (useFourLines && this.fourthLineWidget != null) {
+        // TODO: OnAir Badge anzeigen wenn Stream läuft
+        // if (isPlaying) {
+        //   this.fourthLineWidget.setComponent(
+        //       Component.text("● ON AIR").color(NamedTextColor.RED)
+        //   );
+        // } else {
+        //   this.fourthLineWidget.setComponent(Component.text(""));
+        // }
+        this.fourthLineWidget.setComponent(Component.text(""));
+        this.fourthLineWidget.setVisible(true);
+      }
     }
 
     this.streamWidget.setVisible(true);
     this.artistWidget.setVisible(true);
+
+    if (this.fourthLineWidget != null) {
+      if (useFourLines) {
+        this.fourthLineWidget.setVisible(true);
+      } else {
+        this.fourthLineWidget.setVisible(false);
+      }
+    }
 
     Icon icon;
     if(currentSong != null) {
