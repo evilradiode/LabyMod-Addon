@@ -47,6 +47,7 @@ public class RadioManager {
     // Wenn der Stream gestoppt wurde (isPlaying = false), starte ihn neu
     stopStream();
     currentStream = stream;
+    this.addon.radioStreamService().setLastSelectedStream(stream);
     
     // Speichere die ID des letzten gestarteten Streams
     if (stream != null && addon != null) {

@@ -47,14 +47,14 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public void initialize(HudWidgetWidget widget) {
     super.initialize(widget);
 
-    CurrentSongWidget currentSongWidget = new CurrentSongWidget(this);
+    CurrentSongWidget currentSongWidget = new CurrentSongWidget(this, widget.accessor().isEditor());
     widget.addChild(currentSongWidget);
     widget.addId("current-song");
   }
 
   @Override
   public boolean isVisibleInGame() {
-    return this.addon.radioManager().isPlaying();
+    return this.addon.configuration().enabled().get();
   }
 
   public static class CurrentSongHudWidgetConfig extends HudWidgetConfig {

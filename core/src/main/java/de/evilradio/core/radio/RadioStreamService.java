@@ -11,6 +11,8 @@ public class RadioStreamService {
 
   private final Logging logging = Logging.create("EvilRadio-RadioStreamService");
 
+  private RadioStream lastSelectedStream;
+
   private List<RadioStream> streams = new ArrayList<>();
   private EvilRadioAddon addon;
 
@@ -62,6 +64,14 @@ public class RadioStreamService {
             callback.run();
           }
         });
+  }
+
+  public RadioStream getLastSelectedStream() {
+    return lastSelectedStream;
+  }
+
+  public void setLastSelectedStream(RadioStream radioStream) {
+    this.lastSelectedStream = radioStream;
   }
 
   public List<RadioStream> streams() {

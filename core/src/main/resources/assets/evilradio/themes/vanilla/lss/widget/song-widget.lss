@@ -73,6 +73,20 @@ CurrentSong {
     }
   }
 
+  &.maximized {
+      background-color: #1a1a1a;
+
+      .minimized-bar {
+        visible: false;
+      }
+
+      .controls {
+        Icon {
+          visible: true;
+        }
+      }
+    }
+
   &.right {
     .text {
       Component {
