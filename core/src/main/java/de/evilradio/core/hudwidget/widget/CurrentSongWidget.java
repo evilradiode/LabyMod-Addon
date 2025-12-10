@@ -169,7 +169,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     if (reason.equals(CurrentSongHudWidget.FOUR_LINES_REASON)) {
       this.reInitialize();
-      return;
     }
   }
 
