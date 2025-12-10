@@ -3,6 +3,7 @@ package de.evilradio.core.hudwidget.widget;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
+import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
@@ -183,7 +184,12 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     if (currentSong == null) {
       // Wenn kein Song gefunden wurde, aber der Stream läuft, zeige "Loading..." an
       if (isPlaying) {
-        this.streamWidget.setComponent(Component.text("EvilRadio - " + this.hudWidget.addon().radioManager().getCurrentStream().getName()));
+        RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
+        if (currentStream != null && currentStream.getName() != null) {
+          this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()));
+        } else {
+          this.streamWidget.setComponent(Component.translatable("evilradio.widget.loading"));
+        }
         this.trackWidget.setComponent(Component.translatable("evilradio.widget.loading"));
         this.artistWidget.setComponent(Component.translatable("evilradio.widget.fetchingSongInfo"));
         this.fourthLineWidget.setComponent(Component.text(""));
@@ -224,7 +230,12 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         this.removeId("four-lines");
         
         // Normale 3-Zeilen-Ansicht
-        this.streamWidget.setComponent(Component.text("EvilRadio - " + this.hudWidget.addon().radioManager().getCurrentStream().getName()));
+        RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
+        if (currentStream != null && currentStream.getName() != null) {
+          this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()));
+        } else {
+          this.streamWidget.setComponent(Component.translatable("evilradio.widget.noStreamSelected"));
+        }
         this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
         this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
         this.fourthLineWidget.setComponent(Component.text(""));

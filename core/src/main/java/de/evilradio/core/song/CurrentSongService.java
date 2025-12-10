@@ -106,12 +106,17 @@ public class CurrentSongService {
             
             // Zeige Notification nur, wenn sich der Song geändert hat (nicht beim ersten Laden)
             if (songChanged && this.addon.configuration().showSongChangeNotification().get()) {
+              RadioStream notificationStream = this.addon.radioManager().getCurrentStream();
+              Icon streamIcon = null;
+              if (notificationStream != null) {
+                streamIcon = notificationStream.getIcon();
+              }
               this.addon.notification(
                   Component.translatable("evilradio.notification.songChanged.title"),
                   Component.translatable("evilradio.notification.songChanged.text",
                       Component.text(this.currentSong.getFormatted())),
                   Icon.url(this.currentSong.getImageUrl()),
-                  this.addon.radioManager().getCurrentStream().getIcon()
+                  streamIcon
               );
             }
           } else {
