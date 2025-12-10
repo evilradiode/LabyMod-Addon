@@ -33,8 +33,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   @Override
   protected void enable() {
-    // Räume alte Ressourcen auf, falls das Addon bereits einmal aktiviert war
-    cleanup();
     
     this.registerSettingCategory();
     instance = this;
@@ -84,39 +82,13 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
         this.logger().info("Stream gestoppt, da Addon deaktiviert wurde");
       }
     });
-  }
 
-  /**
-   * Räumt alle Ressourcen auf, die beim Deaktivieren des Addons freigegeben werden müssen.
-   * Wird auch beim Reaktivieren aufgerufen, um alte Ressourcen zu bereinigen.
-   */
-  private void cleanup() {
-    this.logger().info("Cleaning up Addon resources");
-    
-    // Deregistriere Event-Bus-Listener, um doppelte Registrierungen zu vermeiden
-    try {
-      this.labyAPI().eventBus().unregisterListener(this);
-    } catch (Exception e) {
-      // Ignoriere Fehler beim Deregistrieren (z.B. wenn noch nicht registriert)
-    }
-    
-    // Stoppe den CurrentSongService Updater
-    if (this.currentSongService != null) {
-      this.currentSongService.stopUpdater();
-      this.currentSongService = null;
-    }
-    
-    // Stoppe den RadioManager und räume auf
-    if (this.radioManager != null) {
-      this.radioManager.shutdown();
-      this.radioManager = null;
-    }
-    
-    // Setze Widget-Referenz auf null
-    this.currentSongHudWidget = null;
-    
-    // RadioStreamService wird automatisch aufgeräumt, da keine laufenden Tasks vorhanden sind
-    this.radioStreamService = null;
+    configuration().useFourLines().addChangeListener((useFourLines) -> {
+      if(this.currentSongHudWidget != null) {
+        this.currentSongHudWidget.requestUpdate(CurrentSongHudWidget.FOUR_LINES_REASON);
+      }
+    });
+
   }
 
   @Override
