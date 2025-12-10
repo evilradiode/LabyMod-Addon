@@ -24,8 +24,8 @@ labyMod {
 
     addonInfo {
         namespace = "evilradio"
-        displayName = "EvilRadio"
-        author = "EvilRadio Team"
+        displayName = "Evil-Radio"
+        author = "Evil-Radio Team"
         description = "Ein Radio-Addon für LabyMod 4"
         minecraftVersion = "*"
         version = rootProject.version.toString()

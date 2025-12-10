@@ -41,7 +41,7 @@
     "settings": {
       "enabled": {
         "name": "Enable Addon",
-        "description": "Enable or disable the EvilRadio Addon"
+        "description": "Enable or disable the Evil-Radio Addon"
       },
       "radioMenuKeybind": {
         "name": "Radio Menu Keybind",
