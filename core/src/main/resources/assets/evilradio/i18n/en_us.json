@@ -93,9 +93,9 @@
         }
       },
       "reloadStreams": {
-        "name": "Reload Streams",
+        "name": "Reload Streams §c(only if you have problems)§r",
         "text": "Reload",
-        "description": "Reloads the stream list from the server"
+        "description": "Reloads the stream list from the server. §cOnly use if you have problems.§r"
       }
     }
   }

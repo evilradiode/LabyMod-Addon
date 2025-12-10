@@ -93,9 +93,9 @@
         }
       },
       "reloadStreams": {
-        "name": "Streams neu laden",
+        "name": "Streams neu laden §c(nur bei Problemen)§r",
         "text": "neu laden",
-        "description": "Lädt die Stream-Liste vom Server neu"
+        "description": "Lädt die Stream-Liste vom Server neu. §cNur bei Problemen verwenden.§r"
       }
     }
   }
