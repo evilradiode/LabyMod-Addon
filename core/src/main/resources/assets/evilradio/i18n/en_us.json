@@ -98,9 +98,9 @@
         "description": "Reloads the stream list from the server. §cOnly use if you have problems.§r"
       },
       "openFlintMcPage": {
-        "name": "Open Addon Page on flintmc.net §c(not available yet)§r",
+        "name": "Open Addon Page on flintmc.net",
         "text": "Open flintmc.net",
-        "description": "Opens the addon page on flintmc.net where you can add reviews and see the changelog. §cDoes not work yet, as the page is not available.§r"
+        "description": "Opens the addon page on flintmc.net where you can add reviews and see the changelog."
       }
     }
   }
