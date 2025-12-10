@@ -51,11 +51,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.addId("no-cover");
     }
 
-    boolean useFourLines = this.hudWidget.addon().configuration().useFourLines().get();
-    if (useFourLines) {
-      this.addId("four-lines");
-    }
-
     boolean leftAligned = this.hudWidget.anchor().isLeft();
     this.addId(leftAligned ? "left" : "right");
 
@@ -77,19 +72,21 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     VerticalListWidget<ComponentWidget> text = new VerticalListWidget<>();
     text.addId("text");
 
+    // Zeile 1: On Air Info (wenn aktiv) oder Stream-Name
     this.streamWidget = ComponentWidget.empty();
     text.addChild(this.streamWidget);
 
+    // Zeile 2: Track-Titel
     this.trackWidget = ComponentWidget.empty();
     text.addChild(this.trackWidget);
 
+    // Zeile 3: Artist
     this.artistWidget = ComponentWidget.empty();
     text.addChild(this.artistWidget);
 
+    // Zeile 4: Wird nur angezeigt wenn On Air aktiv ist
     this.fourthLineWidget = ComponentWidget.empty();
-    if (useFourLines) {
-      text.addChild(this.fourthLineWidget);
-    }
+    text.addChild(this.fourthLineWidget);
 
     // Controls
     this.controlsWidget = new DivWidget();
@@ -180,8 +177,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       return;
     }
 
-    boolean useFourLines = this.hudWidget.addon().configuration().useFourLines().get();
-
     // Prüfe, ob der Stream läuft, auch wenn currentSong noch null ist
     boolean isPlaying = this.hudWidget.addon().radioManager().isPlaying();
     
@@ -191,51 +186,55 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         this.streamWidget.setComponent(Component.text("EvilRadio - " + this.hudWidget.addon().radioManager().getCurrentStream().getName()));
         this.trackWidget.setComponent(Component.translatable("evilradio.widget.loading"));
         this.artistWidget.setComponent(Component.translatable("evilradio.widget.fetchingSongInfo"));
-        if (useFourLines && this.fourthLineWidget != null) {
-          // TODO: OnAir Badge anzeigen wenn Stream läuft
-          // this.fourthLineWidget.setComponent(
-          //     Component.text("● ON AIR").color(NamedTextColor.RED)
-          // );
-          this.fourthLineWidget.setComponent(Component.text(""));
-          this.fourthLineWidget.setVisible(true);
-        }
+        this.fourthLineWidget.setComponent(Component.text(""));
+        this.fourthLineWidget.setVisible(false);
+        this.removeId("four-lines");
       } else {
         this.streamWidget.setComponent(Component.translatable("evilradio.widget.noStreamSelected"));
         this.trackWidget.setComponent(Component.translatable("evilradio.widget.notPlaying"));
         this.artistWidget.setComponent(Component.translatable("evilradio.widget.notPlaying"));
-        if (useFourLines && this.fourthLineWidget != null) {
-          this.fourthLineWidget.setComponent(Component.text(""));
-          this.fourthLineWidget.setVisible(true);
-        }
+        this.fourthLineWidget.setComponent(Component.text(""));
+        this.fourthLineWidget.setVisible(false);
+        this.removeId("four-lines");
       }
     } else {
-      this.streamWidget.setComponent(Component.text("EvilRadio - " + this.hudWidget.addon().radioManager().getCurrentStream().getName()));
-      this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
-      this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
-      if (useFourLines && this.fourthLineWidget != null) {
-        // TODO: OnAir Badge anzeigen wenn Stream läuft
-        // if (isPlaying) {
-        //   this.fourthLineWidget.setComponent(
-        //       Component.text("● ON AIR").color(NamedTextColor.RED)
-        //   );
-        // } else {
-        //   this.fourthLineWidget.setComponent(Component.text(""));
-        // }
+      boolean isOnAir = currentSong.isOnAir();
+      
+      // Zeige 4 Zeilen nur wenn On Air aktiv ist
+      if (isOnAir) {
+        this.addId("four-lines");
+        
+        // Zeile 1: On Air Badge mit Moderator-Name
+        String onAirText = "● ON AIR";
+        if (currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
+          onAirText += " | " + currentSong.getModeratorName();
+        }
+        this.streamWidget.setComponent(Component.text(onAirText));
+        
+        // Zeile 2: Track-Titel (bereinigt)
+        this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
+        
+        // Zeile 3: Artist (bereinigt)
+        this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
+        
+        // Zeile 4: Leer (kann später für andere Infos verwendet werden)
         this.fourthLineWidget.setComponent(Component.text(""));
         this.fourthLineWidget.setVisible(true);
+      } else {
+        this.removeId("four-lines");
+        
+        // Normale 3-Zeilen-Ansicht
+        this.streamWidget.setComponent(Component.text("EvilRadio - " + this.hudWidget.addon().radioManager().getCurrentStream().getName()));
+        this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
+        this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
+        this.fourthLineWidget.setComponent(Component.text(""));
+        this.fourthLineWidget.setVisible(false);
       }
     }
 
     this.streamWidget.setVisible(true);
+    this.trackWidget.setVisible(true);
     this.artistWidget.setVisible(true);
-
-    if (this.fourthLineWidget != null) {
-      if (useFourLines) {
-        this.fourthLineWidget.setVisible(true);
-      } else {
-        this.fourthLineWidget.setVisible(false);
-      }
-    }
 
     Icon icon;
     if(currentSong != null) {
