@@ -38,7 +38,7 @@ public class CurrentSong {
     if (sourceToCheck.contains("* On Air")) {
       onAir = true;
       
-      // Extrahiere Moderator-Name nach "|"
+      // Extrahiere Moderator-Name nach "|" (alles nach dem | ist der Moderator-Name)
       if (sourceToCheck.contains("|")) {
         String[] parts = sourceToCheck.split("\\|", 2);
         if (parts.length == 2) {
@@ -48,8 +48,11 @@ public class CurrentSong {
         }
       }
       
-      // Entferne "* On Air" aus dem String
+      // Entferne "* On Air" und "Euer"/"Eure" aus dem String
       sourceToCheck = sourceToCheck.replace("* On Air", "").trim();
+      sourceToCheck = sourceToCheck.replaceAll("\\bEuer\\b", "").trim();
+      sourceToCheck = sourceToCheck.replaceAll("\\bEure\\b", "").trim();
+      sourceToCheck = sourceToCheck.replaceAll("\\s+", " ").trim(); // Mehrfache Leerzeichen entfernen
       
       // Wenn das Format direkt im title oder artist war, passe entsprechend an
       if (title.contains("* On Air")) {

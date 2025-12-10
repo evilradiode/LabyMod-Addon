@@ -7,7 +7,7 @@ import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
-// import net.labymod.api.client.component.format.NamedTextColor; // TODO: Wird für OnAir Badge benötigt
+import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.lss.property.annotation.AutoWidget;
@@ -210,21 +210,27 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       if (isOnAir) {
         this.addId("four-lines");
         
-        // Zeile 1: On Air Badge mit Moderator-Name
-        String onAirText = "● ON AIR";
-        if (currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
-          onAirText += " | " + currentSong.getModeratorName();
+        RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
+        
+        // Zeile 1: Stream-Name (z.B. "EvilRadio - Mashup") - Grau für dezente Anzeige
+        if (currentStream != null && currentStream.getName() != null) {
+          this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()).color(NamedTextColor.GRAY));
+        } else {
+          this.streamWidget.setComponent(Component.translatable("evilradio.widget.noStreamSelected").color(NamedTextColor.GRAY));
         }
-        this.streamWidget.setComponent(Component.text(onAirText));
         
-        // Zeile 2: Track-Titel (bereinigt)
-        this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
+        // Zeile 2: On Air Badge (rot) mit optionalem Moderator-Name (weiß)
+        Component onAirComponent = Component.text("● ON AIR").color(NamedTextColor.RED);
+        if (currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
+          onAirComponent = onAirComponent.append(Component.text(" | " + currentSong.getModeratorName()).color(NamedTextColor.WHITE));
+        }
+        this.trackWidget.setComponent(onAirComponent);
         
-        // Zeile 3: Artist (bereinigt)
-        this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
+        // Zeile 3: Track-Titel (bereinigt) - Weiß für prominente Anzeige
+        this.artistWidget.setComponent(Component.text(currentSong.getTitle()).color(NamedTextColor.WHITE));
         
-        // Zeile 4: Leer (kann später für andere Infos verwendet werden)
-        this.fourthLineWidget.setComponent(Component.text(""));
+        // Zeile 4: Artist (bereinigt) - Grau für sekundäre Info
+        this.fourthLineWidget.setComponent(Component.text(currentSong.getArtist()).color(NamedTextColor.GRAY));
         this.fourthLineWidget.setVisible(true);
       } else {
         this.removeId("four-lines");
