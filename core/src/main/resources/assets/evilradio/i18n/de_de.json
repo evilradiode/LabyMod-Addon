@@ -96,6 +96,11 @@
         "name": "Streams neu laden §c(nur bei Problemen)§r",
         "text": "neu laden",
         "description": "Lädt die Stream-Liste vom Server neu. §cNur bei Problemen verwenden.§r"
+      },
+      "openFlintMcPage": {
+        "name": "Addon-Seite auf flintmc.net öffnen §c(noch nicht verfügbar)§r",
+        "text": "flintmc.net öffnen",
+        "description": "Öffnet die Addon-Seite auf flintmc.net, wo du Reviews hinterlassen und den Changelog sehen kannst. §cFunktioniert noch nicht, da die Seite noch nicht verfügbar ist.§r"
       }
     }
   }

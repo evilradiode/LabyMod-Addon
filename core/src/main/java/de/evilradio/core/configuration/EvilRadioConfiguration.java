@@ -10,6 +10,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.Switc
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
+// import net.labymod.api.models.OperatingSystem; // TODO: Wieder aktivieren, wenn URL-Aufruf aktiviert wird
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +46,14 @@ public class EvilRadioConfiguration extends AddonConfig {
   @ButtonSetting
   public void reloadStreams() {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
+  }
+
+  @MethodOrder(after = "reloadStreams")
+  @ButtonSetting
+  public void openFlintMcPage() {
+    // TODO: URL-Aufruf aktivieren, sobald die Addon-Seite auf flintmc.net verfügbar ist
+    // TODO: URL anpassen: https://flintmc.net/modification/????
+    // OperatingSystem.getPlatform().openUrl("https://flintmc.net/modification/evilradio");
   }
 
   public void resetStreamUsageCount() {
