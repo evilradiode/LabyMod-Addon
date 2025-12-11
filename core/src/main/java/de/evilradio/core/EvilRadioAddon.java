@@ -15,6 +15,7 @@ import net.labymod.api.models.addon.annotation.AddonMain;
 import net.labymod.api.notification.Notification;
 import net.labymod.api.event.Subscribe;
 import net.labymod.api.event.client.network.server.ServerJoinEvent;
+import net.labymod.api.event.client.world.WorldEnterEvent;
 import net.labymod.api.event.client.world.WorldLeaveEvent;
 import net.labymod.api.util.concurrent.task.Task;
 import java.util.concurrent.TimeUnit;
@@ -155,6 +156,24 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode != null && mode.shouldStartOnServerJoin()) {
       this.startLastStreamWithDelay("server join");
+    }
+  }
+  
+  /**
+   * Event-Handler für World-Beitritt
+   * Wird aufgerufen, wenn der Spieler einer Welt beitritt (auch im Singleplayer)
+   * Startet den Stream, wenn Auto-Start auf "Beim Welt betreten" steht
+   */
+  @Subscribe
+  public void onWorldEnter(WorldEnterEvent event) {
+    // Prüfe, ob Auto-Start aktiviert ist
+    if (!configuration().autoStart().enabled().get()) {
+      return;
+    }
+    
+    AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
+    if (mode != null && mode.shouldStartOnServerJoin()) {
+      this.startLastStreamWithDelay("world enter");
     }
   }
   
