@@ -19,7 +19,10 @@ import net.labymod.api.client.gui.screen.activity.util.PageNavigator;
 import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.client.gui.screen.key.MouseButton;
 import net.labymod.api.client.gui.screen.widget.AbstractWidget;
+import net.labymod.api.client.gui.screen.widget.Widget;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.event.Subscribe;
 import net.labymod.api.event.client.input.KeyEvent;
 import net.labymod.api.event.client.input.MouseButtonEvent;
@@ -32,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
 @Link("activity/radio-wheel.lss")
 @AutoActivity
 public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
+
+  private static final String SUBTITLE_INFO_ID = "subtitle-info";
+  private static final String SUBTITLE_INFO_CONTROLS_ID = "subtitle-info-controls";
 
   private final EvilRadioAddon addon;
   private final RadioManager radioManager;
@@ -63,48 +69,48 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   protected Component createTitleComponent() {
     if (!this.hasEntries()) {
       return Component.translatable("evilradio.wheel.noStationsAvailable").color(NamedTextColor.DARK_RED);
-    } else {
-      // Immer den aktuellen Lautstärke-Wert aus der Konfiguration lesen
-      float volume = this.addon.configuration().volume().get();
-      int volumeInt = Math.round(volume);
-      
-      // Prüfe Play/Pause Status
-      boolean isPlaying = this.radioManager.isPlaying() && !this.radioManager.isPaused();
-      boolean isPaused = this.radioManager.isPaused();
-      
-      // Play/Pause Status mit Farbe
-      Component playPauseStatus;
-      if (isPlaying) {
-        playPauseStatus = Component.text("▶ PLAY").color(NamedTextColor.GREEN);
-      } else if (isPaused) {
-        playPauseStatus = Component.text("⏸ PAUSE").color(NamedTextColor.RED);
-      } else {
-        playPauseStatus = Component.text("⏹ STOP").color(NamedTextColor.GRAY);
-      }
-      
-      // Erste Zeile: Titel
-      Component firstLine = Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
-      
-      // Zweite Zeile: Lautstärke und Play/Pause Status
-      Component secondLine = Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt))).color(NamedTextColor.YELLOW)
-          .append(Component.text(" | ").color(NamedTextColor.GRAY))
-          .append(playPauseStatus);
-      
-      // Dritte Zeile: Info über Mausrad und Mittelklick
-      Component thirdLine = Component.translatable("evilradio.wheel.scrollInfo").color(NamedTextColor.GRAY);
-      
-      // Kombiniere alle drei Zeilen mit Zeilenumbrüchen
-      Component title = firstLine
-          .append(Component.text("\n", NamedTextColor.GRAY))
-          .append(secondLine)
-          .append(Component.text("\n", NamedTextColor.GRAY))
-          .append(thirdLine);
-      
-      // Füge Shadow hinzu (durch Text-Decoration oder ähnliches)
-      // In LabyMod kann man möglicherweise Shadow über CSS/LSS hinzufügen
-      // Für jetzt verwenden wir einen einfachen Ansatz mit Text-Formatting
-      return title;
     }
+    return Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
+  }
+
+  private Component getControlsLine() {
+    float volume = this.addon.configuration().volume().get();
+    int volumeInt = Math.round(volume);
+
+    boolean isPlaying = this.radioManager.isPlaying() && !this.radioManager.isPaused();
+    boolean isPaused = this.radioManager.isPaused();
+
+    Component playPauseStatus;
+    if (isPlaying) {
+      playPauseStatus = Component.text("▶ PLAY").color(NamedTextColor.GREEN);
+    } else if (isPaused) {
+      playPauseStatus = Component.text("⏸ PAUSE").color(NamedTextColor.RED);
+    } else {
+      playPauseStatus = Component.text("⏹ STOP").color(NamedTextColor.GRAY);
+    }
+
+    return Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt))).color(NamedTextColor.YELLOW)
+        .append(Component.text(" | ").color(NamedTextColor.GRAY))
+        .append(playPauseStatus);
+  }
+
+  @Override
+  protected Widget createSubtitle() {
+    VerticalListWidget<Widget> list = new VerticalListWidget<>().addId(WHEEL_SUBTITLE_ID);
+
+    if(hasEntries()) {
+      list.addChild(this.createPageBar());
+    }
+
+    VerticalListWidget<ComponentWidget> infoSubtitle = new VerticalListWidget<ComponentWidget>().addId(SUBTITLE_INFO_ID);
+    infoSubtitle.addChild(ComponentWidget.component(getControlsLine()).addId(SUBTITLE_INFO_CONTROLS_ID));
+
+    // Dritte Zeile: Info über Mausrad und Mittelklick
+    Component scrollInfoLine = Component.translatable("evilradio.wheel.scrollInfo").color(NamedTextColor.GRAY);
+    infoSubtitle.addChild(ComponentWidget.component(scrollInfoLine));
+
+    list.addChild(infoSubtitle);
+    return list;
   }
 
   @Override
@@ -194,58 +200,22 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
    * Dies ist notwendig, da createTitleComponent() möglicherweise nur einmal aufgerufen wird
    */
   private void updateTitleWidgetIfPossible() {
-    try {
-      // Versuche, den Titel-Widget über Reflection zu finden
-      // Dies ist ein Workaround, da die Basisklasse möglicherweise den Titel cached
-      java.lang.reflect.Field[] fields = this.getClass().getSuperclass().getDeclaredFields();
-      for (java.lang.reflect.Field field : fields) {
-        field.setAccessible(true);
-        Object value = field.get(this);
-        if (value instanceof ComponentWidget componentWidget) {
-          // Füge ID hinzu, falls noch nicht vorhanden, für besseres Styling
-          if (!componentWidget.hasId("radio-wheel-title")) {
-            componentWidget.addId("radio-wheel-title");
-          }
-          
-          // Aktualisiere den Component mit dem aktuellen Wert
-          float volume = this.addon.configuration().volume().get();
-          int volumeInt = Math.round(volume);
-          
-          // Prüfe Play/Pause Status
-          boolean isPlaying = this.radioManager.isPlaying() && !this.radioManager.isPaused();
-          boolean isPaused = this.radioManager.isPaused();
-          
-          // Play/Pause Status mit Farbe
-          Component playPauseStatus;
-          if (isPlaying) {
-            playPauseStatus = Component.text("▶ PLAY").color(NamedTextColor.GREEN);
-          } else if (isPaused) {
-            playPauseStatus = Component.text("⏸ PAUSE").color(NamedTextColor.RED);
-          } else {
-            playPauseStatus = Component.text("⏹ STOP").color(NamedTextColor.GRAY);
-          }
-          
-          Component firstLine = Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
-          
-          Component secondLine = Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt))).color(NamedTextColor.YELLOW)
-              .append(Component.text(" | ").color(NamedTextColor.GRAY))
-              .append(playPauseStatus);
-          
-          Component thirdLine = Component.translatable("evilradio.wheel.scrollInfo").color(NamedTextColor.GRAY);
-          
-          Component newTitle = firstLine
-              .append(Component.text("\n", NamedTextColor.GRAY))
-              .append(secondLine)
-              .append(Component.text("\n", NamedTextColor.GRAY))
-              .append(thirdLine);
-          
-          componentWidget.setComponent(newTitle);
-          break;
-        }
-      }
-    } catch (Exception e) {
-      // Fehler beim Aktualisieren - ignoriere, da createTitleComponent() als Fallback dient
-    }
+    Widget container = this.document.findFirstChildIf(widget -> widget.hasId(CONTAINER_ID));
+    if(container == null) return;
+    if(!(container instanceof DivWidget containerDiv)) return;
+
+    Widget subtitle = containerDiv.findFirstChildIf(widget -> widget.hasId(WHEEL_SUBTITLE_ID));
+    if(subtitle == null) return;
+    if(!(subtitle instanceof VerticalListWidget<?> subtitleWidget)) return;
+
+    Widget subtitleInfo = subtitleWidget.findFirstChildIf(widget -> widget.hasId(SUBTITLE_INFO_ID));
+    if(subtitleInfo == null) return;
+    if(!(subtitleInfo instanceof VerticalListWidget<?> subtitleInfoWidget)) return;
+
+    Widget subtitleControls = subtitleInfoWidget.findFirstChildIf(widget -> widget.hasId(SUBTITLE_INFO_CONTROLS_ID));
+    if(subtitleControls == null) return;
+    if(!(subtitleControls instanceof ComponentWidget subtitleControlsWidget)) return;
+    subtitleControlsWidget.setComponent(this.getControlsLine());
   }
 
   /**
