@@ -11,7 +11,9 @@
     },
     "wheel": {
       "noStationsAvailable": "No stations available",
-      "selectStation": "Select an Evil-Radio station"
+      "selectStation": "Select an Evil-Radio station",
+      "volume": "Volume: %s%%",
+      "scrollInfo": "Mouse wheel ↑↓: Change volume | Middle click: Play/Pause"
     },
     "notification": {
       "streamSelected": {
