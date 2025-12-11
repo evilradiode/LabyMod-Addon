@@ -39,6 +39,17 @@
       }
     },
     "settings": {
+      "header": {
+        "general": {
+          "name": "Allgemein"
+        },
+        "advanced": {
+          "name": "Erweitert"
+        },
+        "other": {
+          "name": "Sonstiges"
+        }
+      },
       "enabled": {
         "name": "Addon aktivieren",
         "description": "Aktiviere oder deaktiviere das Evil-Radio Addon"

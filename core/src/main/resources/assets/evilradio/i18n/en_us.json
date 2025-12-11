@@ -39,6 +39,17 @@
       }
     },
     "settings": {
+      "header": {
+        "general": {
+          "name": "General"
+        },
+        "advanced": {
+          "name": "Advanced"
+        },
+        "other": {
+          "name": "Other"
+        }
+      },
       "enabled": {
         "name": "Enable Addon",
         "description": "Enable or disable the Evil-Radio Addon"

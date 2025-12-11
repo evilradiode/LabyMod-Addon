@@ -10,6 +10,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.Switc
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
+import net.labymod.api.configuration.settings.annotation.SettingSection;
 // import net.labymod.api.models.OperatingSystem; // TODO: Wieder aktivieren, wenn URL-Aufruf aktiviert wird
 import net.labymod.api.models.OperatingSystem;
 import net.labymod.api.util.MethodOrder;
@@ -19,11 +20,18 @@ import java.util.Map;
 @ConfigName("settings")
 public class EvilRadioConfiguration extends AddonConfig {
 
+  @SettingSection(value = "general", center = true)
+
   @SwitchSetting
   private final ConfigProperty<Boolean> enabled = new ConfigProperty<>(true);
 
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
+
+  @SliderSetting(min = 0, max = 100, steps = 2f)
+  private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
+
+  private final AutoStartSubSettings autoStart = new AutoStartSubSettings();
 
   @SwitchSetting
   private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
@@ -31,17 +39,11 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SwitchSetting
   private final ConfigProperty<Boolean> useFourLines = new ConfigProperty<>(false);
 
-  @SliderSetting(min = 0, max = 100, steps = 2f)
-  private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
-
-  private final AutoStartSubSettings autoStart = new AutoStartSubSettings();
+  @SettingSection(value = "advanced", center = true)
 
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
 
-  @Exclude
-  private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
-
-  private Map<Integer, Integer> streamUsageCount = new HashMap<>();
+  @SettingSection(value = "other", center = true)
 
   @MethodOrder(after = "usageStatistics")
   @ButtonSetting
@@ -54,6 +56,11 @@ public class EvilRadioConfiguration extends AddonConfig {
   public void openFlintMcPage() {
     OperatingSystem.getPlatform().openUrl("https://flintmc.net/modification/277.evilradio");
   }
+
+  @Exclude
+  private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
+
+  private Map<Integer, Integer> streamUsageCount = new HashMap<>();
 
   public void resetStreamUsageCount() {
     if (streamUsageCount != null) {
