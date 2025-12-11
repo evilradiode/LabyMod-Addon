@@ -7,7 +7,7 @@ import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
 import de.evilradio.core.song.CurrentSongService;
-import de.evilradio.core.ui.RadioWheelOverlay;
+import de.evilradio.core.activity.wheel.RadioWheelOverlay;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.gui.icon.Icon;

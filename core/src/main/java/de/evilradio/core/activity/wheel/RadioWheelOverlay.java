@@ -1,12 +1,12 @@
-package de.evilradio.core.ui;
+package de.evilradio.core.activity.wheel;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.util.List;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
-import de.evilradio.core.ui.widget.RadioSegmentWidget;
-import de.evilradio.core.ui.widget.RadioWheelWidget;
+import de.evilradio.core.activity.wheel.widget.RadioSegmentWidget;
+import de.evilradio.core.activity.wheel.widget.RadioWheelWidget;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.icon.Icon;

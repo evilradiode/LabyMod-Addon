@@ -1,4 +1,4 @@
-package de.evilradio.core.ui;
+package de.evilradio.core.activity;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.configuration.EvilRadioConfiguration;

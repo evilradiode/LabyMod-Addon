@@ -1,4 +1,4 @@
-package de.evilradio.core.ui.widget;
+package de.evilradio.core.activity.wheel.widget;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.radio.RadioStream;
