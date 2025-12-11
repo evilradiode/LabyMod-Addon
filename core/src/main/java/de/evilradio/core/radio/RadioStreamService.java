@@ -27,7 +27,7 @@ public class RadioStreamService {
   public void loadStreams(Runnable callback) {
     streams.clear();
     Request.ofGson(JsonObject.class)
-        .url("https://api.evil-radio.de/laby-addon/")
+        .url("https://api.evil-radio.de/laby-addon/?uuid="+this.addon.labyAPI().getUniqueId().toString())
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
