@@ -17,8 +17,13 @@ import net.labymod.api.client.gui.screen.activity.Link;
 import net.labymod.api.client.gui.screen.activity.types.AbstractWheelInteractionOverlayActivity;
 import net.labymod.api.client.gui.screen.activity.util.PageNavigator;
 import net.labymod.api.client.gui.screen.key.Key;
+import net.labymod.api.client.gui.screen.key.MouseButton;
 import net.labymod.api.client.gui.screen.widget.AbstractWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
+import net.labymod.api.event.Subscribe;
 import net.labymod.api.event.client.input.KeyEvent;
+import net.labymod.api.event.client.input.MouseButtonEvent;
+import net.labymod.api.event.client.input.MouseScrollEvent;
 import net.labymod.api.client.gui.screen.widget.widgets.WheelWidget;
 import net.labymod.api.util.CharSequences;
 import net.labymod.api.util.math.MathHelper;
@@ -30,16 +35,28 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
   private final EvilRadioAddon addon;
   private final RadioManager radioManager;
+  private boolean isWheelOpen = false;
+  private long lastMiddleClickTime = 0;
+  private static final long MIDDLE_CLICK_DEBOUNCE_MS = 200; // 200ms Debounce für Mittelklick
 
   public RadioWheelOverlay(EvilRadioAddon addon) {
     this.addon = addon;
     this.radioManager = addon.radioManager();
+    // Event-Bus registrieren für Mouse-Events
+    addon.labyAPI().eventBus().registerListener(this);
   }
 
   @Override
   protected void closeInteractionOverlay() {
+    this.isWheelOpen = false;
     this.playStream(null, false);
     super.closeInteractionOverlay();
+  }
+
+  @Override
+  protected void openInteractionOverlay() {
+    this.isWheelOpen = true;
+    super.openInteractionOverlay();
   }
 
   @Override
@@ -47,7 +64,46 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     if (!this.hasEntries()) {
       return Component.translatable("evilradio.wheel.noStationsAvailable").color(NamedTextColor.DARK_RED);
     } else {
-      return Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
+      // Immer den aktuellen Lautstärke-Wert aus der Konfiguration lesen
+      float volume = this.addon.configuration().volume().get();
+      int volumeInt = Math.round(volume);
+      
+      // Prüfe Play/Pause Status
+      boolean isPlaying = this.radioManager.isPlaying() && !this.radioManager.isPaused();
+      boolean isPaused = this.radioManager.isPaused();
+      
+      // Play/Pause Status mit Farbe
+      Component playPauseStatus;
+      if (isPlaying) {
+        playPauseStatus = Component.text("▶ PLAY").color(NamedTextColor.GREEN);
+      } else if (isPaused) {
+        playPauseStatus = Component.text("⏸ PAUSE").color(NamedTextColor.RED);
+      } else {
+        playPauseStatus = Component.text("⏹ STOP").color(NamedTextColor.GRAY);
+      }
+      
+      // Erste Zeile: Titel
+      Component firstLine = Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
+      
+      // Zweite Zeile: Lautstärke und Play/Pause Status
+      Component secondLine = Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt))).color(NamedTextColor.YELLOW)
+          .append(Component.text(" | ").color(NamedTextColor.GRAY))
+          .append(playPauseStatus);
+      
+      // Dritte Zeile: Info über Mausrad und Mittelklick
+      Component thirdLine = Component.translatable("evilradio.wheel.scrollInfo").color(NamedTextColor.GRAY);
+      
+      // Kombiniere alle drei Zeilen mit Zeilenumbrüchen
+      Component title = firstLine
+          .append(Component.text("\n", NamedTextColor.GRAY))
+          .append(secondLine)
+          .append(Component.text("\n", NamedTextColor.GRAY))
+          .append(thirdLine);
+      
+      // Füge Shadow hinzu (durch Text-Decoration oder ähnliches)
+      // In LabyMod kann man möglicherweise Shadow über CSS/LSS hinzufügen
+      // Für jetzt verwenden wir einen einfachen Ansatz mit Text-Formatting
+      return title;
     }
   }
 
@@ -127,8 +183,156 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
   @Override
   protected void renderInteractionOverlay(ScreenContext context) {
-    // Optional: Hier können wir zusätzliche Overlay-Rendering-Logik hinzufügen
-    // z.B. um den aktiven Stream-Status zu aktualisieren
+    // Versuche, den Titel-Widget direkt zu aktualisieren, falls vorhanden
+    if (this.isWheelOpen && this.hasEntries()) {
+      this.updateTitleWidgetIfPossible();
+    }
+  }
+
+  /**
+   * Versucht, den Titel-Widget direkt zu aktualisieren
+   * Dies ist notwendig, da createTitleComponent() möglicherweise nur einmal aufgerufen wird
+   */
+  private void updateTitleWidgetIfPossible() {
+    try {
+      // Versuche, den Titel-Widget über Reflection zu finden
+      // Dies ist ein Workaround, da die Basisklasse möglicherweise den Titel cached
+      java.lang.reflect.Field[] fields = this.getClass().getSuperclass().getDeclaredFields();
+      for (java.lang.reflect.Field field : fields) {
+        field.setAccessible(true);
+        Object value = field.get(this);
+        if (value instanceof ComponentWidget componentWidget) {
+          // Füge ID hinzu, falls noch nicht vorhanden, für besseres Styling
+          if (!componentWidget.hasId("radio-wheel-title")) {
+            componentWidget.addId("radio-wheel-title");
+          }
+          
+          // Aktualisiere den Component mit dem aktuellen Wert
+          float volume = this.addon.configuration().volume().get();
+          int volumeInt = Math.round(volume);
+          
+          // Prüfe Play/Pause Status
+          boolean isPlaying = this.radioManager.isPlaying() && !this.radioManager.isPaused();
+          boolean isPaused = this.radioManager.isPaused();
+          
+          // Play/Pause Status mit Farbe
+          Component playPauseStatus;
+          if (isPlaying) {
+            playPauseStatus = Component.text("▶ PLAY").color(NamedTextColor.GREEN);
+          } else if (isPaused) {
+            playPauseStatus = Component.text("⏸ PAUSE").color(NamedTextColor.RED);
+          } else {
+            playPauseStatus = Component.text("⏹ STOP").color(NamedTextColor.GRAY);
+          }
+          
+          Component firstLine = Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
+          
+          Component secondLine = Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt))).color(NamedTextColor.YELLOW)
+              .append(Component.text(" | ").color(NamedTextColor.GRAY))
+              .append(playPauseStatus);
+          
+          Component thirdLine = Component.translatable("evilradio.wheel.scrollInfo").color(NamedTextColor.GRAY);
+          
+          Component newTitle = firstLine
+              .append(Component.text("\n", NamedTextColor.GRAY))
+              .append(secondLine)
+              .append(Component.text("\n", NamedTextColor.GRAY))
+              .append(thirdLine);
+          
+          componentWidget.setComponent(newTitle);
+          break;
+        }
+      }
+    } catch (Exception e) {
+      // Fehler beim Aktualisieren - ignoriere, da createTitleComponent() als Fallback dient
+    }
+  }
+
+  /**
+   * Event-Handler für Mausrad-Scroll
+   * Ändert die Lautstärke in 5er-Schritten pro erkanntem Dreh, wenn das Wheel offen ist
+   */
+  @Subscribe
+  public void onMouseScroll(MouseScrollEvent event) {
+    // Nur verarbeiten, wenn das Wheel offen ist
+    if (!this.isWheelOpen) {
+      return;
+    }
+
+    // Prüfe, ob die Taste zum Öffnen des Wheels gedrückt gehalten wird
+    Key openKey = this.getKeyToOpen();
+    if (openKey == null) {
+      return;
+    }
+
+    // Verhindere, dass das Event weiterverarbeitet wird
+    event.setCancelled(true);
+
+    // Ändere die Lautstärke basierend auf der Scroll-Richtung
+    float currentVolume = this.addon.configuration().volume().get();
+    double scrollDelta = event.delta();
+    
+    // Bestimme die Scroll-Richtung: positiv = nach oben, negativ = nach unten
+    // Pro erkanntem Scroll-Event ändern wir die Lautstärke um genau 5%
+    int direction = scrollDelta > 0 ? 1 : -1;
+    float volumeChange = direction * 5.0f;
+    
+    // Berechne die neue Lautstärke
+    float newVolume = currentVolume + volumeChange;
+    newVolume = Math.max(0.0f, Math.min(100.0f, newVolume));
+    
+    // Runde auf den nächsten 5er-Schritt (0, 5, 10, 15, 20, ...)
+    newVolume = Math.round(newVolume / 5.0f) * 5.0f;
+    
+    // Setze die neue Lautstärke
+    this.addon.configuration().volume().set(newVolume);
+    
+    // Aktualisiere den Titel, um die neue Lautstärke anzuzeigen
+    this.updateTitle();
+  }
+
+  /**
+   * Event-Handler für Maus-Button-Klicks
+   * Togglet Play/Pause bei Mittelklick, wenn das Wheel offen ist
+   */
+  @Subscribe
+  public void onMouseButton(MouseButtonEvent event) {
+    // Nur verarbeiten, wenn das Wheel offen ist
+    if (!this.isWheelOpen) {
+      return;
+    }
+
+    // Prüfe, ob es ein Mittelklick ist
+    MouseButton button = event.button();
+    if (button == MouseButton.MIDDLE) {
+      long currentTime = System.currentTimeMillis();
+      
+      // Debounce: Verhindere mehrfache Auslösung bei einem Klick (Press + Release)
+      if (currentTime - this.lastMiddleClickTime < MIDDLE_CLICK_DEBOUNCE_MS) {
+        event.setCancelled(true);
+        return;
+      }
+      
+      this.lastMiddleClickTime = currentTime;
+      
+      // Verhindere, dass das Event weiterverarbeitet wird
+      event.setCancelled(true);
+      
+      // Toggle Play/Pause
+      if (this.radioManager.isPlaying() || this.radioManager.isPaused()) {
+        this.radioManager.togglePlayPause();
+      }
+    }
+  }
+
+  /**
+   * Aktualisiert den Titel des Wheels mit der aktuellen Lautstärke
+   * Der Titel wird automatisch beim nächsten Render aktualisiert,
+   * da createTitleComponent() immer den aktuellen Wert aus der Konfiguration liest
+   */
+  private void updateTitle() {
+    // Keine Aktion nötig - createTitleComponent() wird beim nächsten Render
+    // automatisch mit dem aktuellen Lautstärke-Wert aufgerufen
   }
 
   @Override

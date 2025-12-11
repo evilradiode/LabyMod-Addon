@@ -33,3 +33,20 @@ RadioSegment .radio-segment-name {
   opacity: 0.7;
 }
 
+Component {
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.8);
+}
+
+/* Hintergrund für den Titel-Container */
+.radio-wheel-title,
+ComponentWidget {
+  top: -40;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 6;
+  padding: 10;
+  padding-left: 15;
+  padding-right: 15;
+  border-thickness: 1;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+

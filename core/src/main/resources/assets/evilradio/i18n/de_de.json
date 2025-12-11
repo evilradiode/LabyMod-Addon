@@ -11,7 +11,9 @@
     },
     "wheel": {
       "noStationsAvailable": "Keine Sender verfügbar",
-      "selectStation": "Wähle einen Evil-Radio Sender"
+      "selectStation": "Wähle einen Evil-Radio Sender",
+      "volume": "Lautstärke: %s%%",
+      "scrollInfo": "Mausrad: Lautstärke ändern | Mittelklick: Play/Pause"
     },
     "notification": {
       "streamSelected": {
