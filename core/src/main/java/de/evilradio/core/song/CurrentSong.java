@@ -30,12 +30,12 @@ public class CurrentSong {
     String sourceToCheck = combined;
     
     // Prüfe auch direkt im title oder artist Feld
-    if (title.contains("* On Air") || artist.contains("* On Air")) {
-      sourceToCheck = title.contains("* On Air") ? title : artist;
+    if (title.contains("* On Air") || artist.contains("* On Air") || title.contains("*On Air") || artist.contains("*On Air")) {
+      sourceToCheck = title.contains("* On Air") || title.contains("*On Air") ? title : artist;
     }
 
     // Prüfe ob "* On Air" im String enthalten ist
-    if (sourceToCheck.contains("* On Air")) {
+    if (sourceToCheck.contains("* On Air") || sourceToCheck.contains("*On Air")) {
       onAir = true;
       
       // Extrahiere Moderator-Name nach "|" (alles nach dem | ist der Moderator-Name)
@@ -50,14 +50,15 @@ public class CurrentSong {
       
       // Entferne "* On Air" und "Euer"/"Eure" aus dem String
       sourceToCheck = sourceToCheck.replace("* On Air", "").trim();
+      sourceToCheck = sourceToCheck.replace("*On Air", "").trim();
       sourceToCheck = sourceToCheck.replaceAll("\\bEuer\\b", "").trim();
       sourceToCheck = sourceToCheck.replaceAll("\\bEure\\b", "").trim();
       sourceToCheck = sourceToCheck.replaceAll("\\s+", " ").trim(); // Mehrfache Leerzeichen entfernen
       
       // Wenn das Format direkt im title oder artist war, passe entsprechend an
-      if (title.contains("* On Air")) {
+      if (title.contains("* On Air") || title.contains("*On Air")) {
         cleanTitle = sourceToCheck;
-      } else if (artist.contains("* On Air")) {
+      } else if (artist.contains("* On Air") || artist.contains("*On Air")) {
         cleanArtist = sourceToCheck;
       } else {
         // Format war im kombinierten String, teile wieder in artist und title
