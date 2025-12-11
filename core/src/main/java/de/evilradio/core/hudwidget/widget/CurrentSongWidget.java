@@ -182,9 +182,9 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     
     if (currentSong == null) {
       // Wenn kein Song gefunden wurde, aber der Stream läuft, zeige "Loading..." an
-      if (isPlaying) {
-        RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
-        if (currentStream != null && currentStream.getName() != null) {
+      RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
+      if (isPlaying && currentStream != null) {
+        if (currentStream.getName() != null) {
           this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()));
         } else {
           this.streamWidget.setComponent(Component.translatable("evilradio.widget.loading"));
@@ -195,9 +195,10 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         this.fourthLineWidget.setVisible(false);
         this.removeId("four-lines");
       } else {
-        this.streamWidget.setComponent(Component.translatable("evilradio.widget.noStreamSelected"));
-        this.trackWidget.setComponent(Component.translatable("evilradio.widget.notPlaying"));
-        this.artistWidget.setComponent(Component.translatable("evilradio.widget.notPlaying"));
+        // Kein Stream ausgewählt - Widgets leer lassen (Widget wird durch isVisibleInGame() versteckt)
+        this.streamWidget.setComponent(Component.text(""));
+        this.trackWidget.setComponent(Component.text(""));
+        this.artistWidget.setComponent(Component.text(""));
         this.fourthLineWidget.setComponent(Component.text(""));
         this.fourthLineWidget.setVisible(false);
         this.removeId("four-lines");
@@ -214,7 +215,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         if (currentStream != null && currentStream.getName() != null) {
           this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()).color(NamedTextColor.GRAY));
         } else {
-          this.streamWidget.setComponent(Component.translatable("evilradio.widget.noStreamSelected").color(NamedTextColor.GRAY));
+          // Fallback: Leer lassen (sollte nicht auftreten, da Widget versteckt wird)
+          this.streamWidget.setComponent(Component.text(""));
         }
 
         if(isOnAir) {
@@ -253,7 +255,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
             this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()));
           }
         } else {
-          this.streamWidget.setComponent(Component.translatable("evilradio.widget.noStreamSelected"));
+          // Fallback: Leer lassen (sollte nicht auftreten, da Widget versteckt wird)
+          this.streamWidget.setComponent(Component.text(""));
         }
         this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
         this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
