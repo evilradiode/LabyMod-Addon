@@ -286,9 +286,6 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     
     // Setze die neue Lautstärke
     this.addon.configuration().volume().set(newVolume);
-    
-    // Aktualisiere den Titel, um die neue Lautstärke anzuzeigen
-    this.updateTitle();
   }
 
   /**
@@ -325,16 +322,6 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     }
   }
 
-  /**
-   * Aktualisiert den Titel des Wheels mit der aktuellen Lautstärke
-   * Der Titel wird automatisch beim nächsten Render aktualisiert,
-   * da createTitleComponent() immer den aktuellen Wert aus der Konfiguration liest
-   */
-  private void updateTitle() {
-    // Keine Aktion nötig - createTitleComponent() wird beim nächsten Render
-    // automatisch mit dem aktuellen Lautstärke-Wert aufgerufen
-  }
-
   @Override
   protected boolean shouldOpenInteractionMenu() {
     return this.addon.configuration().enabled().get();
@@ -345,7 +332,6 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     this.refreshStreams();
     super.initialize(parent);
   }
-
 
   private void refreshStreams() {
     int maxPages = MathHelper.ceil((float) this.addon.radioStreamService().streams().size() / (float) this.getSegmentCount()) - 1;
