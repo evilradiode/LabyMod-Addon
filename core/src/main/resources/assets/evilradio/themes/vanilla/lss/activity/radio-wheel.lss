@@ -78,6 +78,14 @@ Component {
 
   }
 
+.wheel-title {
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 6;
+  padding: 5 5 5 5;
+  border-thickness: 2;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 .subtitle-info {
   margin-top: 5;
   width: fit-content;
