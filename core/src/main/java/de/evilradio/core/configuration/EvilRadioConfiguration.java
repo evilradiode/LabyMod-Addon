@@ -11,7 +11,6 @@ import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.configuration.settings.annotation.SettingSection;
-// import net.labymod.api.models.OperatingSystem; // TODO: Wieder aktivieren, wenn URL-Aufruf aktiviert wird
 import net.labymod.api.models.OperatingSystem;
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
