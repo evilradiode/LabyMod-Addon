@@ -31,6 +31,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private CurrentSongService currentSongService;
 
   private CurrentSongHudWidget currentSongHudWidget;
+  
+  // Flag, um zu verfolgen, ob ein WorldEnterEvent nach einem WorldLeaveEvent kommt (Subserver-Wechsel)
+  private boolean worldEnterExpected = false;
+  private Task pendingWorldLeaveStopTask = null;
 
   @Override
   protected void enable() {
@@ -166,6 +170,19 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    */
   @Subscribe
   public void onWorldEnter(WorldEnterEvent event) {
+    // Wenn ein WorldLeaveEvent vorher kam, handelt es sich wahrscheinlich um einen Subserver-Wechsel
+    // In diesem Fall sollte der Stream nicht gestoppt werden
+    if (this.worldEnterExpected) {
+      this.worldEnterExpected = false;
+      // Bricht den geplanten Stop ab, falls noch nicht ausgeführt
+      if (this.pendingWorldLeaveStopTask != null) {
+        this.pendingWorldLeaveStopTask.cancel();
+        this.pendingWorldLeaveStopTask = null;
+      }
+      // Der Stream läuft weiter, wir müssen ihn nicht neu starten
+      return;
+    }
+    
     // Prüfe, ob Auto-Start aktiviert ist
     if (!configuration().autoStart().enabled().get()) {
       return;
@@ -181,6 +198,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    * Event-Handler für World-Verlassen
    * Wird aufgerufen, wenn der Spieler eine Welt verlässt
    * Stoppt den Stream, wenn Auto-Start auf "Beim Welt betreten" steht
+   * Verwendet eine Verzögerung, um Subserver-Wechsel zu erkennen (dabei wird kein WorldLeave gefolgt von WorldEnter ausgelöst)
    */
   @Subscribe
   public void onWorldLeave(WorldLeaveEvent event) {
@@ -191,10 +209,25 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode != null && mode.shouldStartOnServerJoin()) {
-      // Stoppe den Stream, wenn er läuft
-      if (this.radioManager != null && this.radioManager.isPlaying()) {
-        this.radioManager.stopStream();
+      // Setze Flag, dass ein WorldEnterEvent erwartet wird (Subserver-Wechsel)
+      this.worldEnterExpected = true;
+      
+      // Bricht einen vorherigen geplanten Stop ab, falls vorhanden
+      if (this.pendingWorldLeaveStopTask != null) {
+        this.pendingWorldLeaveStopTask.cancel();
       }
+      
+      // Plane den Stop mit einer kurzen Verzögerung (500ms)
+      // Wenn innerhalb dieser Zeit ein WorldEnterEvent kommt, wird der Stop abgebrochen
+      this.pendingWorldLeaveStopTask = Task.builder(() -> {
+        // Nur stoppen, wenn immer noch erwartet wird (kein WorldEnterEvent kam)
+        if (this.worldEnterExpected && this.radioManager != null && this.radioManager.isPlaying()) {
+          this.radioManager.stopStream();
+        }
+        this.worldEnterExpected = false;
+        this.pendingWorldLeaveStopTask = null;
+      }).delay(500, TimeUnit.MILLISECONDS).build();
+      this.pendingWorldLeaveStopTask.execute();
     }
   }
   
@@ -223,7 +256,9 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       return;
     }
     
-    float delaySeconds = configuration().autoStart().delay().get();
+    // Verzögerung nur beim Spielstart anwenden, nicht beim Welt betreten oder Server-Join
+    boolean shouldApplyDelay = "game start".equals(context);
+    float delaySeconds = shouldApplyDelay ? configuration().autoStart().delay().get() : 0;
     
     if (delaySeconds > 0) {
       // Starte mit Verzögerung
