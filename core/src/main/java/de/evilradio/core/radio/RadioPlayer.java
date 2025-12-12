@@ -183,6 +183,32 @@ public class RadioPlayer {
                 break;
               }
             }
+          } catch (RuntimeException e) {
+            // Abfangen von RuntimeExceptions (z.B. ArrayIndexOutOfBoundsException)
+            // die von der JLayer-Bibliothek während der Dekodierung auftreten können
+            if (!shouldStop) {
+              // Bei Fehlern, versuche den Stream neu zu verbinden
+              Thread.sleep(1000);
+              try {
+                if (bitstream != null) {
+                  bitstream.close();
+                }
+                if (audioStream != null) {
+                  audioStream.close();
+                }
+              } catch (Exception ignored) {}
+              try {
+                audioStream = new BufferedInputStream(url.openStream());
+                bitstream = new Bitstream(audioStream);
+                header = bitstream.readFrame();
+                if (header == null) {
+                  break;
+                }
+              } catch (Exception reconnectException) {
+                // Wenn Reconnect fehlschlägt, beende die Wiedergabe
+                break;
+              }
+            }
           }
         }
 

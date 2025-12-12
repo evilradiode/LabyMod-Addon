@@ -35,6 +35,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   // Flag, um zu verfolgen, ob ein WorldEnterEvent nach einem WorldLeaveEvent kommt (Subserver-Wechsel)
   private boolean worldEnterExpected = false;
   private Task pendingWorldLeaveStopTask = null;
+  
+  // Fokus-Tracking für Auto-Pause
+  private boolean lastWindowFocused = true;
+  private boolean wasPausedByFocusLoss = false;
+  private Task focusCheckTask = null;
 
   @Override
   protected void enable() {
@@ -82,15 +87,39 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     // Stoppe den Stream, wenn das Addon deaktiviert wird
     configuration().enabled().addChangeListener((enabled) -> {
-      if (!enabled && this.radioManager != null && this.radioManager.isPlaying()) {
-        this.radioManager.stopStream();
-        this.logger().info("Stream gestoppt, da Addon deaktiviert wurde");
+      if (!enabled) {
+        if (this.radioManager != null && this.radioManager.isPlaying()) {
+          this.radioManager.stopStream();
+          this.logger().info("Stream gestoppt, da Addon deaktiviert wurde");
+        }
+        // Stoppe auch den Fokus-Check-Task
+        stopFocusCheckTask();
+        wasPausedByFocusLoss = false;
+      } else {
+        // Wenn Addon wieder aktiviert wird, starte Fokus-Check-Task neu (falls aktiviert)
+        if (configuration().pauseOnFocusLoss().get()) {
+          startFocusCheckTask();
+        }
       }
     });
 
     configuration().useFourLines().addChangeListener((useFourLines) -> {
       if(this.currentSongHudWidget != null) {
         this.currentSongHudWidget.requestUpdate(CurrentSongHudWidget.FOUR_LINES_REASON);
+      }
+    });
+
+    // Starte Fokus-Check-Task für Auto-Pause bei Fokus-Verlust
+    startFocusCheckTask();
+    
+    // Listener für Änderungen der pauseOnFocusLoss-Einstellung
+    configuration().pauseOnFocusLoss().addChangeListener((enabled) -> {
+      if (enabled) {
+        startFocusCheckTask();
+      } else {
+        stopFocusCheckTask();
+        // Wenn durch Fokus-Verlust pausiert wurde, setze Flag zurück
+        wasPausedByFocusLoss = false;
       }
     });
 
@@ -283,6 +312,78 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     this.radioManager.playStream(stream);
     this.currentSongService.fetchCurrentSong();
+  }
+  
+  /**
+   * Startet den Task zum regelmäßigen Prüfen des Fenster-Fokus
+   */
+  private void startFocusCheckTask() {
+    // Stoppe vorherigen Task, falls vorhanden
+    stopFocusCheckTask();
+    
+    // Nur starten, wenn die Einstellung aktiviert ist
+    if (!configuration().pauseOnFocusLoss().get()) {
+      return;
+    }
+    
+    // Initialisiere den letzten Fokus-Status
+    try {
+      lastWindowFocused = this.labyAPI().minecraft().minecraftWindow().isFocused();
+    } catch (Exception e) {
+      // Fallback: annehmen, dass Fenster fokussiert ist
+      lastWindowFocused = true;
+    }
+    
+    // Erstelle Task, der alle 100ms den Fokus-Status prüft
+    this.focusCheckTask = Task.builder(() -> {
+      if (!configuration().pauseOnFocusLoss().get()) {
+        stopFocusCheckTask();
+        return;
+      }
+      
+      boolean currentFocused;
+      try {
+        currentFocused = this.labyAPI().minecraft().minecraftWindow().isFocused();
+      } catch (Exception e) {
+        // Bei Fehler: annehmen, dass Fenster fokussiert ist
+        currentFocused = true;
+      }
+      
+      // Prüfe, ob sich der Fokus-Status geändert hat
+      if (currentFocused != lastWindowFocused) {
+        lastWindowFocused = currentFocused;
+        
+        if (this.radioManager != null) {
+          if (!currentFocused) {
+            // Fenster hat Fokus verloren
+            if (this.radioManager.isPlaying() && !this.radioManager.isPaused()) {
+              this.radioManager.pauseStream();
+              wasPausedByFocusLoss = true;
+              this.logger().debug("Stream pausiert wegen Fokus-Verlust");
+            }
+          } else {
+            // Fenster hat Fokus zurückerhalten
+            if (wasPausedByFocusLoss && this.radioManager.isPaused()) {
+              this.radioManager.resumeStream();
+              wasPausedByFocusLoss = false;
+              this.logger().debug("Stream fortgesetzt nach Fokus-Rückkehr");
+            }
+          }
+        }
+      }
+    }).repeat(100, TimeUnit.MILLISECONDS).build();
+    
+    this.focusCheckTask.execute();
+  }
+  
+  /**
+   * Stoppt den Fokus-Check-Task
+   */
+  private void stopFocusCheckTask() {
+    if (this.focusCheckTask != null) {
+      this.focusCheckTask.cancel();
+      this.focusCheckTask = null;
+    }
   }
   
 }

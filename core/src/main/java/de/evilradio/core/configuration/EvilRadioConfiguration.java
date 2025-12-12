@@ -38,6 +38,9 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SwitchSetting
   private final ConfigProperty<Boolean> useFourLines = new ConfigProperty<>(false);
 
+  @SwitchSetting
+  private final ConfigProperty<Boolean> pauseOnFocusLoss = new ConfigProperty<>(false);
+
   @SettingSection(value = "advanced", center = true)
 
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
@@ -83,6 +86,10 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Boolean> useFourLines() {
     return this.useFourLines;
+  }
+
+  public ConfigProperty<Boolean> pauseOnFocusLoss() {
+    return this.pauseOnFocusLoss;
   }
 
   public ConfigProperty<Float> volume() {
