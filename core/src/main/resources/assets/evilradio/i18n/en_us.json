@@ -34,7 +34,8 @@
       "noStreamSelected": "No Stream selected"
     },
     "hudWidget": {
-      "evilraio_full_wdiget": {
+      "evilradio_full_widget": {
+        "name": "Evil Radio Widget",
         "showCover": {
           "name": "Show Cover"
         }

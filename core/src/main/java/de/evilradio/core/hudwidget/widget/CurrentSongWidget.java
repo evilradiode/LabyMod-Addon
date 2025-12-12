@@ -57,6 +57,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     this.coverWidget = new IconWidget(EvilTextures.LOGO);
     this.coverWidget.addId("cover");
+    boolean showCover = this.hudWidget.getConfig().showCover().get();
+    this.coverWidget.setVisible(showCover);
 
     // add cover if the hud widget is left-aligned
     if (leftAligned) {
@@ -162,8 +164,14 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       boolean showCover = this.hudWidget.getConfig().showCover().get();
       if (showCover) {
         this.removeId("no-cover");
+        if (this.coverWidget != null) {
+          this.coverWidget.setVisible(true);
+        }
       } else {
         this.addId("no-cover");
+        if (this.coverWidget != null) {
+          this.coverWidget.setVisible(false);
+        }
       }
     }
 
