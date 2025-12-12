@@ -55,7 +55,8 @@ public class RadioStreamService {
                     streamObject.get("name").getAsString(),
                     streamObject.get("displayName").getAsString(),
                     streamObject.get("streamUrl").getAsString(),
-                    streamObject.get("iconPath").getAsString()
+                    streamObject.get("iconPath").getAsString(),
+                    streamObject.get("iconUrl").getAsString()
                 );
                 radioStream.initialize();
                 streams.add(radioStream);

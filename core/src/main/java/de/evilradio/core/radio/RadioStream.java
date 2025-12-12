@@ -10,15 +10,17 @@ public class RadioStream {
   private final String name;
   private final String iconPath;
   private final String displayName;
+  private final String iconUrl;
 
   private Icon icon;
 
-  public RadioStream(int id, String name, String displayName, String streamUrl, String iconPath) {
+  public RadioStream(int id, String name, String displayName, String streamUrl, String iconPath, String iconUrl) {
     this.id = id;
     this.name = name;
     this.displayName = displayName;
     this.url = streamUrl;
     this.iconPath = iconPath;
+    this.iconUrl = iconUrl;
   }
 
   public RadioStream initialize() {
@@ -58,6 +60,10 @@ public class RadioStream {
 
   public String getDisplayName() {
     return displayName;
+  }
+
+  public String getIconUrl() {
+    return iconUrl;
   }
 
   @Override

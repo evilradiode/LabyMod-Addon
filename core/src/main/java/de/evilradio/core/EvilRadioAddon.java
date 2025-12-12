@@ -55,9 +55,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.radioStreamService = new RadioStreamService(this);
     this.radioStreamService.loadStreams(() -> {
       // Nach dem Laden der Streams: Prüfe, ob Auto-Start beim Spielstart aktiviert ist
-      if (!configuration().autoStart().enabled().get()) {
-        return;
-      }
+      if (!configuration().autoStart().enabled().get()) return;
       AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
       if (mode != null && mode.shouldStartOnGameStart()) {
         this.startLastStreamWithDelay("game start");
