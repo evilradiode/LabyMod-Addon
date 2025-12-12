@@ -77,6 +77,11 @@ public class RadioManager {
     isPlaying = false;
     currentStream = null;
     
+    // Setze den aktuellen Song zurück, um beim nächsten Stream-Start keine fälschlichen "Neuer Song" Notifications auszulösen
+    if (addon != null && addon.currentSongService() != null) {
+      addon.currentSongService().resetCurrentSong();
+    }
+    
     // Stoppe die Wiedergabe
     if (radioPlayer != null) {
       radioPlayer.stop();

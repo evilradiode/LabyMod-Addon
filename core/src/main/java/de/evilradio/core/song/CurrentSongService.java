@@ -19,6 +19,7 @@ public class CurrentSongService {
   private final Logging logging = Logging.create("EvilRadio-CurrentSongService");
 
   private CurrentSong currentSong = null;
+  private String currentStreamName = null;
   private EvilRadioAddon addon;
 
   private Task updaterTask;
@@ -55,12 +56,26 @@ public class CurrentSongService {
     if (streamName == null || streamName.isEmpty()) {
       logging.warn("Current stream has no name, cannot fetch song info");
       this.currentSong = null;
+      this.currentStreamName = null;
       this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
       return;
     }
     
-    // Speichere den Song vor dem Request, um später zu prüfen, ob er sich geändert hat
+    // Prüfe, ob sich der Stream geändert hat (auch wenn currentStreamName null ist, z.B. nach resetCurrentSong())
+    boolean streamChanged = this.currentStreamName != null && !this.currentStreamName.equals(streamName);
+    // Wenn currentStreamName null ist, bedeutet das, dass der Stream zurückgesetzt wurde oder noch nicht geladen wurde
+    // In diesem Fall sollte auch keine "Neuer Song" Notification kommen
+    boolean isFirstLoadOrReset = this.currentStreamName == null;
+    
+    // Wenn sich der Stream geändert hat oder es der erste Load/Reset ist, setze currentSong auf null
+    // um keine "Neuer Song" Notification auszulösen
+    if (streamChanged || isFirstLoadOrReset) {
+      this.currentSong = null;
+    }
+    
+    // Speichere den Song und Stream-Namen vor dem Request, um später zu prüfen, ob er sich geändert hat
     CurrentSong songBefore = this.currentSong;
+    String streamNameBefore = this.currentStreamName;
     
     Request.ofGson(JsonObject.class)
         .url(API_BASE_URL + streamName)
@@ -95,16 +110,24 @@ public class CurrentSongService {
             
             CurrentSong newSong = new CurrentSong(title, artist, image);
             
-            // Prüfe, ob sich der Song geändert hat (nur wenn bereits ein Song geladen war)
-            boolean songChanged = songBefore != null && 
+            // Prüfe erneut, ob sich der Stream geändert hat (könnte sich während des Requests geändert haben)
+            boolean streamStillChanged = streamNameBefore != null && !streamNameBefore.equals(streamName);
+            // Prüfe, ob es der erste Load/Reset war
+            boolean wasFirstLoadOrReset = streamNameBefore == null;
+            
+            // Prüfe, ob sich der Song geändert hat (nur wenn bereits ein Song geladen war UND der Stream gleich geblieben ist)
+            // Beim Streamwechsel oder beim ersten Laden soll keine "Neuer Song" Notification kommen
+            boolean songChanged = !streamStillChanged && !wasFirstLoadOrReset && songBefore != null && 
                 (!songBefore.getTitle().equals(newSong.getTitle()) || 
                  !songBefore.getArtist().equals(newSong.getArtist()));
             
             this.currentSong = newSong;
+            // Aktualisiere den aktuellen Stream-Namen erst nach erfolgreichem Laden
+            this.currentStreamName = streamName;
             // Aktualisiere das Widget nach dem Setzen des aktuellen Songs
             this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
             
-            // Zeige Notification nur, wenn sich der Song geändert hat (nicht beim ersten Laden)
+            // Zeige Notification nur, wenn sich der Song geändert hat (nicht beim ersten Laden oder Streamwechsel)
             if (songChanged && this.addon.configuration().showSongChangeNotification().get()) {
               RadioStream notificationStream = this.addon.radioManager().getCurrentStream();
               Icon streamIcon = null;
@@ -125,6 +148,15 @@ public class CurrentSongService {
             this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
           }
         });
+  }
+
+  /**
+   * Setzt den aktuellen Song zurück, wenn der Stream gestoppt wird.
+   * Dies verhindert, dass beim nächsten Stream-Start fälschlicherweise "Neuer Song" Notifications ausgelöst werden.
+   */
+  public void resetCurrentSong() {
+    this.currentSong = null;
+    this.currentStreamName = null;
   }
 
   public void fetchCurrentSong(String streamName, Consumer<CurrentSong> callback) {
