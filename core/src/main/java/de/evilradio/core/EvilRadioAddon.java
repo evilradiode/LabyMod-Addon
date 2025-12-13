@@ -30,6 +30,9 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private CurrentSongService currentSongService;
 
   private CurrentSongHudWidget currentSongHudWidget;
+  private Task focusCheckTask;
+  private boolean wasWindowFocused = true;
+  private RadioStream streamBeforeFocusLoss = null;
 
   @Override
   protected void enable() {
@@ -58,6 +61,9 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
 
     this.labyAPI().hudWidgetRegistry().register(this.currentSongHudWidget = new CurrentSongHudWidget(this));
+
+    // Registriere Window-Focus-Listener für Auto-Stop
+    this.setupWindowFocusListener();
 
     this.logger().info("Enabled the Addon");
 
@@ -192,6 +198,45 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       if (this.radioManager != null && this.radioManager.isPlaying()) {
         this.radioManager.stopStream();
       }
+    }
+  }
+
+  /**
+   * Registriert einen periodischen Check für Window-Focus-Verlust
+   * Prüft alle 500ms, ob das Fenster den Fokus verloren hat
+   */
+  private void setupWindowFocusListener() {
+    var window = this.labyAPI().minecraft().minecraftWindow();
+    if (window != null) {
+      // Initialisiere den Focus-Status
+      this.wasWindowFocused = window.isFocused();
+      
+      // Verwende einen periodischen Check (alle 500ms) statt bei jedem Tick
+      this.focusCheckTask = Task.builder(() -> {
+        if (!configuration().autoStopOnFocusLoss().get()) {
+          return;
+        }
+        
+        boolean isFocused = window.isFocused();
+        
+        // Wenn das Fenster den Fokus verloren hat und der Stream läuft, stoppe ihn
+        if (!isFocused && wasWindowFocused && this.radioManager != null && this.radioManager.isPlaying()) {
+          // Speichere den aktuellen Stream, damit er später wieder gestartet werden kann
+          this.streamBeforeFocusLoss = this.radioManager.getCurrentStream();
+          this.radioManager.stopStream();
+          this.logger().info("Stream gestoppt, da Fenster den Fokus verloren hat");
+        }
+        
+        // Wenn das Fenster den Fokus wiederbekommt und ein Stream vorher lief, starte ihn wieder
+        if (isFocused && !wasWindowFocused && this.streamBeforeFocusLoss != null && this.radioManager != null && !this.radioManager.isPlaying()) {
+          this.radioManager.playStream(this.streamBeforeFocusLoss);
+          this.logger().info("Stream wieder gestartet, da Fenster den Fokus wiederbekommen hat");
+          this.streamBeforeFocusLoss = null; // Zurücksetzen nach dem Resume
+        }
+        
+        wasWindowFocused = isFocused;
+      }).repeat(500, TimeUnit.MILLISECONDS).build();
+      this.focusCheckTask.execute();
     }
   }
   

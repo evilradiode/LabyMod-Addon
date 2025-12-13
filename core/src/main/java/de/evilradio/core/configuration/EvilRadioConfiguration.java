@@ -9,6 +9,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.Slide
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
+import net.labymod.api.configuration.loader.annotation.SpriteSlot;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.Map;
 @ConfigName("settings")
 public class EvilRadioConfiguration extends AddonConfig {
 
+  @SpriteSlot(x = 1)
   @SwitchSetting
   private final ConfigProperty<Boolean> enabled = new ConfigProperty<>(true);
 
@@ -28,6 +30,9 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   @SwitchSetting
   private final ConfigProperty<Boolean> useFourLines = new ConfigProperty<>(false);
+
+  @SwitchSetting
+  private final ConfigProperty<Boolean> autoStopOnFocusLoss = new ConfigProperty<>(false);
 
   @SliderSetting(min = 0, max = 100, steps = 2f)
   private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
@@ -45,6 +50,21 @@ public class EvilRadioConfiguration extends AddonConfig {
   @ButtonSetting
   public void reloadStreams() {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
+  }
+
+  @MethodOrder(after = "reloadStreams")
+  @ButtonSetting
+  public void openFlintMcPage() {
+    // Öffne die URL im Browser
+    if (EvilRadioAddon.instance() != null) {
+      EvilRadioAddon.instance().labyAPI().minecraft().executeOnRenderThread(() -> {
+        try {
+          java.awt.Desktop.getDesktop().browse(new java.net.URI("https://flintmc.net/addons/evil-radio"));
+        } catch (Exception e) {
+          EvilRadioAddon.instance().logger().error("Failed to open flintmc.net page", e);
+        }
+      });
+    }
   }
 
   public void resetStreamUsageCount() {
@@ -69,6 +89,10 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Boolean> useFourLines() {
     return this.useFourLines;
+  }
+
+  public ConfigProperty<Boolean> autoStopOnFocusLoss() {
+    return this.autoStopOnFocusLoss;
   }
 
   public ConfigProperty<Float> volume() {

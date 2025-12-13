@@ -69,6 +69,10 @@
         "name": "4 Zeilen verwenden",
         "description": "Zeige das Widget mit 4 Zeilen statt 3 an"
       },
+      "autoStopOnFocusLoss": {
+        "name": "Auto-Stop bei Fokus-Verlust",
+        "description": "Stoppe den Stream automatisch, wenn das Spiel-Fenster den Fokus verliert"
+      },
       "volume": {
         "name": "Lautstärke",
         "description": "Die Lautstärke des Radio-Streams (0-100%)"

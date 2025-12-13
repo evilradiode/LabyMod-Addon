@@ -69,6 +69,10 @@
         "name": "Use 4 Lines",
         "description": "Display the widget with 4 lines instead of 3"
       },
+      "autoStopOnFocusLoss": {
+        "name": "Auto-Stop on Focus Loss",
+        "description": "Automatically stop the stream when the game window loses focus"
+      },
       "volume": {
         "name": "Volume",
         "description": "The volume of the radio stream (0-100%)"
