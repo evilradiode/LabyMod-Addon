@@ -69,10 +69,6 @@
         "name": "4 Zeilen verwenden",
         "description": "Zeige das Widget mit 4 Zeilen statt 3 an"
       },
-      "pauseOnFocusLoss": {
-        "name": "Bei Fokus-Verlust pausieren",
-        "description": "Pausiert den Stream automatisch, wenn das Minecraft-Fenster den Fokus verliert"
-      },
       "volume": {
         "name": "Lautstärke",
         "description": "Die Lautstärke des Radio-Streams (0-100%)"

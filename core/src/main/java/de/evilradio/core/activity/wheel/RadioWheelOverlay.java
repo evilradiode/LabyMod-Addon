@@ -77,21 +77,18 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     float volume = this.addon.configuration().volume().get();
     int volumeInt = Math.round(volume);
 
-    boolean isPlaying = this.radioManager.isPlaying() && !this.radioManager.isPaused();
-    boolean isPaused = this.radioManager.isPaused();
+    boolean isPlaying = this.radioManager.isPlaying();
 
-    Component playPauseStatus;
+    Component playStopStatus;
     if (isPlaying) {
-      playPauseStatus = Component.text("▶ PLAY").color(NamedTextColor.GREEN);
-    } else if (isPaused) {
-      playPauseStatus = Component.text("⏸ PAUSE").color(NamedTextColor.RED);
+      playStopStatus = Component.text("▶ PLAY").color(NamedTextColor.GREEN);
     } else {
-      playPauseStatus = Component.text("⏹ STOP").color(NamedTextColor.GRAY);
+      playStopStatus = Component.text("⏹ STOP").color(NamedTextColor.GRAY);
     }
 
     return Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt))).color(NamedTextColor.YELLOW)
         .append(Component.text(" | ").color(NamedTextColor.GRAY))
-        .append(playPauseStatus);
+        .append(playStopStatus);
   }
 
   @Override
@@ -260,7 +257,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
   /**
    * Event-Handler für Maus-Button-Klicks
-   * Togglet Play/Pause bei Mittelklick, wenn das Wheel offen ist
+   * Togglet Play/Stop bei Mittelklick, wenn das Wheel offen ist
    */
   @Subscribe
   public void onMouseButton(MouseButtonEvent event) {
@@ -285,10 +282,8 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
       // Verhindere, dass das Event weiterverarbeitet wird
       event.setCancelled(true);
       
-      // Toggle Play/Pause
-      if (this.radioManager.isPlaying() || this.radioManager.isPaused()) {
-        this.radioManager.togglePlayPause();
-      }
+      // Toggle Play/Stop
+      this.radioManager.togglePlayStop();
     }
   }
 

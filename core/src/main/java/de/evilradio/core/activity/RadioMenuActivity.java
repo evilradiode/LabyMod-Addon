@@ -89,19 +89,18 @@ public class RadioMenuActivity extends SimpleActivity {
       });
     }
     
-    // Play/Pause Button
-    boolean isPaused = radioManager.isPaused();
-    boolean isPlaying = radioManager.isPlaying() && !isPaused;
-    String playPauseText = isPlaying ? "⏸" : "▶";
-    ButtonWidget playPauseButton = ButtonWidget.component(
-        Component.text(playPauseText, NamedTextColor.WHITE)
+    // Play/Stop Button
+    boolean isPlaying = radioManager.isPlaying();
+    String playStopText = isPlaying ? "⏹" : "▶";
+    ButtonWidget playStopButton = ButtonWidget.component(
+        Component.text(playStopText, NamedTextColor.WHITE)
     );
-    playPauseButton.addId("play-pause-button");
-    playPauseButton.setPressable(() -> {
-      radioManager.togglePlayPause();
+    playStopButton.addId("play-stop-button");
+    playStopButton.setPressable(() -> {
+      radioManager.togglePlayStop();
       this.reload();
     });
-    controlsContainer.addChild(playPauseButton);
+    controlsContainer.addChild(playStopButton);
     
     // Volume Slider - verwende ConfigProperty aus der Konfiguration
     EvilRadioConfiguration config = addon.configuration();

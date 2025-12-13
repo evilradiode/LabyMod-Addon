@@ -3,7 +3,6 @@ package de.evilradio.core.hudwidget;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget.CurrentSongHudWidgetConfig;
 import de.evilradio.core.hudwidget.widget.CurrentSongWidget;
-import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidgetConfig;
 import net.labymod.api.client.gui.hud.hudwidget.widget.WidgetHudWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
@@ -60,17 +59,14 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
   @Override
   public boolean isVisibleInGame() {
-    // Widget nur anzeigen, wenn Addon aktiviert ist und ein Stream ausgewählt ist oder läuft
+    // Widget nur anzeigen, wenn Addon aktiviert ist und ein Stream läuft
     if (!this.addon.configuration().enabled().get()) {
       return false;
     }
     
-    // Prüfe, ob ein Stream ausgewählt ist oder gerade läuft
-    RadioStream currentStream = this.addon.radioManager().getCurrentStream();
-    boolean isPlaying = this.addon.radioManager().isPlaying();
-    
-    // Widget nur anzeigen, wenn ein Stream ausgewählt ist oder läuft
-    return currentStream != null || isPlaying;
+    // Widget nur anzeigen, wenn der Stream tatsächlich läuft
+    // Nicht nur wenn ein Stream ausgewählt ist (damit das Widget verschwindet, wenn gestoppt wird)
+    return this.addon.radioManager().isPlaying();
   }
 
   public static class CurrentSongHudWidgetConfig extends HudWidgetConfig {

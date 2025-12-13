@@ -69,10 +69,6 @@
         "name": "Use 4 Lines",
         "description": "Display the widget with 4 lines instead of 3"
       },
-      "pauseOnFocusLoss": {
-        "name": "Pause on Focus Loss",
-        "description": "Automatically pauses the stream when the Minecraft window loses focus"
-      },
       "volume": {
         "name": "Volume",
         "description": "The volume of the radio stream (0-100%)"

@@ -1,6 +1,7 @@
 package de.evilradio.core.radio;
 
 import de.evilradio.core.EvilRadioAddon;
+import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 
 public class RadioManager {
 
@@ -36,15 +37,14 @@ public class RadioManager {
   }
 
   public void playStream(RadioStream stream) {
-    // Wenn derselbe Stream bereits läuft und spielt, pausiere/starte ihn
+    // Wenn derselbe Stream bereits läuft, tue nichts
     if (currentStream != null && currentStream.equals(stream) && isPlaying) {
-      if (radioPlayer != null && radioPlayer.isPaused()) {
-        resumeStream();
-      }
       return;
     }
     
     // Wenn der Stream gestoppt wurde (isPlaying = false), starte ihn neu
+    // Setze currentStream auf null, bevor wir stopStream() aufrufen, da wir einen neuen Stream starten
+    currentStream = null;
     stopStream();
     currentStream = stream;
     this.addon.radioStreamService().setLastSelectedStream(stream);
@@ -75,43 +75,27 @@ public class RadioManager {
 
   public void stopStream() {
     isPlaying = false;
-    currentStream = null;
-    
-    // Setze den aktuellen Song zurück, um beim nächsten Stream-Start keine fälschlichen "Neuer Song" Notifications auszulösen
-    if (addon != null && addon.currentSongService() != null) {
-      addon.currentSongService().resetCurrentSong();
-    }
+    // currentStream wird NICHT auf null gesetzt, damit togglePlayStop() den Stream später wieder starten kann
+    // Nur wenn ein neuer Stream gestartet wird (in playStream()), wird currentStream explizit auf null gesetzt
     
     // Stoppe die Wiedergabe
     if (radioPlayer != null) {
       radioPlayer.stop();
     }
-  }
-
-  public void pauseStream() {
-    if (radioPlayer != null && isPlaying) {
-      radioPlayer.pause();
+    
+    // Setze den aktuellen Song zurück und aktualisiere das Widget
+    if (addon != null && addon.currentSongService() != null) {
+      addon.currentSongService().resetCurrentSong();
+      addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
     }
   }
 
-  public void resumeStream() {
+  public void togglePlayStop() {
     if (radioPlayer != null && isPlaying) {
-      radioPlayer.resume();
+      stopStream();
+    } else if (currentStream != null) {
+      playStream(currentStream);
     }
-  }
-
-  public void togglePlayPause() {
-    if (radioPlayer != null && isPlaying) {
-      if (radioPlayer.isPaused()) {
-        resumeStream();
-      } else {
-        pauseStream();
-      }
-    }
-  }
-
-  public boolean isPaused() {
-    return radioPlayer != null && radioPlayer.isPaused();
   }
 
   public void setVolume(float volume) {

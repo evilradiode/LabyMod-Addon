@@ -21,12 +21,11 @@ import javazoom.jl.decoder.SampleBuffer;
 public class RadioPlayer {
   private SourceDataLine audioLine;
   private InputStream audioStream;
-  private Bitstream bitstream;
+  private volatile Bitstream bitstream;
   private ExecutorService executorService;
   private Future<?> playbackTask;
   private volatile boolean isPlaying;
   private volatile boolean shouldStop;
-  private volatile boolean isPaused;
   private volatile float volume = 0.5f; // Standard-Lautstärke (50%)
 
   public RadioPlayer() {
@@ -37,7 +36,6 @@ public class RadioPlayer {
     });
     this.isPlaying = false;
     this.shouldStop = false;
-    this.isPaused = false;
   }
 
   public void play(String streamUrl) {
@@ -57,6 +55,11 @@ public class RadioPlayer {
         // Verwende JLayer für MP3-Streams
         bitstream = new Bitstream(audioStream);
         Decoder decoder = new Decoder();
+        
+        // Prüfe, ob der Stream gestoppt wurde, bevor wir fortfahren
+        if (shouldStop || bitstream == null) {
+          return;
+        }
         
         // Lese den ersten Frame, um die Audio-Parameter zu erhalten
         Header header = bitstream.readFrame();
@@ -102,21 +105,13 @@ public class RadioPlayer {
 
         // Wiedergabe-Loop für MP3-Stream
         byte[] buffer = new byte[4096];
-        while (!shouldStop && audioLine != null && audioLine.isOpen()) {
-          // Pause-Handling
-          if (isPaused) {
-            if (audioLine != null && audioLine.isOpen()) {
-              audioLine.stop();
-            }
-            while (isPaused && !shouldStop && audioLine != null && audioLine.isOpen()) {
-              Thread.sleep(100);
-            }
-            if (!shouldStop && audioLine != null && audioLine.isOpen()) {
-              audioLine.start();
-            }
-          }
-          
+        while (!shouldStop && audioLine != null && audioLine.isOpen() && bitstream != null) {
           try {
+            // Prüfe erneut, ob bitstream noch vorhanden ist (könnte durch stop() auf null gesetzt worden sein)
+            if (bitstream == null) {
+              break;
+            }
+            
             // Dekodiere den Frame
             SampleBuffer sampleBuffer = (SampleBuffer) decoder.decodeFrame(header, bitstream);
             short[] samples = sampleBuffer.getBuffer();
@@ -143,12 +138,20 @@ public class RadioPlayer {
             }
             
             // Lese nächsten Frame
+            if (bitstream == null) {
+              break;
+            }
             bitstream.closeFrame();
             header = bitstream.readFrame();
             
             if (header == null) {
               // Stream-Ende erreicht, versuche erneut zu lesen (für kontinuierliche Streams)
-              Thread.sleep(100);
+              try {
+                Thread.sleep(100);
+              } catch (InterruptedException e) {
+                // Thread wurde unterbrochen, beende die Wiedergabe
+                break;
+              }
               try {
                 if (bitstream != null) {
                   bitstream.close();
@@ -157,8 +160,14 @@ public class RadioPlayer {
                   audioStream.close();
                 }
               } catch (Exception ignored) {}
+              if (shouldStop) {
+                break;
+              }
               audioStream = new BufferedInputStream(url.openStream());
               bitstream = new Bitstream(audioStream);
+              if (bitstream == null) {
+                break;
+              }
               header = bitstream.readFrame();
               if (header == null) {
                 break; // Stream wirklich beendet
@@ -167,7 +176,12 @@ public class RadioPlayer {
           } catch (JavaLayerException e) {
             if (!shouldStop) {
               // Bei Fehlern, versuche den Stream neu zu verbinden
-              Thread.sleep(1000);
+              try {
+                Thread.sleep(1000);
+              } catch (InterruptedException e2) {
+                // Thread wurde unterbrochen, beende die Wiedergabe
+                break;
+              }
               try {
                 if (bitstream != null) {
                   bitstream.close();
@@ -176,8 +190,14 @@ public class RadioPlayer {
                   audioStream.close();
                 }
               } catch (Exception ignored) {}
+              if (shouldStop) {
+                break;
+              }
               audioStream = new BufferedInputStream(url.openStream());
               bitstream = new Bitstream(audioStream);
+              if (bitstream == null) {
+                break;
+              }
               header = bitstream.readFrame();
               if (header == null) {
                 break;
@@ -188,7 +208,12 @@ public class RadioPlayer {
             // die von der JLayer-Bibliothek während der Dekodierung auftreten können
             if (!shouldStop) {
               // Bei Fehlern, versuche den Stream neu zu verbinden
-              Thread.sleep(1000);
+              try {
+                Thread.sleep(1000);
+              } catch (InterruptedException e2) {
+                // Thread wurde unterbrochen, beende die Wiedergabe
+                break;
+              }
               try {
                 if (bitstream != null) {
                   bitstream.close();
@@ -232,29 +257,12 @@ public class RadioPlayer {
   public void stop() {
     shouldStop = true;
     isPlaying = false;
-    isPaused = false;
 
     if (playbackTask != null && !playbackTask.isDone()) {
       playbackTask.cancel(true);
     }
 
     cleanup();
-  }
-
-  public void pause() {
-    if (isPlaying && !isPaused) {
-      isPaused = true;
-    }
-  }
-
-  public void resume() {
-    if (isPlaying && isPaused) {
-      isPaused = false;
-    }
-  }
-
-  public boolean isPaused() {
-    return isPaused;
   }
 
   public void setVolume(float volume) {

@@ -26,20 +26,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private static EvilRadioAddon instance;
 
   private RadioManager radioManager;
-
   private RadioStreamService radioStreamService;
   private CurrentSongService currentSongService;
 
   private CurrentSongHudWidget currentSongHudWidget;
-  
-  // Flag, um zu verfolgen, ob ein WorldEnterEvent nach einem WorldLeaveEvent kommt (Subserver-Wechsel)
-  private boolean worldEnterExpected = false;
-  private Task pendingWorldLeaveStopTask = null;
-  
-  // Fokus-Tracking für Auto-Pause
-  private boolean lastWindowFocused = true;
-  private boolean wasPausedByFocusLoss = false;
-  private Task focusCheckTask = null;
 
   @Override
   protected void enable() {
@@ -87,39 +77,15 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     // Stoppe den Stream, wenn das Addon deaktiviert wird
     configuration().enabled().addChangeListener((enabled) -> {
-      if (!enabled) {
-        if (this.radioManager != null && this.radioManager.isPlaying()) {
-          this.radioManager.stopStream();
-          this.logger().info("Stream gestoppt, da Addon deaktiviert wurde");
-        }
-        // Stoppe auch den Fokus-Check-Task
-        stopFocusCheckTask();
-        wasPausedByFocusLoss = false;
-      } else {
-        // Wenn Addon wieder aktiviert wird, starte Fokus-Check-Task neu (falls aktiviert)
-        if (configuration().pauseOnFocusLoss().get()) {
-          startFocusCheckTask();
-        }
+      if (!enabled && this.radioManager != null && this.radioManager.isPlaying()) {
+        this.radioManager.stopStream();
+        this.logger().info("Stream gestoppt, da Addon deaktiviert wurde");
       }
     });
 
     configuration().useFourLines().addChangeListener((useFourLines) -> {
       if(this.currentSongHudWidget != null) {
         this.currentSongHudWidget.requestUpdate(CurrentSongHudWidget.FOUR_LINES_REASON);
-      }
-    });
-
-    // Starte Fokus-Check-Task für Auto-Pause bei Fokus-Verlust
-    startFocusCheckTask();
-    
-    // Listener für Änderungen der pauseOnFocusLoss-Einstellung
-    configuration().pauseOnFocusLoss().addChangeListener((enabled) -> {
-      if (enabled) {
-        startFocusCheckTask();
-      } else {
-        stopFocusCheckTask();
-        // Wenn durch Fokus-Verlust pausiert wurde, setze Flag zurück
-        wasPausedByFocusLoss = false;
       }
     });
 
@@ -199,19 +165,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    */
   @Subscribe
   public void onWorldEnter(WorldEnterEvent event) {
-    // Wenn ein WorldLeaveEvent vorher kam, handelt es sich wahrscheinlich um einen Subserver-Wechsel
-    // In diesem Fall sollte der Stream nicht gestoppt werden
-    if (this.worldEnterExpected) {
-      this.worldEnterExpected = false;
-      // Bricht den geplanten Stop ab, falls noch nicht ausgeführt
-      if (this.pendingWorldLeaveStopTask != null) {
-        this.pendingWorldLeaveStopTask.cancel();
-        this.pendingWorldLeaveStopTask = null;
-      }
-      // Der Stream läuft weiter, wir müssen ihn nicht neu starten
-      return;
-    }
-    
     // Prüfe, ob Auto-Start aktiviert ist
     if (!configuration().autoStart().enabled().get()) {
       return;
@@ -227,7 +180,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    * Event-Handler für World-Verlassen
    * Wird aufgerufen, wenn der Spieler eine Welt verlässt
    * Stoppt den Stream, wenn Auto-Start auf "Beim Welt betreten" steht
-   * Verwendet eine Verzögerung, um Subserver-Wechsel zu erkennen (dabei wird kein WorldLeave gefolgt von WorldEnter ausgelöst)
    */
   @Subscribe
   public void onWorldLeave(WorldLeaveEvent event) {
@@ -238,25 +190,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode != null && mode.shouldStartOnServerJoin()) {
-      // Setze Flag, dass ein WorldEnterEvent erwartet wird (Subserver-Wechsel)
-      this.worldEnterExpected = true;
-      
-      // Bricht einen vorherigen geplanten Stop ab, falls vorhanden
-      if (this.pendingWorldLeaveStopTask != null) {
-        this.pendingWorldLeaveStopTask.cancel();
+      // Stoppe den Stream, wenn er läuft
+      if (this.radioManager != null && this.radioManager.isPlaying()) {
+        this.radioManager.stopStream();
       }
-      
-      // Plane den Stop mit einer kurzen Verzögerung (500ms)
-      // Wenn innerhalb dieser Zeit ein WorldEnterEvent kommt, wird der Stop abgebrochen
-      this.pendingWorldLeaveStopTask = Task.builder(() -> {
-        // Nur stoppen, wenn immer noch erwartet wird (kein WorldEnterEvent kam)
-        if (this.worldEnterExpected && this.radioManager != null && this.radioManager.isPlaying()) {
-          this.radioManager.stopStream();
-        }
-        this.worldEnterExpected = false;
-        this.pendingWorldLeaveStopTask = null;
-      }).delay(500, TimeUnit.MILLISECONDS).build();
-      this.pendingWorldLeaveStopTask.execute();
     }
   }
   
@@ -285,9 +222,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       return;
     }
     
-    // Verzögerung nur beim Spielstart anwenden, nicht beim Welt betreten oder Server-Join
-    boolean shouldApplyDelay = "game start".equals(context);
-    float delaySeconds = shouldApplyDelay ? configuration().autoStart().delay().get() : 0;
+    float delaySeconds = configuration().autoStart().delay().get();
     
     if (delaySeconds > 0) {
       // Starte mit Verzögerung
@@ -312,78 +247,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     this.radioManager.playStream(stream);
     this.currentSongService.fetchCurrentSong();
-  }
-  
-  /**
-   * Startet den Task zum regelmäßigen Prüfen des Fenster-Fokus
-   */
-  private void startFocusCheckTask() {
-    // Stoppe vorherigen Task, falls vorhanden
-    stopFocusCheckTask();
-    
-    // Nur starten, wenn die Einstellung aktiviert ist
-    if (!configuration().pauseOnFocusLoss().get()) {
-      return;
-    }
-    
-    // Initialisiere den letzten Fokus-Status
-    try {
-      lastWindowFocused = this.labyAPI().minecraft().minecraftWindow().isFocused();
-    } catch (Exception e) {
-      // Fallback: annehmen, dass Fenster fokussiert ist
-      lastWindowFocused = true;
-    }
-    
-    // Erstelle Task, der alle 100ms den Fokus-Status prüft
-    this.focusCheckTask = Task.builder(() -> {
-      if (!configuration().pauseOnFocusLoss().get()) {
-        stopFocusCheckTask();
-        return;
-      }
-      
-      boolean currentFocused;
-      try {
-        currentFocused = this.labyAPI().minecraft().minecraftWindow().isFocused();
-      } catch (Exception e) {
-        // Bei Fehler: annehmen, dass Fenster fokussiert ist
-        currentFocused = true;
-      }
-      
-      // Prüfe, ob sich der Fokus-Status geändert hat
-      if (currentFocused != lastWindowFocused) {
-        lastWindowFocused = currentFocused;
-        
-        if (this.radioManager != null) {
-          if (!currentFocused) {
-            // Fenster hat Fokus verloren
-            if (this.radioManager.isPlaying() && !this.radioManager.isPaused()) {
-              this.radioManager.pauseStream();
-              wasPausedByFocusLoss = true;
-              this.logger().debug("Stream pausiert wegen Fokus-Verlust");
-            }
-          } else {
-            // Fenster hat Fokus zurückerhalten
-            if (wasPausedByFocusLoss && this.radioManager.isPaused()) {
-              this.radioManager.resumeStream();
-              wasPausedByFocusLoss = false;
-              this.logger().debug("Stream fortgesetzt nach Fokus-Rückkehr");
-            }
-          }
-        }
-      }
-    }).repeat(100, TimeUnit.MILLISECONDS).build();
-    
-    this.focusCheckTask.execute();
-  }
-  
-  /**
-   * Stoppt den Fokus-Check-Task
-   */
-  private void stopFocusCheckTask() {
-    if (this.focusCheckTask != null) {
-      this.focusCheckTask.cancel();
-      this.focusCheckTask = null;
-    }
   }
   
 }
