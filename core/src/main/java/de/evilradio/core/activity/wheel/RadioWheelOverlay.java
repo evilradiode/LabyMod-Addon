@@ -417,13 +417,14 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
    * Aktualisiert den On Air Status für ein einzelnes Mashup-Segment
    */
   private void updateMashupSegmentOnAirStatus(RadioSegmentWidget segment) {
-    // Hole den On Air Status für Mashup
+    // Hole den On Air und Twitch Status für Mashup
     this.addon.currentSongService().fetchCurrentSong("mashup", (currentSong) -> {
       boolean isOnAir = currentSong != null && currentSong.isOnAir();
+      boolean isTwitch = currentSong != null && currentSong.isTwitch();
       
       // Aktualisiere das Segment auf dem Render-Thread
       this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-        segment.updateOnAirStatus(isOnAir);
+        segment.updateOnAirAndTwitchStatus(isOnAir, isTwitch);
       });
     });
   }
@@ -446,9 +447,10 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
       return;
     }
 
-    // Hole den On Air Status für Mashup
+    // Hole den On Air und Twitch Status für Mashup
     this.addon.currentSongService().fetchCurrentSong("mashup", (currentSong) -> {
       boolean isOnAir = currentSong != null && currentSong.isOnAir();
+      boolean isTwitch = currentSong != null && currentSong.isTwitch();
       
       // Aktualisiere alle Mashup-Segmente im Wheel
       this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
@@ -456,7 +458,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
           if (child instanceof RadioSegmentWidget radioSegmentWidget) {
             RadioStream stream = radioSegmentWidget.getStream();
             if (stream != null && stream.getName() != null && stream.getName().equalsIgnoreCase("mashup")) {
-              radioSegmentWidget.updateOnAirStatus(isOnAir);
+              radioSegmentWidget.updateOnAirAndTwitchStatus(isOnAir, isTwitch);
             }
           }
         }

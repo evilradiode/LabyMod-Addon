@@ -21,6 +21,7 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
   private final RadioStream stream;
   private ComponentWidget nameWidget;
   private boolean isOnAir = false;
+  private boolean isTwitch = false;
 
   public RadioSegmentWidget(EvilRadioAddon addon, RadioStream stream, boolean isActive) {
     this.addon = addon;
@@ -57,17 +58,32 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
   }
 
   public void updateActive(boolean isActive) {
-    this.updateNameWidget(isActive, this.isOnAir);
+    this.updateNameWidget(isActive, this.isOnAir, this.isTwitch);
   }
 
   public void updateOnAirStatus(boolean isOnAir) {
     this.isOnAir = isOnAir;
     RadioStream currentStream = this.addon.radioManager().getCurrentStream();
     boolean isActive = currentStream != null && currentStream.equals(this.stream) && this.addon.radioManager().isPlaying();
-    this.updateNameWidget(isActive, isOnAir);
+    this.updateNameWidget(isActive, isOnAir, this.isTwitch);
   }
 
-  private void updateNameWidget(boolean isActive, boolean isOnAir) {
+  public void updateTwitchStatus(boolean isTwitch) {
+    this.isTwitch = isTwitch;
+    RadioStream currentStream = this.addon.radioManager().getCurrentStream();
+    boolean isActive = currentStream != null && currentStream.equals(this.stream) && this.addon.radioManager().isPlaying();
+    this.updateNameWidget(isActive, this.isOnAir, isTwitch);
+  }
+
+  public void updateOnAirAndTwitchStatus(boolean isOnAir, boolean isTwitch) {
+    this.isOnAir = isOnAir;
+    this.isTwitch = isTwitch;
+    RadioStream currentStream = this.addon.radioManager().getCurrentStream();
+    boolean isActive = currentStream != null && currentStream.equals(this.stream) && this.addon.radioManager().isPlaying();
+    this.updateNameWidget(isActive, isOnAir, isTwitch);
+  }
+
+  private void updateNameWidget(boolean isActive, boolean isOnAir, boolean isTwitch) {
     if (this.nameWidget != null && this.stream != null) {
       TextColor color = isActive
           ? NamedTextColor.GREEN 
@@ -75,13 +91,28 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
       
       Component nameComponent = Component.text(this.stream.getDisplayName(), color);
       
-      // Zeige "On Air" nur für Mashup-Streams
-      if (isOnAir && this.isMashupStream()) {
-        nameComponent = nameComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
-            .append(Component.text("● ON AIR").color(NamedTextColor.RED));
+      // Zeige "On Air" und "Twitch" nur für Mashup-Streams
+      if (this.isMashupStream()) {
+        boolean hasStatus = false;
+        if (isOnAir) {
+          nameComponent = nameComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
+              .append(Component.text("● ON AIR").color(NamedTextColor.RED));
+          hasStatus = true;
+        }
+        if (isTwitch) {
+          if (hasStatus) {
+            nameComponent = nameComponent.append(Component.text(" | ").color(NamedTextColor.GRAY));
+          } else {
+            nameComponent = nameComponent.append(Component.text(" | ").color(NamedTextColor.GRAY));
+          }
+          TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
+          nameComponent = nameComponent.append(Component.text("● TWITCH").color(twitchColor));
+        }
       }
       
       this.nameWidget.setComponent(nameComponent);
+    } else {
+      this.addon.logger().warn("[RadioSegmentWidget] updateNameWidget - nameWidget or stream is null");
     }
   }
 

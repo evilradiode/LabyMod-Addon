@@ -8,6 +8,7 @@ import de.evilradio.core.song.CurrentSong;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
+import net.labymod.api.client.component.format.TextColor;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.lss.property.annotation.AutoWidget;
@@ -230,9 +231,22 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
           this.streamWidget.setComponent(Component.text(""));
         }
 
+        // Prüfe Twitch-Status (nur für Mashup)
+        String streamName = currentStream != null ? currentStream.getName() : null;
+        boolean isMashup = streamName != null && "Mashup".equalsIgnoreCase(streamName);
+        boolean isTwitch = currentSong.isTwitch();
+        
         if(isOnAir) {
-          // Zeile 2: On Air Badge (rot) mit optionalem Moderator-Name (weiß)
+          // Zeile 2: On Air Badge (rot) mit optionalem Moderator-Name (weiß) und Twitch-Status (nur für Mashup)
           Component onAirComponent = Component.text("● ON AIR").color(NamedTextColor.RED);
+          
+          // Füge Twitch-Status hinzu, wenn aktiv und Stream ist Mashup
+          if (isMashup && isTwitch) {
+            TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
+            onAirComponent = onAirComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
+                .append(Component.text("● TWITCH").color(twitchColor));
+          }
+          
           if (currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
             onAirComponent = onAirComponent.append(Component.text(" | " + currentSong.getModeratorName()).color(NamedTextColor.WHITE));
           }
@@ -242,6 +256,18 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
           this.artistWidget.setComponent(Component.text(currentSong.getTitle()).color(NamedTextColor.WHITE));
 
           // Zeile 4: Artist (bereinigt) - Grau für sekundäre Info
+          this.fourthLineWidget.setComponent(Component.text(currentSong.getArtist()).color(NamedTextColor.GRAY));
+          this.fourthLineWidget.setVisible(true);
+        } else if (isMashup && isTwitch) {
+          // Zeile 2: Twitch Badge (wenn Twitch live, aber nicht On Air)
+          TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
+          Component twitchComponent = Component.text("● TWITCH").color(twitchColor);
+          this.trackWidget.setComponent(twitchComponent);
+          
+          // Zeile 3: Track-Titel
+          this.artistWidget.setComponent(Component.text(currentSong.getTitle()).color(NamedTextColor.WHITE));
+          
+          // Zeile 4: Artist
           this.fourthLineWidget.setComponent(Component.text(currentSong.getArtist()).color(NamedTextColor.GRAY));
           this.fourthLineWidget.setVisible(true);
         } else {
@@ -256,12 +282,29 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         // Normale 3-Zeilen-Ansicht
         RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
         if (currentStream != null && currentStream.getName() != null) {
+          String streamName = currentStream.getName();
+          boolean isMashup = "Mashup".equalsIgnoreCase(streamName);
+          boolean isTwitch = currentSong.isTwitch();
+          
           if(isOnAir) {
             Component onAirComponent = Component.text("● ON AIR").color(NamedTextColor.RED);
+            
+            // Füge Twitch-Status hinzu, wenn aktiv und Stream ist Mashup
+            if (isMashup && isTwitch) {
+              TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
+              onAirComponent = onAirComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
+                  .append(Component.text("● TWITCH").color(twitchColor));
+            }
+            
             if (currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
               onAirComponent = onAirComponent.append(Component.text(" " + currentSong.getModeratorName()).color(NamedTextColor.WHITE));
             }
             this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName() + " | ").append(onAirComponent));
+          } else if (isMashup && isTwitch) {
+            // Zeige Twitch-Status, auch wenn nicht On Air
+            TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
+            Component twitchComponent = Component.text("● TWITCH").color(twitchColor);
+            this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName() + " | ").append(twitchComponent));
           } else {
             this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()));
           }

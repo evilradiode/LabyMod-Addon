@@ -7,8 +7,13 @@ public class CurrentSong {
   private final String imageUrl;
   private final boolean onAir;
   private final String moderatorName;
+  private final boolean twitch;
 
   public CurrentSong(String title, String artist, String imageUrl) {
+    this(title, artist, imageUrl, false);
+  }
+
+  public CurrentSong(String title, String artist, String imageUrl, boolean twitch) {
     // Parse On Air Status und Moderator-Name aus title oder artist
     ParsedSongInfo parsed = parseSongInfo(title, artist);
     
@@ -17,6 +22,7 @@ public class CurrentSong {
     this.imageUrl = imageUrl;
     this.onAir = parsed.onAir;
     this.moderatorName = parsed.moderatorName;
+    this.twitch = twitch;
   }
 
   private ParsedSongInfo parseSongInfo(String title, String artist) {
@@ -107,6 +113,10 @@ public class CurrentSong {
 
   public String getModeratorName() {
     return moderatorName;
+  }
+
+  public boolean isTwitch() {
+    return twitch;
   }
 
   public String getFormatted() {

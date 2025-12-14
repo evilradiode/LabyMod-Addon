@@ -108,7 +108,28 @@ public class CurrentSongService {
             String artist = currentSongObject.get("artist").getAsString();
             String image = currentSongObject.get("image").getAsString();
             
-            CurrentSong newSong = new CurrentSong(title, artist, image);
+            // Extrahiere Twitch-Status aus show-Objekt (nur für Mashup)
+            boolean twitch = false;
+            if (object.has("show") && object.get("show").isJsonObject()) {
+              JsonObject showObject = object.get("show").getAsJsonObject();
+              logging.info("Show object keys: " + showObject.keySet());
+              if (showObject.has("twitch")) {
+                logging.info("Twitch field found, type: " + showObject.get("twitch").getClass().getSimpleName());
+                if (showObject.get("twitch").isJsonPrimitive()) {
+                  twitch = showObject.get("twitch").getAsBoolean();
+                  logging.info("Twitch status extracted: " + twitch);
+                } else {
+                  logging.warn("Twitch field is not a primitive: " + showObject.get("twitch"));
+                }
+              } else {
+                logging.warn("Twitch field not found in show object");
+              }
+            } else {
+              logging.warn("Show object not found or not a JsonObject in API response");
+            }
+            
+            CurrentSong newSong = new CurrentSong(title, artist, image, twitch);
+            logging.info("Created CurrentSong with twitch=" + twitch);
             
             // Prüfe erneut, ob sich der Stream geändert hat (könnte sich während des Requests geändert haben)
             boolean streamStillChanged = streamNameBefore != null && !streamNameBefore.equals(streamName);
@@ -192,7 +213,30 @@ public class CurrentSongService {
           String title = currentSongObject.get("title").getAsString();
           String artist = currentSongObject.get("artist").getAsString();
           String image = currentSongObject.get("image").getAsString();
-          callback.accept(new CurrentSong(title, artist, image));
+          
+          // Extrahiere Twitch-Status aus show-Objekt (nur für Mashup)
+          boolean twitch = false;
+          if (object.has("show") && object.get("show").isJsonObject()) {
+            JsonObject showObject = object.get("show").getAsJsonObject();
+            logging.info("[fetchCurrentSong callback] Show object keys: " + showObject.keySet());
+            if (showObject.has("twitch")) {
+              logging.info("[fetchCurrentSong callback] Twitch field found, type: " + showObject.get("twitch").getClass().getSimpleName());
+              if (showObject.get("twitch").isJsonPrimitive()) {
+                twitch = showObject.get("twitch").getAsBoolean();
+                logging.info("[fetchCurrentSong callback] Twitch status extracted: " + twitch);
+              } else {
+                logging.warn("[fetchCurrentSong callback] Twitch field is not a primitive: " + showObject.get("twitch"));
+              }
+            } else {
+              logging.warn("[fetchCurrentSong callback] Twitch field not found in show object");
+            }
+          } else {
+            logging.warn("[fetchCurrentSong callback] Show object not found or not a JsonObject in API response");
+          }
+          
+          CurrentSong song = new CurrentSong(title, artist, image, twitch);
+          logging.info("[fetchCurrentSong callback] Created CurrentSong with twitch=" + twitch);
+          callback.accept(song);
         });
   }
 
