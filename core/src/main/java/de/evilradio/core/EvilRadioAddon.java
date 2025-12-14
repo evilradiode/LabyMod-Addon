@@ -88,12 +88,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       }
     });
 
-    configuration().useFourLines().addChangeListener((useFourLines) -> {
-      if(this.currentSongHudWidget != null) {
-        this.currentSongHudWidget.requestUpdate(CurrentSongHudWidget.FOUR_LINES_REASON);
-      }
-    });
-
   }
 
   @Override

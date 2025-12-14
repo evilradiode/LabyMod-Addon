@@ -65,10 +65,6 @@
         "name": "Song Change Notification",
         "description": "Get a notification when the song changes"
       },
-      "useFourLines": {
-        "name": "Use 4 Lines",
-        "description": "Display the widget with 4 lines instead of 3"
-      },
       "autoStopOnFocusLoss": {
         "name": "Auto-Stop on Focus Loss",
         "description": "Automatically stop the stream when the game window loses focus"

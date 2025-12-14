@@ -25,10 +25,12 @@ import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
 public class CurrentSongWidget extends FlexibleContentWidget implements Updatable {
 
   private final CurrentSongHudWidget hudWidget;
+
   private ComponentWidget streamWidget;
+  private ComponentWidget liveStatusWidget;
   private ComponentWidget trackWidget;
   private ComponentWidget artistWidget;
-  private ComponentWidget fourthLineWidget;
+
   private IconWidget coverWidget;
   private DivWidget controlsWidget;
   private IconWidget playPauseWidget;
@@ -76,9 +78,13 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     VerticalListWidget<ComponentWidget> text = new VerticalListWidget<>();
     text.addId("text");
 
-    // Zeile 1: On Air Info (wenn aktiv) oder Stream-Name
+    // Zeile 1: Stream-Name
     this.streamWidget = ComponentWidget.empty();
     text.addChild(this.streamWidget);
+
+    // Zeile 2: Live Status
+    this.liveStatusWidget = ComponentWidget.empty();
+    text.addChild(this.liveStatusWidget);
 
     // Zeile 2: Track-Titel
     this.trackWidget = ComponentWidget.empty();
@@ -87,10 +93,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     // Zeile 3: Artist
     this.artistWidget = ComponentWidget.empty();
     text.addChild(this.artistWidget);
-
-    // Zeile 4: Wird nur angezeigt wenn On Air aktiv ist
-    this.fourthLineWidget = ComponentWidget.empty();
-    text.addChild(this.fourthLineWidget);
 
     // Controls
     this.controlsWidget = new DivWidget();
@@ -178,10 +180,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         }
       }
     }
-
-    if (reason.equals(CurrentSongHudWidget.FOUR_LINES_REASON)) {
-      this.reInitialize();
-    }
   }
 
   private void updateTrack(CurrentSong currentSong) {
@@ -191,151 +189,75 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     // Prüfe, ob der Stream läuft, auch wenn currentSong noch null ist
     boolean isPlaying = this.hudWidget.addon().radioManager().isPlaying();
-    
-    if (currentSong == null) {
-      // Wenn kein Song gefunden wurde, aber der Stream läuft, zeige "Loading..." an
-      RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
+    RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
+
+    if(currentSong == null) {
       if (isPlaying && currentStream != null) {
         if (currentStream.getName() != null) {
           this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()));
         } else {
           this.streamWidget.setComponent(Component.translatable("evilradio.widget.loading"));
         }
+        this.liveStatusWidget.setComponent(Component.text(""));
+        this.liveStatusWidget.setVisible(false);
         this.trackWidget.setComponent(Component.translatable("evilradio.widget.loading"));
         this.artistWidget.setComponent(Component.translatable("evilradio.widget.fetchingSongInfo"));
-        this.fourthLineWidget.setComponent(Component.text(""));
-        this.fourthLineWidget.setVisible(false);
-        this.removeId("four-lines");
       } else {
         // Kein Stream ausgewählt - Widgets leer lassen (Widget wird durch isVisibleInGame() versteckt)
         this.streamWidget.setComponent(Component.text(""));
+        this.liveStatusWidget.setComponent(Component.text(""));
+        this.liveStatusWidget.setVisible(false);
         this.trackWidget.setComponent(Component.text(""));
         this.artistWidget.setComponent(Component.text(""));
-        this.fourthLineWidget.setComponent(Component.text(""));
-        this.fourthLineWidget.setVisible(false);
-        this.removeId("four-lines");
       }
-    } else {
-      boolean isOnAir = currentSong.isOnAir();
-      // Zeige 4 Zeilen wenn Einstellung aktiviert ist
-      if (this.hudWidget.addon().configuration().useFourLines().get()) {
-        this.addId("four-lines");
-        
-        RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
-        
-        // Zeile 1: Stream-Name (z.B. "EvilRadio - Mashup") - Grau für dezente Anzeige
-        if (currentStream != null && currentStream.getName() != null) {
-          this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()).color(NamedTextColor.GRAY));
-        } else {
-          // Fallback: Leer lassen (sollte nicht auftreten, da Widget versteckt wird)
-          this.streamWidget.setComponent(Component.text(""));
-        }
-
-        // Prüfe Twitch-Status (nur für Mashup)
-        String streamName = currentStream != null ? currentStream.getName() : null;
-        boolean isMashup = streamName != null && "Mashup".equalsIgnoreCase(streamName);
-        boolean isTwitch = currentSong.isTwitch();
-        
-        if(isOnAir) {
-          // Zeile 2: On Air Badge (rot) mit optionalem Moderator-Name (weiß) und Twitch-Status (nur für Mashup)
-          Component onAirComponent = Component.text("● ON AIR").color(NamedTextColor.RED);
-          
-          // Füge Twitch-Status hinzu, wenn aktiv und Stream ist Mashup
-          if (isMashup && isTwitch) {
-            TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
-            onAirComponent = onAirComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
-                .append(Component.text("● TWITCH").color(twitchColor));
-          }
-          
-          if (currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
-            onAirComponent = onAirComponent.append(Component.text(" | " + currentSong.getModeratorName()).color(NamedTextColor.WHITE));
-          }
-          this.trackWidget.setComponent(onAirComponent);
-
-          // Zeile 3: Track-Titel (bereinigt) - Weiß für prominente Anzeige
-          this.artistWidget.setComponent(Component.text(currentSong.getTitle()).color(NamedTextColor.WHITE));
-
-          // Zeile 4: Artist (bereinigt) - Grau für sekundäre Info
-          this.fourthLineWidget.setComponent(Component.text(currentSong.getArtist()).color(NamedTextColor.GRAY));
-          this.fourthLineWidget.setVisible(true);
-        } else if (isMashup && isTwitch) {
-          // Zeile 2: Twitch Badge (wenn Twitch live, aber nicht On Air)
-          TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
-          Component twitchComponent = Component.text("● TWITCH").color(twitchColor);
-          this.trackWidget.setComponent(twitchComponent);
-          
-          // Zeile 3: Track-Titel
-          this.artistWidget.setComponent(Component.text(currentSong.getTitle()).color(NamedTextColor.WHITE));
-          
-          // Zeile 4: Artist
-          this.fourthLineWidget.setComponent(Component.text(currentSong.getArtist()).color(NamedTextColor.GRAY));
-          this.fourthLineWidget.setVisible(true);
-        } else {
-          this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
-          this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
-          this.fourthLineWidget.setComponent(Component.text(""));
-          this.fourthLineWidget.setVisible(false);
-        }
-      } else {
-        this.removeId("four-lines");
-        
-        // Normale 3-Zeilen-Ansicht
-        RadioStream currentStream = this.hudWidget.addon().radioManager().getCurrentStream();
-        if (currentStream != null && currentStream.getName() != null) {
-          String streamName = currentStream.getName();
-          boolean isMashup = "Mashup".equalsIgnoreCase(streamName);
-          boolean isTwitch = currentSong.isTwitch();
-          
-          if(isOnAir) {
-            Component onAirComponent = Component.text("● ON AIR").color(NamedTextColor.RED);
-            
-            // Füge Twitch-Status hinzu, wenn aktiv und Stream ist Mashup
-            if (isMashup && isTwitch) {
-              TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
-              onAirComponent = onAirComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
-                  .append(Component.text("● TWITCH").color(twitchColor));
-            }
-            
-            if (currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
-              onAirComponent = onAirComponent.append(Component.text(" " + currentSong.getModeratorName()).color(NamedTextColor.WHITE));
-            }
-            this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName() + " | ").append(onAirComponent));
-          } else if (isMashup && isTwitch) {
-            // Zeige Twitch-Status, auch wenn nicht On Air
-            TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
-            Component twitchComponent = Component.text("● TWITCH").color(twitchColor);
-            this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName() + " | ").append(twitchComponent));
-          } else {
-            this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()));
-          }
-        } else {
-          // Fallback: Leer lassen (sollte nicht auftreten, da Widget versteckt wird)
-          this.streamWidget.setComponent(Component.text(""));
-        }
-        this.trackWidget.setComponent(Component.text(currentSong.getTitle()));
-        this.artistWidget.setComponent(Component.text(currentSong.getArtist()));
-        this.fourthLineWidget.setComponent(Component.text(""));
-        this.fourthLineWidget.setVisible(false);
-      }
-    }
-
-    this.streamWidget.setVisible(true);
-    this.trackWidget.setVisible(true);
-    this.artistWidget.setVisible(true);
-
-    Icon icon;
-    if(currentSong != null) {
-      icon = Icon.url(currentSong.getImageUrl());
-    } else {
-      icon = EvilTextures.LOGO;
-    }
-    this.coverWidget.icon().set(icon);
-
-    if (currentSong == null) {
+      this.coverWidget.icon().set(EvilTextures.LOGO);
       this.controlsWidget.setVisible(false);
       return;
     }
 
+    boolean onAir = currentSong.isOnAir();
+    boolean twitch = currentSong.isTwitch();
+
+    // Zeile 1: Stream-Name (z.B. "EvilRadio - Mashup") - Grau für dezente Anzeige
+    if (currentStream != null && currentStream.getName() != null) {
+      this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()).color(NamedTextColor.GRAY));
+    } else {
+      this.streamWidget.setComponent(Component.text(""));
+    }
+
+    // Prüfe Twitch-Status (nur für Mashup)
+    String streamName = currentStream != null ? currentStream.getName() : null;
+    boolean isMashup = streamName != null && streamName.equalsIgnoreCase("Mashup");
+
+    // Zeile 2: On Air Badge (rot) mit optionalem Moderator-Name (weiß) und Twitch-Status (nur für Mashup)
+    Component onAirComponent = Component.text("");
+    if(isMashup && onAir) {
+      onAirComponent = Component.text("● ON AIR").color(NamedTextColor.RED);
+    }
+
+    // Füge Twitch-Status hinzu, wenn aktiv und Stream ist Mashup
+    if (isMashup && twitch) {
+      TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
+      onAirComponent = onAirComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
+          .append(Component.text("● TWITCH").color(twitchColor));
+    }
+
+    if (onAir && isMashup && currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
+      onAirComponent = onAirComponent.append(Component.text(" | " + currentSong.getModeratorName()).color(NamedTextColor.WHITE));
+    }
+    this.liveStatusWidget.setComponent(onAirComponent);
+
+    // Zeile 3: Track-Titel (bereinigt) - Weiß für prominente Anzeige
+    this.trackWidget.setComponent(Component.text(currentSong.getTitle()).color(NamedTextColor.WHITE));
+
+    // Zeile 4: Artist (bereinigt) - Grau für sekundäre Info
+    this.artistWidget.setComponent(Component.text(currentSong.getArtist()).color(NamedTextColor.GRAY));
+
+    this.streamWidget.setVisible(true);
+    this.liveStatusWidget.setVisible(true);
+    this.trackWidget.setVisible(true);
+    this.artistWidget.setVisible(true);
+    this.coverWidget.icon().set(Icon.url(currentSong.getImageUrl()));
     this.controlsWidget.setVisible(true);
   }
 

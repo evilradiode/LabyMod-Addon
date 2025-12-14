@@ -1,7 +1,7 @@
 CurrentSong {
   top: 0;
   left: 0;
-  height: 34;
+  height: 44;
   min-width: 170;
   width: fit-content;
   max-width: 600;
@@ -58,8 +58,8 @@ CurrentSong {
   }
 
   .cover {
-    width: 34;
-    height: 34;
+    width: 44;
+    height: 44;
     right: 0;
     top: 0;
     visible: true;
@@ -70,15 +70,6 @@ CurrentSong {
 
     .cover {
       visible: false;
-    }
-  }
-
-  &.four-lines {
-    height: 44;
-
-    .cover {
-      width: 44;
-      height: 44;
     }
   }
 

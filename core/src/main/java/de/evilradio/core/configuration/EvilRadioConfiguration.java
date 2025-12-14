@@ -32,9 +32,6 @@ public class EvilRadioConfiguration extends AddonConfig {
   private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
 
   @SwitchSetting
-  private final ConfigProperty<Boolean> useFourLines = new ConfigProperty<>(false);
-
-  @SwitchSetting
   private final ConfigProperty<Boolean> autoStopOnFocusLoss = new ConfigProperty<>(false);
 
   @SliderSetting(min = 0, max = 100, steps = 2f)
@@ -92,10 +89,6 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Boolean> showSongChangeNotification() {
     return showSongChangeNotification;
-  }
-
-  public ConfigProperty<Boolean> useFourLines() {
-    return this.useFourLines;
   }
 
   public ConfigProperty<Boolean> autoStopOnFocusLoss() {
