@@ -29,7 +29,9 @@ import net.labymod.api.event.client.input.MouseButtonEvent;
 import net.labymod.api.event.client.input.MouseScrollEvent;
 import net.labymod.api.client.gui.screen.widget.widgets.WheelWidget;
 import net.labymod.api.util.CharSequences;
+import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.math.MathHelper;
+import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.Nullable;
 
 @Link("activity/radio-wheel.lss")
@@ -44,6 +46,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   private boolean isWheelOpen = false;
   private long lastMiddleClickTime = 0;
   private static final long MIDDLE_CLICK_DEBOUNCE_MS = 200; // 200ms Debounce für Mittelklick
+  private Task mashupOnAirUpdateTask;
 
   public RadioWheelOverlay(EvilRadioAddon addon) {
     this.addon = addon;
@@ -55,6 +58,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   @Override
   protected void closeInteractionOverlay() {
     this.isWheelOpen = false;
+    this.stopMashupOnAirUpdateTask();
     this.playStream(null, false);
     super.closeInteractionOverlay();
   }
@@ -62,6 +66,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   @Override
   protected void openInteractionOverlay() {
     this.isWheelOpen = true;
+    this.startMashupOnAirUpdateTask();
     super.openInteractionOverlay();
   }
 
@@ -144,6 +149,11 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
       
       if (isComingSoon) {
         segment.addId("coming-soon");
+      }
+
+      // Prüfe sofort den On Air Status für Mashup-Streams
+      if (stream.getName() != null && stream.getName().equalsIgnoreCase("mashup")) {
+        this.updateMashupSegmentOnAirStatus(segment);
       }
 
       return segment;
@@ -373,6 +383,85 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     }
 
     return null;
+  }
+
+  /**
+   * Startet den periodischen Task zum Aktualisieren des On Air Status für Mashup-Streams
+   */
+  private void startMashupOnAirUpdateTask() {
+    this.stopMashupOnAirUpdateTask();
+    
+    // Aktualisiere sofort beim Öffnen
+    this.updateMashupOnAirStatus();
+    
+    // Dann periodisch alle 30 Sekunden
+    this.mashupOnAirUpdateTask = Task.builder(() -> {
+      if (this.isWheelOpen) {
+        this.updateMashupOnAirStatus();
+      }
+    }).repeat(30, TimeUnit.SECONDS).build();
+    this.mashupOnAirUpdateTask.execute();
+  }
+
+  /**
+   * Stoppt den periodischen Task zum Aktualisieren des On Air Status
+   */
+  private void stopMashupOnAirUpdateTask() {
+    if (this.mashupOnAirUpdateTask != null) {
+      this.mashupOnAirUpdateTask.cancel();
+      this.mashupOnAirUpdateTask = null;
+    }
+  }
+
+  /**
+   * Aktualisiert den On Air Status für ein einzelnes Mashup-Segment
+   */
+  private void updateMashupSegmentOnAirStatus(RadioSegmentWidget segment) {
+    // Hole den On Air Status für Mashup
+    this.addon.currentSongService().fetchCurrentSong("mashup", (currentSong) -> {
+      boolean isOnAir = currentSong != null && currentSong.isOnAir();
+      
+      // Aktualisiere das Segment auf dem Render-Thread
+      this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
+        segment.updateOnAirStatus(isOnAir);
+      });
+    });
+  }
+
+  /**
+   * Aktualisiert den On Air Status für alle Mashup-Streams im Wheel
+   */
+  private void updateMashupOnAirStatus() {
+    if (!this.isWheelOpen) {
+      return;
+    }
+
+    // Finde alle Mashup-Streams
+    RadioStream mashupStream = this.addon.radioStreamService().streams().stream()
+        .filter(stream -> stream.getName() != null && stream.getName().equalsIgnoreCase("mashup"))
+        .findFirst()
+        .orElse(null);
+
+    if (mashupStream == null) {
+      return;
+    }
+
+    // Hole den On Air Status für Mashup
+    this.addon.currentSongService().fetchCurrentSong("mashup", (currentSong) -> {
+      boolean isOnAir = currentSong != null && currentSong.isOnAir();
+      
+      // Aktualisiere alle Mashup-Segmente im Wheel
+      this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
+        for (AbstractWidget<?> child : this.wheelWidget().getChildren()) {
+          if (child instanceof RadioSegmentWidget radioSegmentWidget) {
+            RadioStream stream = radioSegmentWidget.getStream();
+            if (stream != null && stream.getName() != null && stream.getName().equalsIgnoreCase("mashup")) {
+              radioSegmentWidget.updateOnAirStatus(isOnAir);
+            }
+          }
+        }
+      });
+    });
   }
 
 }

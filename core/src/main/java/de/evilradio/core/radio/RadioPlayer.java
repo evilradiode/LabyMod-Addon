@@ -27,6 +27,7 @@ public class RadioPlayer {
   private volatile boolean isPlaying;
   private volatile boolean shouldStop;
   private volatile float volume = 0.5f; // Standard-Lautstärke (50%)
+  private volatile String currentStreamUrl; // Speichere die aktuelle Stream-URL
 
   public RadioPlayer() {
     this.executorService = Executors.newSingleThreadExecutor(r -> {
@@ -39,10 +40,16 @@ public class RadioPlayer {
   }
 
   public void play(String streamUrl) {
+    // Wenn derselbe Stream bereits läuft, tue nichts (vermeidet Pause beim Subserver-Wechsel)
+    if (isPlaying && streamUrl != null && streamUrl.equals(currentStreamUrl)) {
+      return;
+    }
+    
     if (isPlaying) {
       stop();
     }
 
+    currentStreamUrl = streamUrl; // Speichere die neue URL
     shouldStop = false;
     // isPlaying wird erst gesetzt, wenn der Stream erfolgreich gestartet wurde
 
@@ -257,6 +264,7 @@ public class RadioPlayer {
   public void stop() {
     shouldStop = true;
     isPlaying = false;
+    currentStreamUrl = null; // Setze URL zurück beim Stoppen
 
     if (playbackTask != null && !playbackTask.isDone()) {
       playbackTask.cancel(true);

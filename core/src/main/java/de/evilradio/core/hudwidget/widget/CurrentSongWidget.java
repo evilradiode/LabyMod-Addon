@@ -105,8 +105,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       );
 
       if(this.hudWidget.addon().radioManager().isPlaying()) {
-        this.hudWidget.addon().radioManager().stopStream();
+        // Benutzer stoppt das Radio manuell
+        this.hudWidget.addon().radioManager().stopStream(true);
       } else {
+        // Benutzer startet das Radio manuell - setze Flag zurück
+        this.hudWidget.addon().setUserManuallyStopped(false);
         this.hudWidget.addon().radioManager().playStream(this.hudWidget.addon().radioStreamService().getLastSelectedStream());
       }
     });

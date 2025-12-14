@@ -33,6 +33,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private Task focusCheckTask;
   private boolean wasWindowFocused = true;
   private RadioStream streamBeforeFocusLoss = null;
+  private boolean userManuallyStopped = false;
 
   @Override
   protected void enable() {
@@ -151,6 +152,16 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    */
   @Subscribe
   public void onServerJoin(ServerJoinEvent event) {
+    // Prüfe, ob der Stream bereits läuft - wenn ja, tue nichts (verhindert Pause beim Subserver-Wechsel)
+    if (this.radioManager != null && this.radioManager.isPlaying()) {
+      return;
+    }
+    
+    // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
+    if (this.userManuallyStopped) {
+      return;
+    }
+    
     // Prüfe, ob Auto-Start aktiviert ist
     if (!configuration().autoStart().enabled().get()) {
       return;
@@ -169,6 +180,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    */
   @Subscribe
   public void onWorldEnter(WorldEnterEvent event) {
+    // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
+    if (this.userManuallyStopped) {
+      return;
+    }
+    
     // Prüfe, ob Auto-Start aktiviert ist
     if (!configuration().autoStart().enabled().get()) {
       return;
@@ -288,8 +304,35 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       return;
     }
     
+    // Prüfe, ob derselbe Stream bereits läuft (verhindert Pause beim Subserver-Wechsel)
+    RadioStream currentStream = this.radioManager.getCurrentStream();
+    boolean isSameStream = currentStream != null && stream != null && 
+                          currentStream.getId() == stream.getId();
+    
+    // Wenn derselbe Stream bereits läuft, tue nichts (verhindert Pause beim Subserver-Wechsel)
+    if (isSameStream && this.radioManager.isPlaying()) {
+      return;
+    }
+    
+    // Wenn der Benutzer das Radio manuell startet, setze die Flag zurück
+    this.userManuallyStopped = false;
+    
     this.radioManager.playStream(stream);
     this.currentSongService.fetchCurrentSong();
+  }
+  
+  /**
+   * Markiert, dass der Benutzer das Radio manuell gestoppt hat
+   */
+  public void setUserManuallyStopped(boolean stopped) {
+    this.userManuallyStopped = stopped;
+  }
+  
+  /**
+   * Gibt zurück, ob der Benutzer das Radio manuell gestoppt hat
+   */
+  public boolean isUserManuallyStopped() {
+    return this.userManuallyStopped;
   }
   
 }

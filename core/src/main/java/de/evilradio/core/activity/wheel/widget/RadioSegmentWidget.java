@@ -20,6 +20,7 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
   private final EvilRadioAddon addon;
   private final RadioStream stream;
   private ComponentWidget nameWidget;
+  private boolean isOnAir = false;
 
   public RadioSegmentWidget(EvilRadioAddon addon, RadioStream stream, boolean isActive) {
     this.addon = addon;
@@ -56,12 +57,40 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
   }
 
   public void updateActive(boolean isActive) {
+    this.updateNameWidget(isActive, this.isOnAir);
+  }
+
+  public void updateOnAirStatus(boolean isOnAir) {
+    this.isOnAir = isOnAir;
+    RadioStream currentStream = this.addon.radioManager().getCurrentStream();
+    boolean isActive = currentStream != null && currentStream.equals(this.stream) && this.addon.radioManager().isPlaying();
+    this.updateNameWidget(isActive, isOnAir);
+  }
+
+  private void updateNameWidget(boolean isActive, boolean isOnAir) {
     if (this.nameWidget != null && this.stream != null) {
       TextColor color = isActive
           ? NamedTextColor.GREEN 
           : NamedTextColor.WHITE;
-      this.nameWidget.setComponent(Component.text(stream.getDisplayName(), color));
+      
+      Component nameComponent = Component.text(this.stream.getDisplayName(), color);
+      
+      // Zeige "On Air" nur für Mashup-Streams
+      if (isOnAir && this.isMashupStream()) {
+        nameComponent = nameComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
+            .append(Component.text("● ON AIR").color(NamedTextColor.RED));
+      }
+      
+      this.nameWidget.setComponent(nameComponent);
     }
+  }
+
+  private boolean isMashupStream() {
+    if (this.stream == null) {
+      return false;
+    }
+    String streamName = this.stream.getName();
+    return streamName != null && streamName.equalsIgnoreCase("mashup");
   }
 }
 
