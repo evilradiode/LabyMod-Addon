@@ -1,6 +1,0 @@
-RadioWheel {
-  inner-radius: 7%;
-  segment-distance-degrees: 2;
-  renderer: "Wheel";
-}
-
