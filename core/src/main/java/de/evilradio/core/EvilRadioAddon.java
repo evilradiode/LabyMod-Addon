@@ -6,6 +6,7 @@ import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
+import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSongService;
 import de.evilradio.core.activity.wheel.RadioWheelOverlay;
 import net.labymod.api.addon.LabyAddon;
@@ -28,6 +29,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private RadioManager radioManager;
   private RadioStreamService radioStreamService;
   private CurrentSongService currentSongService;
+  private ScheduleService scheduleService;
 
   private CurrentSongHudWidget currentSongHudWidget;
   private Task focusCheckTask;
@@ -45,6 +47,9 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
     this.currentSongService = new CurrentSongService(this);
     this.currentSongService.startUpdater();
+
+    this.scheduleService = new ScheduleService(this);
+    this.scheduleService.startScheduleChecker();
 
     this.radioStreamService = new RadioStreamService(this);
     this.radioStreamService.loadStreams(() -> {
@@ -138,6 +143,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   public CurrentSongHudWidget currentSongHudWidget() {
     return currentSongHudWidget;
+  }
+  
+  public ScheduleService scheduleService() {
+    return scheduleService;
   }
   
   /**

@@ -1,0 +1,106 @@
+CurrentSong {
+  top: 0;
+  left: 0;
+  height: 44;
+  min-width: 170;
+  width: fit-content;
+  max-width: 600;
+
+  orientation: horizontal;
+  background-color: rgba(0, 0, 0, 0);
+
+  .player {
+    height: 100%;
+    orientation: vertical;
+    width: 250;
+    padding-left: 2;
+    padding-right: 2;
+
+    .text-and-control {
+      height: 100%;
+      orientation: horizontal;
+      space-between-entries: 2;
+
+
+      .text {
+        margin-top: 2;
+        height: fit-content;
+
+        Component {
+          left: 0;
+          top: 0;
+          max-lines: 1;
+          overflow-strategy: clip;
+          width: 100%;
+        }
+      }
+
+      .controls {
+        height: 100%;
+        width: 30;
+        padding: 1;
+
+        Icon {
+          width: 8;
+          height: 8;
+
+          visible: false;
+        }
+
+        .play {
+          top: 50%;
+          left: 50%;
+          alignment-x: center;
+          alignment-y: center;
+        }
+      }
+    }
+  }
+
+  .cover {
+    width: 44;
+    height: 44;
+    right: 0;
+    top: 0;
+    visible: true;
+  }
+
+  &.no-cover {
+    max-width: 300;
+
+    .cover {
+      visible: false;
+    }
+  }
+
+  &.maximized {
+      background-color: #1a1a1a;
+
+      .minimized-bar {
+        visible: false;
+      }
+
+      .controls {
+        Icon {
+          visible: true;
+        }
+      }
+    }
+
+  &.right {
+    .text {
+      Component {
+        alignment-x: right;
+      }
+    }
+  }
+
+  &.left {
+    .text {
+      Component {
+        alignment-x: left;
+      }
+    }
+  }
+
+}

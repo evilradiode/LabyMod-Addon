@@ -23,6 +23,9 @@ public class CurrentSongService {
   private EvilRadioAddon addon;
 
   private Task updaterTask;
+  
+  // Trackt, ob bereits eine Twitch-Nachricht für die aktuelle Live-Session gesendet wurde
+  private boolean twitchNotificationSent = false;
 
   public CurrentSongService(EvilRadioAddon addon) {
     this.addon = addon;
@@ -138,6 +141,35 @@ public class CurrentSongService {
               (!songBefore.getTitle().equals(newSong.getTitle()) ||
                   !songBefore.getArtist().equals(newSong.getArtist()));
 
+          // Alte Twitch-Erkennung deaktiviert - wird jetzt über ScheduleService mit Sendeplan-API gehandhabt
+          // Die Twitch-Status-Anzeige im Widget bleibt weiterhin aktiv
+          // Prüfe Twitch-Status für Chat-Nachricht (nur für Mashup-Stream)
+          // boolean wasTwitchLive = this.currentSong != null && this.currentSong.isTwitch();
+          // boolean isTwitchLive = newSong.isTwitch();
+          // boolean isMashupStream = streamName != null && streamName.equalsIgnoreCase("mashup");
+          
+          // Wenn Twitch nicht mehr live ist, setze die Flag zurück
+          // if (wasTwitchLive && !isTwitchLive) {
+          //   this.twitchNotificationSent = false;
+          // }
+          
+          // Wenn sich der Stream geändert hat, setze die Flag zurück
+          // if (streamStillChanged || wasFirstLoadOrReset) {
+          //   this.twitchNotificationSent = false;
+          // }
+          
+          // Sende Chat-Nachricht, wenn Twitch gerade live geworden ist (nur einmalig pro Session)
+          // if (isMashupStream && isTwitchLive && !wasTwitchLive && !this.twitchNotificationSent) {
+          //   this.twitchNotificationSent = true;
+          //   this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
+          //     Component twitchMessage = Component.text("EvilRadio ist jetzt live auf Twitch! ")
+          //         .color(net.labymod.api.client.component.format.NamedTextColor.GRAY)
+          //         .append(Component.text("https://www.twitch.tv/evilradiode")
+          //             .color(net.labymod.api.client.component.format.TextColor.color(145, 70, 255))); // Twitch-Farbe
+          //     this.addon.labyAPI().minecraft().chatExecutor().displayClientMessage(twitchMessage);
+          //   });
+          // }
+
           this.currentSong = newSong;
           // Aktualisiere den aktuellen Stream-Namen erst nach erfolgreichem Laden
           this.currentStreamName = streamName;
@@ -169,6 +201,7 @@ public class CurrentSongService {
   public void resetCurrentSong() {
     this.currentSong = null;
     this.currentStreamName = null;
+    this.twitchNotificationSent = false; // Setze auch die Twitch-Notification-Flag zurück
   }
 
   public void fetchCurrentSong(String streamName, Consumer<CurrentSong> callback) {

@@ -1,0 +1,233 @@
+.title {
+  alignment-x: center;
+  text-color: white;
+  font-size: 2.0;
+  font-weight: 175;
+  top: 0;
+}
+
+.description {
+  alignment-x: center;
+  text-color: gray;
+  font-size: 0.9;
+  top: 30;
+  left: 20;
+  right: 20;
+  text-alignment: center;
+}
+
+.controls-container {
+  top: 80;
+  left: 50%;
+  width: 400;
+  height: 50;
+  alignment-x: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 5;
+  padding: 5;
+}
+
+.current-song {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20;
+  alignment-x: center;
+  alignment-y: center;
+  text-color: white;
+  font-size: 0.9;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.8);
+}
+
+.play-pause-button {
+  top: 25;
+  left: 5;
+  width: 20;
+  height: 20;
+  alignment-x: center;
+  padding: 2;
+  border-radius: 3;
+  background-color: rgba(100, 150, 255, 0.2);
+  border-thickness: 1;
+  border-color: rgba(100, 150, 255, 0.4);
+  cursor: pointer;
+  font-size: 0.7;
+}
+
+.play-pause-button:hover {
+  background-color: rgba(100, 150, 255, 0.3);
+  border-color: rgba(100, 150, 255, 0.6);
+}
+
+.volume-slider {
+  top: 25;
+  left: 35;
+  width: 150;
+  height: 20;
+  alignment-x: center;
+}
+
+.volume-label {
+  top: 25;
+  left: 190;
+  width: 50;
+  height: 20;
+  alignment-x: center;
+  alignment-y: center;
+  text-color: gray;
+  font-size: 0.9;
+}
+
+.stations-container {
+  top: 120;
+  bottom: 80;
+  left: 20;
+  right: 20;
+  box-shadow: classic left top right bottom;
+  renderer: "DirtBackground";
+
+  .station-button-0 {
+    top: 20;
+    left: 20;
+    width: 90;
+    height: 90;
+  }
+
+  .station-button-1 {
+    top: 20;
+    left: 120;
+    width: 90;
+    height: 90;
+  }
+
+  .station-button-2 {
+    top: 20;
+    left: 220;
+    width: 90;
+    height: 90;
+  }
+
+  .station-button-3 {
+    top: 20;
+    left: 320;
+    width: 90;
+    height: 90;
+  }
+
+  .station-button-4 {
+    top: 120;
+    left: 20;
+    width: 90;
+    height: 90;
+  }
+
+  .station-button-5 {
+    top: 120;
+    left: 120;
+    width: 90;
+    height: 90;
+  }
+
+  .station-button-6 {
+    top: 120;
+    left: 220;
+    width: 90;
+    height: 90;
+  }
+
+  .station-button-7 {
+    top: 120;
+    left: 320;
+    width: 90;
+    height: 90;
+  }
+}
+
+.station-button-0,
+.station-button-1,
+.station-button-2,
+.station-button-3,
+.station-button-4,
+.station-button-5,
+.station-button-6,
+.station-button-7 {
+  border-radius: 45;
+  padding: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-thickness: 3;
+  border-color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.station-button-0 .station-icon-0,
+.station-button-1 .station-icon-1,
+.station-button-2 .station-icon-2,
+.station-button-3 .station-icon-3,
+.station-button-4 .station-icon-4,
+.station-button-5 .station-icon-5,
+.station-button-6 .station-icon-6,
+.station-button-7 .station-icon-7 {
+  width: 90%;
+  height: 90%;
+  alignment-x: center;
+  alignment-y: center;
+}
+
+.station-button-0:hover,
+.station-button-1:hover,
+.station-button-2:hover,
+.station-button-3:hover,
+.station-button-4:hover,
+.station-button-5:hover,
+.station-button-6:hover,
+.station-button-7:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  border-thickness: 4;
+}
+
+.station-button-0.active,
+.station-button-1.active,
+.station-button-2.active,
+.station-button-3.active,
+.station-button-4.active,
+.station-button-5.active,
+.station-button-6.active,
+.station-button-7.active {
+  background-color: rgba(100, 150, 255, 0.3);
+  border-color: rgba(100, 150, 255, 0.8);
+  border-thickness: 4;
+}
+
+.station-button-0.coming-soon,
+.station-button-1.coming-soon,
+.station-button-2.coming-soon,
+.station-button-3.coming-soon,
+.station-button-4.coming-soon,
+.station-button-5.coming-soon,
+.station-button-6.coming-soon,
+.station-button-7.coming-soon {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.close-button {
+  bottom: 20;
+  left: 50%;
+  width: 200;
+  height: 40;
+  alignment-x: center;
+  padding: 10;
+  border-radius: 8;
+  background-color: rgba(200, 50, 50, 0.2);
+  border-thickness: 2;
+  border-color: rgba(200, 50, 50, 0.4);
+  cursor: pointer;
+  font-size: 1.0;
+}
+
+.close-button:hover {
+  background-color: rgba(200, 50, 50, 0.3);
+  border-color: rgba(200, 50, 50, 0.6);
+}
