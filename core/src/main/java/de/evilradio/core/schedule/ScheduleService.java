@@ -11,6 +11,7 @@ import net.labymod.api.util.logging.Logging;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -260,18 +261,47 @@ public class ScheduleService {
           }
           
           String startTimeStr = sendung.get("von").getAsString();
+          String endTimeStr = sendung.has("bis") ? sendung.get("bis").getAsString() : null;
           String showname = sendung.has("showname") ? sendung.get("showname").getAsString() : "Unbekannte Sendung";
           String moderator = sendung.has("moderator") ? sendung.get("moderator").getAsString() : "Unbekannt";
           
           // Prüfe, ob es eine Twitch-Sendung ist
           boolean isTwitch = sendung.has("twitch") && sendung.get("twitch").getAsString().equals("1");
           
-          shows.add(new ScheduleShow(dateStr, startTimeStr, showname, moderator, isTwitch));
+          // Überspringe abgesagte Sendungen (Dauer ≤ 10 Minuten)
+          if (isShowCancelled(startTimeStr, endTimeStr)) {
+            continue;
+          }
+          
+          shows.add(new ScheduleShow(dateStr, startTimeStr, endTimeStr, showname, moderator, isTwitch));
         }
       }
     }
     
     return shows;
+  }
+  
+  /**
+   * Prüft, ob eine Sendung abgesagt wurde (Dauer zwischen "von" und "bis" ≤ 10 Minuten)
+   */
+  private boolean isShowCancelled(String startTimeStr, String endTimeStr) {
+    if (endTimeStr == null || endTimeStr.isEmpty()) {
+      // Wenn kein "bis" Feld vorhanden ist, ist die Sendung nicht abgesagt
+      return false;
+    }
+    
+    LocalTime startTime = parseTime(startTimeStr);
+    LocalTime endTime = parseTime(endTimeStr);
+    
+    if (startTime == null || endTime == null) {
+      return false;
+    }
+    
+    // Berechne die Dauer in Minuten
+    long durationMinutes = ChronoUnit.MINUTES.between(startTime, endTime);
+    
+    // Wenn die Dauer ≤ 10 Minuten ist, ist die Sendung abgesagt
+    return durationMinutes <= 10;
   }
   
   /**
@@ -336,8 +366,14 @@ public class ScheduleService {
           }
           
           String startTimeStr = sendung.get("von").getAsString();
+          String endTimeStr = sendung.has("bis") ? sendung.get("bis").getAsString() : null;
+          
           if (startTimeStr.equals(show.getStartTime())) {
-            // Sendung gefunden - sie ist noch gültig
+            // Sendung gefunden - prüfe, ob sie abgesagt wurde (Dauer ≤ 10 Minuten)
+            if (isShowCancelled(startTimeStr, endTimeStr)) {
+              return false; // Sendung ist abgesagt
+            }
+            // Sendung gefunden und nicht abgesagt - sie ist noch gültig
             return true;
           }
         }
@@ -418,6 +454,13 @@ public class ScheduleService {
           }
           
           String startTimeStr = sendung.get("von").getAsString();
+          String endTimeStr = sendung.has("bis") ? sendung.get("bis").getAsString() : null;
+          
+          // Überspringe abgesagte Sendungen (Dauer ≤ 10 Minuten)
+          if (isShowCancelled(startTimeStr, endTimeStr)) {
+            continue;
+          }
+          
           LocalTime startTime = parseTime(startTimeStr);
           
           if (startTime == null) {
@@ -435,7 +478,7 @@ public class ScheduleService {
               // Prüfe, ob es eine Twitch-Sendung ist
               boolean isTwitch = sendung.has("twitch") && sendung.get("twitch").getAsString().equals("1");
               
-              return new ScheduleShow(dateStr, startTimeStr, showname, moderator, isTwitch);
+              return new ScheduleShow(dateStr, startTimeStr, endTimeStr, showname, moderator, isTwitch);
             }
           } else if (showDate.equals(today.plusDays(1))) {
             // Für morgen: Nimm die erste Sendung
@@ -445,7 +488,7 @@ public class ScheduleService {
             // Prüfe, ob es eine Twitch-Sendung ist
             boolean isTwitch = sendung.has("twitch") && sendung.get("twitch").getAsString().equals("1");
             
-            return new ScheduleShow(dateStr, startTimeStr, showname, moderator, isTwitch);
+            return new ScheduleShow(dateStr, startTimeStr, endTimeStr, showname, moderator, isTwitch);
           }
         }
       }
@@ -547,13 +590,15 @@ public class ScheduleService {
   private static class ScheduleShow {
     private final String date;
     private final String startTime;
+    private final String endTime;
     private final String showName;
     private final String moderator;
     private final boolean isTwitch;
     
-    public ScheduleShow(String date, String startTime, String showName, String moderator, boolean isTwitch) {
+    public ScheduleShow(String date, String startTime, String endTime, String showName, String moderator, boolean isTwitch) {
       this.date = date;
       this.startTime = startTime;
+      this.endTime = endTime;
       this.showName = showName;
       this.moderator = moderator;
       this.isTwitch = isTwitch;
@@ -565,6 +610,10 @@ public class ScheduleService {
     
     public String getStartTime() {
       return startTime;
+    }
+    
+    public String getEndTime() {
+      return endTime;
     }
     
     public String getShowName() {
