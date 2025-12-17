@@ -9,7 +9,6 @@ import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.ThreadSafe;
-import net.labymod.api.util.bounds.area.RectangleAreaPosition;
 
 public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetConfig> {
 
@@ -23,7 +22,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     this.addon = addon;
   }
 
-  @Override
+  /*@Override
   public void initializePreConfigured(CurrentSongHudWidgetConfig config) {
     super.initializePreConfigured(config);
 
@@ -32,7 +31,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     config.setX(-2);
     config.setY(2);
     config.setParentToTailOfChainIn(RectangleAreaPosition.TOP_RIGHT);
-  }
+  }*/
 
   @Override
   public void load(CurrentSongHudWidgetConfig config) {
