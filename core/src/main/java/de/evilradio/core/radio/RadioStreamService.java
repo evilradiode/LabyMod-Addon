@@ -32,7 +32,7 @@ public class RadioStreamService {
       uuid = "966b5d5e-2577-4ab7-987a-89bfa59da74a";
     }
     Request.ofGson(JsonObject.class)
-        .url("https://api.evil-radio.de/laby-addon/?uuid="+uuid)
+        .url("https://api.evil-radio.de/streams?uuid="+uuid)
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
