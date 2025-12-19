@@ -122,7 +122,9 @@ public class RadioManager {
     // Setze den aktuellen Song zurück und aktualisiere das Widget
     if (addon != null && addon.currentSongService() != null) {
       addon.currentSongService().resetCurrentSong();
-      addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      if(addon.currentSongHudWidget().isEnabled()) {
+        addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      }
     }
   }
 

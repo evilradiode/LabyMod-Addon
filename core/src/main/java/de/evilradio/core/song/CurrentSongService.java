@@ -78,7 +78,9 @@ public class CurrentSongService {
     if (currentStream == null) {
       logging.warn("No current stream found, cannot fetch song info");
       this.currentSong = null;
-      this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      if(this.addon.currentSongHudWidget().isEnabled()) {
+        this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      }
       return;
     }
     
@@ -87,7 +89,9 @@ public class CurrentSongService {
       logging.warn("Current stream has no name, cannot fetch song info");
       this.currentSong = null;
       this.currentStreamName = null;
-      this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      if(this.addon.currentSongHudWidget().isEnabled()) {
+        this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      }
       return;
     }
     
@@ -117,7 +121,9 @@ public class CurrentSongService {
           if(response.hasException() || response.getStatusCode() != 200) {
             logging.error("Failed to load current song", response.hasException() ? response.exception() : new Exception("HTTP " + response.getStatusCode()));
             this.currentSong = null;
-            this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+            if(this.addon.currentSongHudWidget().isEnabled()) {
+              this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+            }
             return;
           }
           
@@ -126,7 +132,9 @@ public class CurrentSongService {
           CurrentSong newSong = getSongFromJson(object);
           if(newSong == null) {
             this.currentSong = null;
-            this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+            if(this.addon.currentSongHudWidget().isEnabled()) {
+              this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+            }
             return;
           }
 
@@ -174,7 +182,9 @@ public class CurrentSongService {
           // Aktualisiere den aktuellen Stream-Namen erst nach erfolgreichem Laden
           this.currentStreamName = streamName;
           // Aktualisiere das Widget nach dem Setzen des aktuellen Songs
-          this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+          if(this.addon.currentSongHudWidget().isEnabled()) {
+            this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+          }
 
           // Zeige Notification nur, wenn sich der Song geändert hat (nicht beim ersten Laden oder Streamwechsel)
           if (songChanged && this.addon.configuration().showSongChangeNotification().get()) {
