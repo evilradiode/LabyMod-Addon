@@ -69,7 +69,7 @@ public class CurrentSongService {
         moderatorName = showObject.get("dj").getAsString();
       }
     }
-    return new CurrentSong(title, artist, image, moderatorName, twitch, onAir);
+    return new CurrentSong(title, artist, image, moderatorName, onAir, twitch);
   }
 
   public void fetchCurrentSong() {
