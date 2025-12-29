@@ -101,10 +101,7 @@ public class ScheduleService {
     if (!this.cachedShows.isEmpty()) {
       checkCachedShows();
     }
-    
-    // TODO: Beim Senden der Ankündigung nochmal in dem Moment die API gegenprüfen,
-    // damit nicht eine Show angekündigt wird, die kurzfristig abgesagt wurde
-    // Aktualisiere auch die lokalen Daten für die nächste Prüfung
+
     Request.ofGson(JsonArray.class)
         .url(SCHEDULE_API_URL)
         .async()
@@ -132,7 +129,6 @@ public class ScheduleService {
               
               // Sende nur, wenn diese Sendung noch nicht benachrichtigt wurde
               if (!showKey.equals(this.lastNotifiedShowKey)) {
-                // TODO: Hier nochmal die API gegenprüfen, ob die Sendung nicht abgesagt wurde
                 // Prüfe die aktuelle API-Antwort, ob die Sendung noch existiert und nicht abgesagt wurde
                 if (isShowStillValid(scheduleArray, currentShow)) {
                   this.lastNotifiedShowKey = showKey;
