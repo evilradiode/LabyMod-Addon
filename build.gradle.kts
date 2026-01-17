@@ -6,7 +6,7 @@ plugins {
 val versions = providers.gradleProperty("net.labymod.minecraft-versions").get().split(";")
 
 group = "de.evilradio"
-version = providers.environmentVariable("VERSION").getOrElse("0.1.0-SNAPSHOT")
+version = providers.environmentVariable("VERSION").getOrElse("1.0.0")
 
 labyMod {
     defaultPackageName = "de.evilradio" //change this to your main package name (used by all modules)
