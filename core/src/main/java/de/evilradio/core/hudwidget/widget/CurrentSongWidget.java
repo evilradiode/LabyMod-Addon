@@ -9,6 +9,7 @@ import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.component.format.TextColor;
+import net.labymod.api.client.gfx.pipeline.renderer.text.TextRenderer;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.lss.property.annotation.AutoWidget;
@@ -23,6 +24,9 @@ import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
 @Link("widget/song-widget.lss")
 @AutoWidget
 public class CurrentSongWidget extends FlexibleContentWidget implements Updatable {
+
+  private static final String MAX_WIDTH_VARIABLE_KEY = "--current-song-widget-max-width";
+  private static final String MIN_WIDTH_VARIABLE_KEY = "--current-song-widget-min-width";
 
   private final CurrentSongHudWidget hudWidget;
 
@@ -46,6 +50,10 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   public void initialize(Parent parent) {
     super.initialize(parent);
     this.children.clear();
+
+    // Set initial Width Variables
+    this.setVariable(MAX_WIDTH_VARIABLE_KEY, 300);
+    this.setVariable(MIN_WIDTH_VARIABLE_KEY, 200);
 
     if (this.editorContext) {
       this.addId("maximized");
@@ -219,11 +227,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     boolean twitch = currentSong.isTwitch();
 
     // Zeile 1: Stream-Name (z.B. "EvilRadio - Mashup") - Grau für dezente Anzeige
+    String streamDisplayName = "";
     if (currentStream != null && currentStream.getName() != null) {
-      this.streamWidget.setComponent(Component.text("EvilRadio - " + currentStream.getName()).color(NamedTextColor.GRAY));
-    } else {
-      this.streamWidget.setComponent(Component.text(""));
+      streamDisplayName = "EvilRadio - " + currentStream.getName();
     }
+    this.streamWidget.setComponent(Component.text(streamDisplayName).color(NamedTextColor.GRAY));
 
     // Prüfe Twitch-Status (nur für Mashup)
     String streamName = currentStream != null ? currentStream.getName() : null;
@@ -248,10 +256,22 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.liveStatusWidget.setComponent(onAirComponent);
 
     // Zeile 3: Track-Titel (bereinigt) - Weiß für prominente Anzeige
-    this.trackWidget.setComponent(Component.text(currentSong.getTitle()).color(NamedTextColor.WHITE));
+    String trackName = currentSong.getTitle();
+    this.trackWidget.setComponent(Component.text(trackName).color(NamedTextColor.WHITE));
 
     // Zeile 4: Artist (bereinigt) - Grau für sekundäre Info
-    this.artistWidget.setComponent(Component.text(currentSong.getArtist()).color(NamedTextColor.GRAY));
+    String artistName = currentSong.getArtist();
+    this.artistWidget.setComponent(Component.text(artistName).color(NamedTextColor.GRAY));
+
+    TextRenderer textRenderer = Laby.references().textRenderer();
+
+    float minWidgetWidth = (!hasId("no-cover") ? 44 : 0) + 30; // cover + padding width
+    float streamNameWidth = textRenderer.getWidth(streamDisplayName);
+    float trackWidth = textRenderer.getWidth(trackName);
+    float artistWidth = textRenderer.getWidth(artistName);
+
+    this.setVariable(MIN_WIDTH_VARIABLE_KEY, Math.max(minWidgetWidth, streamNameWidth));
+    this.setVariable(MAX_WIDTH_VARIABLE_KEY, minWidgetWidth + Math.max(trackWidth, artistWidth));
 
     this.streamWidget.setVisible(true);
     this.liveStatusWidget.setVisible(true);

@@ -2,9 +2,9 @@ CurrentSong {
   top: 0;
   left: 0;
   height: 44;
-  min-width: 170;
+  min-width: calc(var(--current-song-widget-min-width) + 100);
   width: fit-content;
-  max-width: 600;
+  max-width: calc(var(--current-song-widget-max-width) * 2);
 
   orientation: horizontal;
   background-color: rgba(0, 0, 0, 0);
@@ -12,7 +12,7 @@ CurrentSong {
   .player {
     height: 100%;
     orientation: vertical;
-    width: 250;
+    width: var(--current-song-widget-max-width);
     padding-left: 2;
     padding-right: 2;
 
@@ -66,8 +66,6 @@ CurrentSong {
   }
 
   &.no-cover {
-    max-width: 300;
-
     .cover {
       visible: false;
     }
