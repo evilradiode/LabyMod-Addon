@@ -13,8 +13,6 @@ import net.labymod.api.configuration.loader.annotation.SpriteSlot;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.configuration.settings.annotation.SettingSection;
 import net.labymod.api.util.MethodOrder;
-import java.util.HashMap;
-import java.util.Map;
 
 @ConfigName("settings")
 public class EvilRadioConfiguration extends AddonConfig {
@@ -46,8 +44,6 @@ public class EvilRadioConfiguration extends AddonConfig {
   @Exclude
   private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
 
-  private Map<Integer, Integer> streamUsageCount = new HashMap<>();
-
   @SettingSection(value = "other", center = true)
 
   @MethodOrder(after = "usageStatistics")
@@ -70,13 +66,6 @@ public class EvilRadioConfiguration extends AddonConfig {
       });
     }
   }
-
-  public void resetStreamUsageCount() {
-    if (streamUsageCount != null) {
-      streamUsageCount.clear();
-    }
-  }
-
 
   @Override
   public ConfigProperty<Boolean> enabled() {
@@ -113,27 +102,6 @@ public class EvilRadioConfiguration extends AddonConfig {
   
   public ConfigProperty<Integer> lastStreamId() {
     return this.lastStreamId;
-  }
-  
-  public Map<Integer, Integer> streamUsageCount() {
-    if (streamUsageCount == null) {
-      streamUsageCount = new HashMap<>();
-    }
-    return streamUsageCount;
-  }
-  
-  public void incrementStreamUsage(int streamId) {
-    if (streamUsageCount == null) {
-      streamUsageCount = new HashMap<>();
-    }
-    streamUsageCount.put(streamId, streamUsageCount.getOrDefault(streamId, 0) + 1);
-  }
-  
-  public int getStreamUsageCount(int streamId) {
-    if (streamUsageCount == null) {
-      return 0;
-    }
-    return streamUsageCount.getOrDefault(streamId, 0);
   }
 
 }

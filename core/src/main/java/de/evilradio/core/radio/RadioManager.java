@@ -83,7 +83,7 @@ public class RadioManager {
     
     // Tracke die Nutzung des Streams (nur wenn Usage-Tracking aktiviert ist)
     if (stream != null && addon != null && addon.configuration().usageBasedSorting().get()) {
-      addon.configuration().incrementStreamUsage(stream.getId());
+      addon.configuration().usageStatistics().incrementStreamUsage(stream.getId());
     }
     
     // Starte die Wiedergabe des Streams

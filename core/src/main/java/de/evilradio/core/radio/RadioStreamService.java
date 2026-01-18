@@ -103,8 +103,8 @@ public class RadioStreamService {
     
     // Usage-basierte Sortierung
     streams.sort((stream1, stream2) -> {
-      int usage1 = addon.configuration().getStreamUsageCount(stream1.getId());
-      int usage2 = addon.configuration().getStreamUsageCount(stream2.getId());
+      int usage1 = addon.configuration().usageStatistics().getStreamUsageCount(stream1.getId());
+      int usage2 = addon.configuration().usageStatistics().getStreamUsageCount(stream2.getId());
       
       // Sortiere absteigend nach Nutzung (höchste zuerst)
       // Bei gleicher Nutzung: sortiere nach ID für konsistente Reihenfolge
