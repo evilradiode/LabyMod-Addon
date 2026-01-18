@@ -32,7 +32,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private ScheduleService scheduleService;
 
   private CurrentSongHudWidget currentSongHudWidget;
-  private Task focusCheckTask;
   private boolean wasWindowFocused = true;
   private RadioStream streamBeforeFocusLoss = null;
   private boolean userManuallyStopped = false;
@@ -219,7 +218,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       this.wasWindowFocused = window.isFocused();
       
       // Verwende einen periodischen Check (alle 500ms) statt bei jedem Tick
-      this.focusCheckTask = Task.builder(() -> {
+      Task.builder(() -> {
         if (!configuration().autoStopOnFocusLoss().get()) {
           return;
         }
@@ -242,8 +241,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
         }
         
         wasWindowFocused = isFocused;
-      }).repeat(500, TimeUnit.MILLISECONDS).build();
-      this.focusCheckTask.execute();
+      }).repeat(500, TimeUnit.MILLISECONDS).build().execute();
     }
   }
   
