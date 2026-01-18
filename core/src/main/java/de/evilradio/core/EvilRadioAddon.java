@@ -156,19 +156,13 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   @Subscribe
   public void onServerJoin(ServerJoinEvent event) {
     // Prüfe, ob der Stream bereits läuft - wenn ja, tue nichts (verhindert Pause beim Subserver-Wechsel)
-    if (this.radioManager != null && this.radioManager.isPlaying()) {
-      return;
-    }
+    if (this.radioManager != null && this.radioManager.isPlaying()) return;
     
     // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
-    if (this.userManuallyStopped) {
-      return;
-    }
+    if (this.userManuallyStopped) return;
     
     // Prüfe, ob Auto-Start aktiviert ist
-    if (!configuration().autoStart().enabled().get()) {
-      return;
-    }
+    if (!configuration().autoStart().enabled().get()) return;
     
     AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode != null && mode.shouldStartOnServerJoin()) {
@@ -184,14 +178,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   @Subscribe
   public void onWorldEnter(WorldEnterEvent event) {
     // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
-    if (this.userManuallyStopped) {
-      return;
-    }
+    if (this.userManuallyStopped) return;
     
     // Prüfe, ob Auto-Start aktiviert ist
-    if (!configuration().autoStart().enabled().get()) {
-      return;
-    }
+    if (!configuration().autoStart().enabled().get()) return;
     
     AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode != null && mode.shouldStartOnServerJoin()) {
@@ -207,9 +197,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   @Subscribe
   public void onWorldLeave(WorldLeaveEvent event) {
     // Prüfe, ob Auto-Start aktiviert ist und auf "Beim Welt betreten" steht
-    if (!configuration().autoStart().enabled().get()) {
-      return;
-    }
+    if (!configuration().autoStart().enabled().get()) return;
     
     AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
     if (mode != null && mode.shouldStartOnServerJoin()) {
