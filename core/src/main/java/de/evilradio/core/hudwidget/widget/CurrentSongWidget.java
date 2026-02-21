@@ -59,7 +59,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.addId("maximized");
     }
 
-    if (!this.hudWidget.getConfig().showCover().get()) {
+    boolean showCover = this.hudWidget.getConfig().showCover().get();
+    if (!showCover) {
       this.addId("no-cover");
     }
 
@@ -68,7 +69,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     this.coverWidget = new IconWidget(EvilTextures.LOGO);
     this.coverWidget.addId("cover");
-    boolean showCover = this.hudWidget.getConfig().showCover().get();
     this.coverWidget.setVisible(showCover);
 
     // add cover if the hud widget is left-aligned
