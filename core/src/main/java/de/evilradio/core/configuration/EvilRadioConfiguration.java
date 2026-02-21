@@ -52,21 +52,6 @@ public class EvilRadioConfiguration extends AddonConfig {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
   }
 
-  @MethodOrder(after = "reloadStreams")
-  @ButtonSetting
-  public void openFlintMcPage() {
-    // Öffne die URL im Browser
-    if (EvilRadioAddon.instance() != null) {
-      EvilRadioAddon.instance().labyAPI().minecraft().executeOnRenderThread(() -> {
-        try {
-          java.awt.Desktop.getDesktop().browse(new java.net.URI("https://flintmc.net/addons/evil-radio"));
-        } catch (Exception e) {
-          EvilRadioAddon.instance().logger().error("Failed to open flintmc.net page", e);
-        }
-      });
-    }
-  }
-
   @Override
   public ConfigProperty<Boolean> enabled() {
     return this.enabled;
