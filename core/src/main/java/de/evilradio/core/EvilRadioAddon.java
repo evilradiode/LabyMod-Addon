@@ -9,6 +9,7 @@ import de.evilradio.core.radio.RadioStreamService;
 import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSongService;
 import de.evilradio.core.activity.wheel.RadioWheelOverlay;
+import net.labymod.api.Laby;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.gui.icon.Icon;
@@ -18,7 +19,9 @@ import net.labymod.api.event.Subscribe;
 import net.labymod.api.event.client.network.server.ServerJoinEvent;
 import net.labymod.api.event.client.world.WorldEnterEvent;
 import net.labymod.api.event.client.world.WorldLeaveEvent;
+import net.labymod.api.revision.SimpleRevision;
 import net.labymod.api.util.concurrent.task.Task;
+import net.labymod.api.util.version.SemanticVersion;
 import java.util.concurrent.TimeUnit;
 
 @AddonMain
@@ -35,6 +38,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private boolean wasWindowFocused = true;
   private RadioStream streamBeforeFocusLoss = null;
   private boolean userManuallyStopped = false;
+
+  @Override
+  protected void preConfigurationLoad() {
+    Laby.references().revisionRegistry().register(new SimpleRevision("evilradio", new SemanticVersion(1, 0, 2), "2026-02-21"));
+  }
 
   @Override
   protected void enable() {
