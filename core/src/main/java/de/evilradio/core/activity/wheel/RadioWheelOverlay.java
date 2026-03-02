@@ -437,11 +437,15 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
       return;
     }
 
-    // Finde alle Mashup-Streams
-    RadioStream mashupStream = this.addon.radioStreamService().streams().stream()
-        .filter(stream -> stream.getName() != null && stream.getName().equalsIgnoreCase("mashup"))
-        .findFirst()
-        .orElse(null);
+    // Finde den Mashup-Stream ohne Streams-API
+    RadioStream mashupStream = null;
+    List<RadioStream> streams = this.addon.radioStreamService().streams();
+    for (RadioStream stream : streams) {
+      if (stream != null && stream.getName() != null && stream.getName().equalsIgnoreCase("mashup")) {
+        mashupStream = stream;
+        break;
+      }
+    }
 
     if (mashupStream == null) {
       return;

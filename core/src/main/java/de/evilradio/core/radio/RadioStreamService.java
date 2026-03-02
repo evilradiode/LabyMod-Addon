@@ -83,10 +83,12 @@ public class RadioStreamService {
   }
 
   public RadioStream findStreamById(int id) {
-    return streams.stream()
-        .filter(stream -> stream.getId() == id)
-        .findFirst()
-        .orElse(null);
+    for (RadioStream stream : streams) {
+      if (stream.getId() == id) {
+        return stream;
+      }
+    }
+    return null;
   }
   
   private void sortStreamsByUsage() {
