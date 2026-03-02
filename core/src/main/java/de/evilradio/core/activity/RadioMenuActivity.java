@@ -138,17 +138,8 @@ public class RadioMenuActivity extends SimpleActivity {
     
     SliderWidget volumeSlider = new SliderWidget();
     volumeSlider.addId("volume-slider");
-    
-    // Versuche, die Property über Reflection zu setzen
-    try {
-      java.lang.reflect.Field propertyField = SliderWidget.class.getDeclaredField("property");
-      propertyField.setAccessible(true);
-      propertyField.set(volumeSlider, volumeProperty);
-    } catch (Exception e) {
-      // Fallback: Wenn Reflection nicht funktioniert, müssen wir einen anderen Ansatz verwenden
-      // Der SliderWidget wird die Property automatisch verwenden, wenn sie mit @SliderSetting annotiert ist
-      // Aber das funktioniert nur in Config-Screens, nicht in Activities
-    }
+
+    volumeSlider.setValue(volumeProperty.get());
     
     controlsContainer.addChild(volumeSlider);
     controlsContainer.addChild(volumeLabel);
