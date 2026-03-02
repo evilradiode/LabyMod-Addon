@@ -185,6 +185,11 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
   @Override
   protected void onKey(Key key, KeyEvent.State state) {
+    if(key == Key.ESCAPE) {
+      this.isWheelOpen = false;
+      this.closeInteraction();
+      return;
+    }
     int mappedPosition = this.getMappedPosition(key);
     if (mappedPosition != Integer.MIN_VALUE) {
       RadioStream stream = this.findStreamByPosition(mappedPosition);

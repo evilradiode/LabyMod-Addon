@@ -11,8 +11,6 @@ import net.labymod.api.client.gui.screen.activity.AutoActivity;
 import net.labymod.api.client.gui.screen.activity.Link;
 import net.labymod.api.client.gui.screen.activity.Links;
 import net.labymod.api.client.gui.screen.activity.types.SimpleActivity;
-import net.labymod.api.client.gui.screen.key.Key;
-import net.labymod.api.client.gui.screen.key.InputType;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget;
@@ -241,14 +239,4 @@ public class RadioMenuActivity extends SimpleActivity {
     this.document.addChild(closeButton);
   }
 
-  @Override
-  public boolean keyPressed(Key key, InputType type) {
-    if (key == Key.ESCAPE) {
-      Laby.labyAPI().minecraft().executeOnRenderThread(() -> {
-        Laby.labyAPI().minecraft().minecraftWindow().closeScreen();
-      });
-      return true;
-    }
-    return super.keyPressed(key, type);
-  }
 }
