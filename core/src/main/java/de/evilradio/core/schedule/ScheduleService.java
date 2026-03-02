@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ScheduleService {
 
-  private final String SCHEDULE_API_URL = "https://sp.evil-radio.de/index.php?page=infos&mode=json&opt=sendeplan";
+  private final String SCHEDULE_API_URL = "https://api.evil-radio.de/sp?opt=sendeplan";
   
   private final Logging logging = Logging.create("EvilRadio-ScheduleService");
   
