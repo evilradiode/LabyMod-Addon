@@ -3,6 +3,7 @@ package de.evilradio.core;
 import de.evilradio.core.configuration.AutoStartSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
+import de.evilradio.core.listener.GameListener;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
@@ -12,13 +13,10 @@ import de.evilradio.core.activity.wheel.RadioWheelOverlay;
 import net.labymod.api.Laby;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.component.Component;
+import net.labymod.api.client.gui.hud.binding.category.HudWidgetCategory;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.models.addon.annotation.AddonMain;
 import net.labymod.api.notification.Notification;
-import net.labymod.api.event.Subscribe;
-import net.labymod.api.event.client.network.server.ServerJoinEvent;
-import net.labymod.api.event.client.world.WorldEnterEvent;
-import net.labymod.api.event.client.world.WorldLeaveEvent;
 import net.labymod.api.revision.SimpleRevision;
 import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.version.SemanticVersion;
@@ -28,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   private static EvilRadioAddon instance;
+
+  public static final HudWidgetCategory HUD_WIDGET_CATEGORY = new HudWidgetCategory("evilradio");
 
   private RadioManager radioManager;
   private RadioStreamService radioStreamService;
@@ -70,10 +70,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     });
     
     // Event-Bus registrieren für Event-Handler
-    this.labyAPI().eventBus().registerListener(this);
+    this.labyAPI().eventBus().registerListener(new GameListener(this));
 
     this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
 
+    this.labyAPI().hudWidgetRegistry().categoryRegistry().register(HUD_WIDGET_CATEGORY);
     this.labyAPI().hudWidgetRegistry().register(this.currentSongHudWidget = new CurrentSongHudWidget(this));
 
     // Registriere Window-Focus-Listener für Auto-Stop
@@ -156,65 +157,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   public ScheduleService scheduleService() {
     return scheduleService;
   }
-  
-  /**
-   * Event-Handler für Server-Beitritt
-   * Wird aufgerufen, wenn der Spieler einem Server beitritt
-   */
-  @Subscribe
-  public void onServerJoin(ServerJoinEvent event) {
-    // Prüfe, ob der Stream bereits läuft - wenn ja, tue nichts (verhindert Pause beim Subserver-Wechsel)
-    if (this.radioManager != null && this.radioManager.isPlaying()) return;
-    
-    // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
-    if (this.userManuallyStopped) return;
-    
-    // Prüfe, ob Auto-Start aktiviert ist
-    if (!configuration().autoStart().enabled().get()) return;
-    
-    AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
-    if (mode != null && mode.shouldStartOnServerJoin()) {
-      this.startLastStreamWithDelay("server join");
-    }
-  }
-  
-  /**
-   * Event-Handler für World-Beitritt
-   * Wird aufgerufen, wenn der Spieler einer Welt beitritt (auch im Singleplayer)
-   * Startet den Stream, wenn Auto-Start auf "Beim Welt betreten" steht
-   */
-  @Subscribe
-  public void onWorldEnter(WorldEnterEvent event) {
-    // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
-    if (this.userManuallyStopped) return;
-    
-    // Prüfe, ob Auto-Start aktiviert ist
-    if (!configuration().autoStart().enabled().get()) return;
-    
-    AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
-    if (mode != null && mode.shouldStartOnServerJoin()) {
-      this.startLastStreamWithDelay("world enter");
-    }
-  }
-  
-  /**
-   * Event-Handler für World-Verlassen
-   * Wird aufgerufen, wenn der Spieler eine Welt verlässt
-   * Stoppt den Stream, wenn Auto-Start auf "Beim Welt betreten" steht
-   */
-  @Subscribe
-  public void onWorldLeave(WorldLeaveEvent event) {
-    // Prüfe, ob Auto-Start aktiviert ist und auf "Beim Welt betreten" steht
-    if (!configuration().autoStart().enabled().get()) return;
-    
-    AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
-    if (mode != null && mode.shouldStartOnServerJoin()) {
-      // Stoppe den Stream, wenn er läuft
-      if (this.radioManager != null && this.radioManager.isPlaying()) {
-        this.radioManager.stopStream();
-      }
-    }
-  }
 
   /**
    * Registriert einen periodischen Check für Window-Focus-Verlust
@@ -258,26 +200,18 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    * Startet den letzten Stream mit konfigurierter Verzögerung
    * @param context Kontext für Logging (z.B. "game start", "server join")
    */
-  private void startLastStreamWithDelay(String context) {
+  public void startLastStreamWithDelay(String context) {
     // Prüfe zuerst, ob Auto-Start überhaupt aktiviert ist
-    if (!configuration().autoStart().enabled().get()) {
-      return;
-    }
+    if (!configuration().autoStart().enabled().get()) return;
     
     AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
-    if (mode == null) {
-      return;
-    }
+    if (mode == null) return;
     
     int lastStreamId = configuration().lastStreamId().get();
-    if (lastStreamId < 0) {
-      return;
-    }
+    if (lastStreamId < 0) return;
     
     RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
-    if (lastStream == null || lastStream.getUrl() == null || lastStream.getUrl().isEmpty()) {
-      return;
-    }
+    if (lastStream == null || lastStream.getUrl() == null || lastStream.getUrl().isEmpty()) return;
     
     float delaySeconds = configuration().autoStart().delay().get();
     
@@ -298,9 +232,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    * @param context Kontext für Logging
    */
   private void startLastStream(RadioStream stream, String context) {
-    if (stream == null || stream.getUrl() == null || stream.getUrl().isEmpty()) {
-      return;
-    }
+    if (stream == null || stream.getUrl() == null || stream.getUrl().isEmpty()) return;
     
     // Prüfe, ob derselbe Stream bereits läuft (verhindert Pause beim Subserver-Wechsel)
     RadioStream currentStream = this.radioManager.getCurrentStream();
@@ -308,9 +240,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
                           currentStream.getId() == stream.getId();
     
     // Wenn derselbe Stream bereits läuft, tue nichts (verhindert Pause beim Subserver-Wechsel)
-    if (isSameStream && this.radioManager.isPlaying()) {
-      return;
-    }
+    if (isSameStream && this.radioManager.isPlaying()) return;
     
     // Wenn der Benutzer das Radio manuell startet, setze die Flag zurück
     this.userManuallyStopped = false;

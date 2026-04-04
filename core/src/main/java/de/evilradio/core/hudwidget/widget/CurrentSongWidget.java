@@ -150,7 +150,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   public void tick() {
     super.tick();
 
-    // everything with the variable LARGE_PROGRESS_VISIBLE_KEY is an ugly hotfix for IDEA-16722. Revert the changes and you'll see
     if (!this.editorContext) {
       boolean isChatOpen = Laby.references().chatAccessor().isChatOpen();
 

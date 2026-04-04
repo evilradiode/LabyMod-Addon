@@ -1,6 +1,7 @@
 package de.evilradio.core.hudwidget;
 
 import de.evilradio.core.EvilRadioAddon;
+import de.evilradio.core.EvilTextures;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget.CurrentSongHudWidgetConfig;
 import de.evilradio.core.hudwidget.widget.CurrentSongWidget;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidgetConfig;
@@ -20,6 +21,8 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public CurrentSongHudWidget(EvilRadioAddon addon) {
     super("evilradio_full_widget", CurrentSongHudWidgetConfig.class);
     this.addon = addon;
+    this.bindCategory(EvilRadioAddon.HUD_WIDGET_CATEGORY);
+    this.setIcon(EvilTextures.LOGO);
   }
 
   /*@Override

@@ -1,4 +1,12 @@
 {
+  "labymod": {
+    "hudWidgetCategory": {
+      "evilradio": {
+        "name": "EvilRadio",
+        "description": "Hier findest du alle Widgets, die mit dem Evil-Radio Addon verbunden sind"
+      }
+    }
+  },
   "evilradio": {
     "menu": {
       "title": "Unsere Sender",
