@@ -7,6 +7,7 @@ import de.evilradio.core.hudwidget.widget.CurrentSongWidget;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidgetConfig;
 import net.labymod.api.client.gui.hud.hudwidget.widget.WidgetHudWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.ThreadSafe;
@@ -15,6 +16,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
   public static final String COVER_VISIBILITY_REASON = "cover_visibility";
   public static final String SONG_CHANGE_REASON = "song_change";
+  public static final String TITLE_LENGTH_CHANGE_REASON = "title_length_change";
 
   private final EvilRadioAddon addon;
 
@@ -43,6 +45,14 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COVER_VISIBILITY_REASON))
     );
+    config.limitTitleLength.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(TITLE_LENGTH_CHANGE_REASON))
+    );
+    config.maxTitleLength.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(TITLE_LENGTH_CHANGE_REASON))
+    );
   }
 
   @Override
@@ -56,13 +66,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
   @Override
   public boolean isVisibleInGame() {
-    // Widget nur anzeigen, wenn Addon aktiviert ist und ein Stream läuft
-    if (!this.addon.configuration().enabled().get()) {
-      return false;
-    }
-    
-    // Widget nur anzeigen, wenn der Stream tatsächlich läuft
-    // Nicht nur wenn ein Stream ausgewählt ist (damit das Widget verschwindet, wenn gestoppt wird)
+    if (!this.addon.configuration().enabled().get()) return false;
     return this.addon.radioManager().isPlaying();
   }
 
@@ -71,8 +75,22 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SwitchSetting
     private final ConfigProperty<Boolean> showCover = ConfigProperty.create(true);
 
+    @SwitchSetting
+    private final ConfigProperty<Boolean> limitTitleLength = ConfigProperty.create(true);
+
+    @SliderSetting(min = 0, max = 500, steps = 10)
+    private final ConfigProperty<Integer> maxTitleLength = ConfigProperty.create(150);
+
     public ConfigProperty<Boolean> showCover() {
       return this.showCover;
+    }
+
+    public ConfigProperty<Boolean> limitTitleLength() {
+      return this.limitTitleLength;
+    }
+
+    public ConfigProperty<Integer> maxTitleLength() {
+      return maxTitleLength;
     }
 
   }

@@ -173,6 +173,10 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.updateTrack(this.hudWidget.addon().currentSongService().getCurrentSong());
     }
 
+    if(reason.equals(CurrentSongHudWidget.TITLE_LENGTH_CHANGE_REASON)) {
+      this.updateTitleLength(this.hudWidget.addon().currentSongService().getCurrentSong());
+    }
+
     if (reason.equals(CurrentSongHudWidget.COVER_VISIBILITY_REASON)) {
       boolean showCover = this.hudWidget.getConfig().showCover().get();
       if (showCover) {
@@ -189,10 +193,19 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     }
   }
 
-  private void updateTrack(CurrentSong currentSong) {
-    if (this.trackWidget == null || this.artistWidget == null || this.streamWidget == null) {
-      return;
+  private void updateTitleLength(CurrentSong currentSong) {
+    if(currentSong == null) return;
+    if(this.trackWidget == null) return;
+    String trackName = currentSong.getTitle();
+    if(this.hudWidget.getConfig().limitTitleLength().get() && this.hudWidget.getConfig().maxTitleLength().get() > 0) {
+      trackName = trackName.substring(0, Math.min(trackName.length(), this.hudWidget.getConfig().maxTitleLength().get()));
     }
+    this.trackWidget.setComponent(Component.text(trackName).color(NamedTextColor.WHITE));
+    this.hudWidget.addon().labyAPI().minecraft().executeOnRenderThread(() -> this.trackWidget.updateComponent());
+  }
+
+  private void updateTrack(CurrentSong currentSong) {
+    if (this.trackWidget == null || this.artistWidget == null || this.streamWidget == null) return;
 
     // Prüfe, ob der Stream läuft, auch wenn currentSong noch null ist
     boolean isPlaying = this.hudWidget.addon().radioManager().isPlaying();
@@ -256,6 +269,9 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     // Zeile 3: Track-Titel (bereinigt) - Weiß für prominente Anzeige
     String trackName = currentSong.getTitle();
+    if(this.hudWidget.getConfig().limitTitleLength().get() && this.hudWidget.getConfig().maxTitleLength().get() > 0) {
+      trackName = trackName.substring(0, Math.min(trackName.length(), this.hudWidget.getConfig().maxTitleLength().get()));
+    }
     this.trackWidget.setComponent(Component.text(trackName).color(NamedTextColor.WHITE));
 
     // Zeile 4: Artist (bereinigt) - Grau für sekundäre Info

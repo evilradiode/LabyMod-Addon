@@ -46,6 +46,14 @@
         "name": "Evil Radio Widget",
         "showCover": {
           "name": "Show Cover"
+        },
+        "limitTitleLength": {
+          "name": "Limit Title Length",
+          "description": "Limit the length of the title. Prevents the title from being too long and potentially taking up too much space on the screen."
+        },
+        "maxTitleLength": {
+          "name": "Max Title Length",
+          "description": "Set the character limit of the Song Title. When set to 0 the title length is unlimited."
         }
       }
     },
