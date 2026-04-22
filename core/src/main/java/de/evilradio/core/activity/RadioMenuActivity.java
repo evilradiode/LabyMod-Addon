@@ -1,7 +1,6 @@
 package de.evilradio.core.activity;
 
 import de.evilradio.core.EvilRadioAddon;
-import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.Laby;
@@ -101,8 +100,7 @@ public class RadioMenuActivity extends SimpleActivity {
     controlsContainer.addChild(playStopButton);
     
     // Volume Slider - verwende ConfigProperty aus der Konfiguration
-    EvilRadioConfiguration config = addon.configuration();
-    ConfigProperty<Float> volumeProperty = config.volume();
+    ConfigProperty<Float> volumeProperty = addon.configuration().volume();
     
     // Synchronisiere den aktuellen Volume-Wert mit der ConfigProperty
     // radioManager.getVolume() gibt 0.0-1.0 zurück, Property erwartet 0-100
@@ -125,14 +123,6 @@ public class RadioMenuActivity extends SimpleActivity {
       // Aktualisiere das Label
       volumeLabel.setComponent(Component.text(newValue + "%", NamedTextColor.GRAY));
     });
-    
-    // Erstelle SliderWidget - in Activities muss die Property manuell verbunden werden
-    // Da SliderWidget normalerweise nur in Config-Screens mit @SliderSetting funktioniert,
-    // müssen wir die Property manuell aktualisieren, wenn der Slider geändert wird
-    
-    // Erstelle den SliderWidget - er sollte die Property automatisch verwenden
-    // wenn sie mit @SliderSetting annotiert ist, aber das funktioniert nur in Config-Screens
-    // Für Activities: Wir müssen die Property manuell verbinden über einen Workaround
     
     SliderWidget volumeSlider = new SliderWidget();
     volumeSlider.addId("volume-slider");

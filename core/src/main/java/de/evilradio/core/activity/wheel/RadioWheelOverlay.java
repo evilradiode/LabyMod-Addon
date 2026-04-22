@@ -237,15 +237,11 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   @Subscribe
   public void onMouseScroll(MouseScrollEvent event) {
     // Nur verarbeiten, wenn das Wheel offen ist
-    if (!this.isWheelOpen) {
-      return;
-    }
+    if (!this.isWheelOpen) return;
 
     // Prüfe, ob die Taste zum Öffnen des Wheels gedrückt gehalten wird
     Key openKey = this.getKeyToOpen();
-    if (openKey == null) {
-      return;
-    }
+    if (openKey == null) return;
 
     // Verhindere, dass das Event weiterverarbeitet wird
     event.setCancelled(true);
@@ -257,14 +253,14 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     // Bestimme die Scroll-Richtung: positiv = nach oben, negativ = nach unten
     // Pro erkanntem Scroll-Event ändern wir die Lautstärke um genau 5%
     int direction = scrollDelta > 0 ? 1 : -1;
-    float volumeChange = direction * 5.0f;
-    
+    float volumeChange = direction * 0.5f;
+
     // Berechne die neue Lautstärke
     float newVolume = currentVolume + volumeChange;
-    newVolume = Math.max(0.0f, Math.min(100.0f, newVolume));
-    
+    newVolume = Math.clamp(newVolume, 0.0f, 100.0f);
+
     // Runde auf den nächsten 5er-Schritt (0, 5, 10, 15, 20, ...)
-    newVolume = Math.round(newVolume / 5.0f) * 5.0f;
+    newVolume = Math.round(newVolume / 0.5f) * 0.5f;
     
     // Setze die neue Lautstärke
     this.addon.configuration().volume().set(newVolume);
