@@ -9,6 +9,7 @@ import net.labymod.api.client.gui.hud.hudwidget.widget.WidgetHudWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
+import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.ThreadSafe;
 
@@ -75,9 +76,11 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SwitchSetting
     private final ConfigProperty<Boolean> showCover = ConfigProperty.create(true);
 
+    @IntroducedIn(namespace = "evilradio", value = "1.0.4")
     @SwitchSetting
     private final ConfigProperty<Boolean> limitTitleLength = ConfigProperty.create(true);
 
+    @IntroducedIn(namespace = "evilradio", value = "1.0.4")
     @SliderSetting(min = 0, max = 500, steps = 10)
     private final ConfigProperty<Integer> maxTitleLength = ConfigProperty.create(150);
 
