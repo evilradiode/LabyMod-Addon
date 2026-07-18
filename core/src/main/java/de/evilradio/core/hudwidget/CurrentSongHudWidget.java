@@ -12,6 +12,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.Switc
 import net.labymod.api.client.gui.screen.widget.widgets.input.color.ColorPickerWidget.ColorPickerSetting;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
+import net.labymod.api.util.Color;
 import net.labymod.api.util.ThreadSafe;
 
 public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetConfig> {
@@ -91,8 +92,8 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     private final ConfigProperty<Integer> maxTitleLength = ConfigProperty.create(150);
 
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
-    @ColorPickerSetting(alpha = true)
-    private final ConfigProperty<Integer> backgroundColor = ConfigProperty.create(0x00000000);
+    @ColorPickerSetting(alpha = true, chroma = true)
+    private final ConfigProperty<Color> backgroundColor = ConfigProperty.create(Color.ofRGB(0, 0, 0));
 
     public ConfigProperty<Boolean> showCover() {
       return this.showCover;
@@ -106,7 +107,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
       return maxTitleLength;
     }
 
-    public ConfigProperty<Integer> backgroundColor() {
+    public ConfigProperty<Color> backgroundColor() {
       return this.backgroundColor;
     }
 

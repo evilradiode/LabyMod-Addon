@@ -452,8 +452,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     boolean hasDuration = song.hasKnownDuration();
     int percent = 0;
     if (hasDuration) {
-      double progress = song.getProgress();
-      percent = (int) Math.round(Math.max(0.0d, Math.min(1.0d, progress)) * 100.0d);
+      percent = (int) Math.round(Math.clamp(song.getProgress(), 0.0d, 1.0d) * 100.0d);
     }
 
     if (elapsed == this.lastRenderedElapsed
@@ -493,24 +492,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   }
 
   private void applyBackgroundColor() {
-    Integer argb = this.hudWidget.getConfig().backgroundColor().get();
-    this.setVariable(BACKGROUND_VARIABLE_KEY, toRgbaCss(argb == null ? 0 : argb));
-  }
-
-  private static String toRgbaCss(int argb) {
-    int alpha = (argb >> 24) & 0xFF;
-    int red = (argb >> 16) & 0xFF;
-    int green = (argb >> 8) & 0xFF;
-    int blue = argb & 0xFF;
-    float alphaNormalized = alpha / 255.0f;
-    return String.format(
-        java.util.Locale.ROOT,
-        "rgba(%d, %d, %d, %.3f)",
-        red,
-        green,
-        blue,
-        alphaNormalized
-    );
+    this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
   }
 
   private static String stationLabel(RadioStream stream) {
