@@ -56,21 +56,21 @@ CurrentSong {
     }
 
     .progress-track {
-      bottom: 0;
-      left: 0;
       height: 3;
       width: 100%;
+      margin-top: 1;
       background-color: rgba(255, 255, 255, 0.12);
 
       .progress-fill {
-        height: 100%;
-        width: calc(var(--current-song-progress) * 1%);
-        background-color: rgba(255, 255, 255, 0.7);
+        top: 0;
+        left: 0;
+        height: 3;
+        width: var(--current-song-progress-width);
+        background-color: rgba(220, 50, 50, 0.9);
       }
 
       &.indeterminate {
         .progress-fill {
-          width: 30%;
           opacity: 0.4;
         }
       }

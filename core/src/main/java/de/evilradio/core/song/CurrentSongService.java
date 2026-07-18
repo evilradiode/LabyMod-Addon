@@ -61,7 +61,7 @@ public class CurrentSongService {
     if (stream == null) {
       logging.warn("Cannot subscribe NowPlaying – missing AzuraCast shortcode because Stream is null.");
       resetCurrentSong();
-      this.nowPlayingService.switchStation(null);
+      this.nowPlayingService.clearSubscription();
       this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
       return;
     }
@@ -176,7 +176,7 @@ public class CurrentSongService {
     if (currentStream == null) {
       logging.warn("No current stream found, cannot fetch song info");
       resetCurrentSong();
-      this.nowPlayingService.switchStation(null);
+      this.nowPlayingService.clearSubscription();
       this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
       return;
     }

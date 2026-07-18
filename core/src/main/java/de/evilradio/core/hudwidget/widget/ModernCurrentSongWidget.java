@@ -20,7 +20,6 @@ import net.labymod.api.client.gui.screen.activity.Link;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.FlexibleContentWidget;
-import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
 
 @Link("widget/song-widget-modern.lss")
@@ -33,7 +32,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
   private static final String MAX_WIDTH_VARIABLE_KEY = "--modern-song-widget-max-width";
   private static final String MIN_WIDTH_VARIABLE_KEY = "--modern-song-widget-min-width";
-  private static final String PROGRESS_VARIABLE_KEY = "--modern-song-widget-progress";
+  private static final String PROGRESS_FILL_WIDTH_KEY = "--modern-song-widget-progress-width";
   private static final String PROGRESS_MAX_WIDTH_VARIABLE_KEY = "--modern-song-widget-progress-max-width";
   private static final String BACKGROUND_VARIABLE_KEY = "--modern-song-widget-bg";
   private static final String BORDER_COLOR_VARIABLE_KEY = "--modern-song-widget-border-color";
@@ -44,6 +43,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private ComponentWidget artistWidget;
 
   private IconWidget coverWidget;
+  private IconWidget stationIconWidget;
   private DivWidget progressTrack;
   private DivWidget progressFill;
 
@@ -52,6 +52,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private long lastRenderedElapsed = -1L;
   private int lastRenderedProgressPercent = -1;
   private boolean lastRenderedHadDuration;
+  private float progressTrackMaxWidth = 280f;
   private String lastTrackName = "";
   private Component lastLivePrefix = Component.empty();
 
@@ -76,7 +77,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     this.setVariable(MAX_WIDTH_VARIABLE_KEY, 300);
     this.setVariable(MIN_WIDTH_VARIABLE_KEY, 200);
-    this.setVariable(PROGRESS_VARIABLE_KEY, 0);
+    this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, this.progressTrackMaxWidth);
+    this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
     this.applyBackgroundColor();
 
     boolean showCover = this.hudWidget.getConfig().showCover().get();
@@ -93,21 +95,28 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     FlexibleContentWidget player = new FlexibleContentWidget().addId("player");
 
-    VerticalListWidget<ComponentWidget> text = new VerticalListWidget<>();
-    text.addId("text");
+    FlexibleContentWidget text = new FlexibleContentWidget().addId("text");
 
-    // Immer 4 Zeilen – wie im Original-Layout
+    FlexibleContentWidget streamLine = new FlexibleContentWidget().addId("stream-line");
+    this.stationIconWidget = new IconWidget(EvilTextures.LOGO);
+    this.stationIconWidget.addId("station-icon");
     this.streamWidget = ComponentWidget.empty();
-    text.addChild(this.streamWidget);
+    this.streamWidget.addId("stream-name");
+    streamLine.addContent(this.stationIconWidget);
+    streamLine.addContent(this.streamWidget);
+    text.addContent(streamLine);
 
     this.statusWidget = ComponentWidget.empty();
-    text.addChild(this.statusWidget);
+    this.statusWidget.addId("status");
+    text.addContent(this.statusWidget);
 
     this.trackWidget = ComponentWidget.empty();
-    text.addChild(this.trackWidget);
+    this.trackWidget.addId("track");
+    text.addContent(this.trackWidget);
 
     this.artistWidget = ComponentWidget.empty();
-    text.addChild(this.artistWidget);
+    this.artistWidget.addId("artist");
+    text.addContent(this.artistWidget);
 
     player.addFlexibleContent(text);
 
@@ -190,6 +199,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       this.lastTrackName = "";
       this.lastLivePrefix = Component.empty();
       if (isPlaying && currentStream != null) {
+        this.applyStationIcon(currentStream);
         this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(NamedTextColor.GRAY));
         if (state == NowPlayingConnectionState.RECONNECTING) {
           this.statusWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
@@ -204,6 +214,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
         }
         this.setProgressVisible(false);
       } else {
+        this.applyStationIcon(null);
         this.streamWidget.setComponent(Component.empty());
         this.statusWidget.setComponent(Component.empty());
         this.trackWidget.setComponent(Component.empty());
@@ -217,6 +228,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     if (streamDisplayName.isBlank() && currentSong.getStationName() != null) {
       streamDisplayName = "EvilRadio - " + currentSong.getStationName();
     }
+    this.applyStationIcon(currentStream);
     this.streamWidget.setComponent(Component.text(streamDisplayName).color(NamedTextColor.GRAY));
 
     this.lastLivePrefix = buildLivePrefix(currentStream, currentSong);
@@ -242,7 +254,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     this.setVariable(MIN_WIDTH_VARIABLE_KEY, Math.max(minWidgetWidth, streamNameWidth));
     this.setVariable(MAX_WIDTH_VARIABLE_KEY, (minWidgetWidth + contentWidth));
-    this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, (minWidgetWidth + contentWidth) - 20);
+    this.progressTrackMaxWidth = Math.max(40f, (minWidgetWidth + contentWidth) - 20f);
+    this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, this.progressTrackMaxWidth);
 
     this.applyCover(currentSong);
     this.updateProgress(currentSong);
@@ -300,10 +313,10 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       if (!timeLabel.isEmpty()) {
         status = status
             .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
-            .append(Component.text(timeLabel).color(NamedTextColor.DARK_GRAY));
+            .append(Component.text(timeLabel).color(NamedTextColor.GRAY));
       }
     } else if (!timeLabel.isEmpty()) {
-      status = Component.text(timeLabel).color(NamedTextColor.DARK_GRAY);
+      status = Component.text(timeLabel).color(NamedTextColor.GRAY);
     } else {
       status = Component.empty();
     }
@@ -410,15 +423,18 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     this.renderStatusLine(song);
 
+    // Pixelbreite statt calc(percent * 1%) – LabyMod-LSS aktualisiert %-Breiten sonst nicht zuverlässig
+    float fillWidth;
     if (hasDuration) {
-      this.setVariable(PROGRESS_VARIABLE_KEY, percent);
+      fillWidth = this.progressTrackMaxWidth * (percent / 100.0f);
       this.progressTrack.removeId("indeterminate");
-      this.setProgressVisible(true);
     } else {
-      this.setVariable(PROGRESS_VARIABLE_KEY, 0);
-      this.setProgressVisible(true);
+      fillWidth = this.progressTrackMaxWidth * 0.3f;
       this.progressTrack.addId("indeterminate");
     }
+    this.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
+    this.progressFill.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
+    this.setProgressVisible(true);
   }
 
   private void setProgressVisible(boolean visible) {
@@ -426,6 +442,10 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       this.lastRenderedElapsed = -1L;
       this.lastRenderedProgressPercent = -1;
       this.lastRenderedHadDuration = false;
+      this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
+      if (this.progressFill != null) {
+        this.progressFill.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
+      }
     }
     if (this.progressTrack != null) {
       this.progressTrack.setVisible(visible);
@@ -438,6 +458,15 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private void applyBackgroundColor() {
     this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
     this.setVariable(BORDER_COLOR_VARIABLE_KEY, this.hudWidget.getConfig().borderColor().get().get());
+  }
+
+  private void applyStationIcon(RadioStream stream) {
+    if (this.stationIconWidget == null) {
+      return;
+    }
+    Icon icon = stream != null ? stream.getIcon() : null;
+    this.stationIconWidget.icon().set(icon != null ? icon : EvilTextures.LOGO);
+    this.stationIconWidget.setVisible(stream != null);
   }
 
   private static String stationLabel(RadioStream stream) {

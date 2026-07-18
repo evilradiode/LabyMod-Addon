@@ -331,9 +331,8 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     final RadioStream finalStream = stream;
     if (finalStream != null && finalStream.getUrl() != null && !finalStream.getUrl().isEmpty()) {
       this.radioManager.playStream(finalStream);
-      this.addon.currentSongService().fetchCurrentSong();
-      
-      // Hole Song-Informationen für die Notification
+
+      // Nur REST für Toast – WS-Subscribe macht playStream bereits
       this.addon.currentSongService().fetchCurrentSong(finalStream.getName(), (currentSong) -> {
         Component notificationTitle;
         Component notificationText;

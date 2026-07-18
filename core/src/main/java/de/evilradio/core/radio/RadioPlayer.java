@@ -52,8 +52,16 @@ public class RadioPlayer {
       return;
     }
 
-    if (isPlaying) {
-      stop();
+    stop();
+
+    // Hängenden Playback-Task freimachen, sonst blockiert der Single-Thread-Executor neue Starts
+    if (playbackTask != null && !playbackTask.isDone()) {
+      executorService.shutdownNow();
+      executorService = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "RadioPlayer-Thread");
+        t.setDaemon(true);
+        return t;
+      });
     }
 
     currentStreamUrl = streamUrl;
@@ -271,6 +279,20 @@ public class RadioPlayer {
     shouldStop = true;
     isPlaying = false;
     currentStreamUrl = null;
+
+    // Streams schließen, damit blockierende Reads/OpenAL abbrechen
+    try {
+      if (audioStream != null) {
+        audioStream.close();
+      }
+    } catch (Exception ignored) {
+    }
+    try {
+      if (bitstream != null) {
+        bitstream.close();
+      }
+    } catch (Exception ignored) {
+    }
 
     if (playbackTask != null && !playbackTask.isDone()) {
       playbackTask.cancel(true);

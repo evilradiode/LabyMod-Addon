@@ -96,7 +96,7 @@ public class RadioManager {
 
     if (addon != null && addon.currentSongService() != null) {
       addon.currentSongService().resetCurrentSong();
-      addon.currentSongService().nowPlayingService().switchStation(null);
+      addon.currentSongService().nowPlayingService().clearSubscription();
       addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
     }
   }

@@ -18,19 +18,20 @@ ModernCurrentSong {
     height: 4;
     width: var(--modern-song-widget-progress-max-width);
     margin-left: 10;
-    margin-top: -1;
+    margin-bottom: 6;
     background-color: rgba(255, 255, 255, 0.12);
 
     .progress-fill {
-      height: 100%;
-      width: calc(var(--modern-song-widget-progress) * 1%);
-      //background-color: rgba(255, 255, 255, 0.7);
-      background-color: red;
+      top: 0;
+      left: 0;
+      height: 4;
+      width: var(--modern-song-widget-progress-width);
+      border-radius: 5;
+      background-color: rgba(220, 50, 50, 0.9);
     }
 
     &.indeterminate {
       .progress-fill {
-        width: 30%;
         opacity: 0.4;
       }
     }
@@ -52,10 +53,31 @@ ModernCurrentSong {
         .text {
           margin-top: 2;
           height: fit-content;
+          orientation: vertical;
 
-          Component {
-            left: 0;
-            top: 0;
+          .stream-line {
+            orientation: horizontal;
+            height: 10;
+            width: 100%;
+            space-between-entries: 4;
+
+            .station-icon {
+              width: 10;
+              height: 10;
+              min-width: 10;
+              max-width: 10;
+              border-radius: 3;
+            }
+
+            .stream-name {
+              height: 10;
+              width: fit-content;
+              max-lines: 1;
+              overflow-strategy: clip;
+            }
+          }
+
+          .status, .track, .artist {
             max-lines: 1;
             overflow-strategy: clip;
             width: 100%;

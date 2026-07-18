@@ -95,18 +95,19 @@ public final class AzuraCastNowPlayingService {
     if (!started.get()) {
       start();
     }
-    if (shortcode == null) {
-      logging.warn("Ignoring invalid (null) AzuraCast shortcode");
-      long generation = guard.clear();
-      closeSocket(false);
-      publishState(NowPlayingConnectionState.IDLE, null);
+    if (shortcode == null || shortcode.isBlank()) {
+      clearSubscription();
       return;
     }
 
     String normalized = shortcode.trim();
     String current = guard.activeShortcode();
-    if (normalized.equals(current) && webSocket.get() != null
-        && connectionState.get() == NowPlayingConnectionState.CONNECTED) {
+    NowPlayingConnectionState state = connectionState.get();
+    // Kein Reconnect, wenn dieselbe Station schon connected/lädt – vermeidet Doppel-Switch-Races
+    if (normalized.equals(current)
+        && (state == NowPlayingConnectionState.CONNECTED
+        || state == NowPlayingConnectionState.LOADING
+        || state == NowPlayingConnectionState.RECONNECTING)) {
       return;
     }
 
@@ -116,6 +117,19 @@ public final class AzuraCastNowPlayingService {
     publishState(NowPlayingConnectionState.LOADING, normalized);
     logging.info("Switching NowPlaying subscription to station:" + normalized + " generation=" + generation);
     connect(generation, normalized, false);
+  }
+
+  /**
+   * Beendet die aktuelle Subscription ohne Warn-Log (z.B. beim Stream-Stop während eines Wechsels).
+   */
+  public void clearSubscription() {
+    if (stopped.get()) {
+      return;
+    }
+    guard.clear();
+    cancelReconnect();
+    closeSocket(false);
+    publishState(NowPlayingConnectionState.IDLE, null);
   }
 
   public void stop() {

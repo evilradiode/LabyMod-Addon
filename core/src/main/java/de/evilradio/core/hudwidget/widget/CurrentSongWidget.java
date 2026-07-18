@@ -34,7 +34,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
   private static final String MAX_WIDTH_VARIABLE_KEY = "--current-song-widget-max-width";
   private static final String MIN_WIDTH_VARIABLE_KEY = "--current-song-widget-min-width";
-  private static final String PROGRESS_VARIABLE_KEY = "--current-song-progress";
+  private static final String PROGRESS_FILL_WIDTH_KEY = "--current-song-progress-width";
   private static final String BACKGROUND_VARIABLE_KEY = "--song-widget-bg";
 
   private ComponentWidget streamWidget;
@@ -53,6 +53,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private long lastRenderedElapsed = -1L;
   private int lastRenderedProgressPercent = -1;
   private boolean lastRenderedHadDuration;
+  private float progressTrackMaxWidth = 200f;
   private String lastTrackName = "";
   private Component lastLivePrefix = Component.empty();
 
@@ -76,7 +77,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     this.setVariable(MAX_WIDTH_VARIABLE_KEY, 300);
     this.setVariable(MIN_WIDTH_VARIABLE_KEY, 200);
-    this.setVariable(PROGRESS_VARIABLE_KEY, 0);
+    this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
     this.applyBackgroundColor();
 
     if (this.isEditorContext) {
@@ -154,15 +155,14 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     player.addFlexibleContent(textAndControl);
 
-    this.addContent(player);
-
     this.progressTrack = new DivWidget();
     this.progressTrack.addId("progress-track");
     this.progressFill = new DivWidget();
     this.progressFill.addId("progress-fill");
     this.progressTrack.addChild(this.progressFill);
+    player.addContent(this.progressTrack);
 
-    this.addContent(this.progressTrack);
+    this.addContent(player);
 
     if (!leftAligned) {
       this.addContent(this.coverWidget);
@@ -307,6 +307,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     this.setVariable(MIN_WIDTH_VARIABLE_KEY, Math.max(minWidgetWidth, streamNameWidth));
     this.setVariable(MAX_WIDTH_VARIABLE_KEY, minWidgetWidth + contentWidth);
+    this.progressTrackMaxWidth = Math.max(40f, contentWidth);
 
     this.controlsWidget.setVisible(true);
     this.applyCover(currentSong);
@@ -470,15 +471,17 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     this.renderStatusLine(song);
 
+    float fillWidth;
     if (hasDuration) {
-      this.setVariable(PROGRESS_VARIABLE_KEY, percent);
+      fillWidth = this.progressTrackMaxWidth * (percent / 100.0f);
       this.progressTrack.removeId("indeterminate");
-      this.setProgressVisible(true);
     } else {
-      this.setVariable(PROGRESS_VARIABLE_KEY, 0);
-      this.setProgressVisible(true);
+      fillWidth = this.progressTrackMaxWidth * 0.3f;
       this.progressTrack.addId("indeterminate");
     }
+    this.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
+    this.progressFill.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
+    this.setProgressVisible(true);
   }
 
   private void setProgressVisible(boolean visible) {
@@ -486,6 +489,10 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.lastRenderedElapsed = -1L;
       this.lastRenderedProgressPercent = -1;
       this.lastRenderedHadDuration = false;
+      this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
+      if (this.progressFill != null) {
+        this.progressFill.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
+      }
     }
     if (this.progressTrack != null) {
       this.progressTrack.setVisible(visible);
