@@ -21,7 +21,9 @@
       "noStationsAvailable": "Keine Sender verfügbar",
       "selectStation": "Wähle einen Evil-Radio Sender",
       "volume": "Lautstärke: %s%%",
-      "scrollInfo": "Mausrad ↑↓: Lautstärke ändern | Mittelklick: Play/Pause"
+      "scrollInfo": "Mausrad ↑↓: Lautstärke ändern | Mittelklick: Play/Pause",
+      "playing": "▶ PLAY",
+      "stopped": "⏹ STOP"
     },
     "notification": {
       "streamSelected": {
@@ -37,9 +39,15 @@
     },
     "widget": {
       "loading": "Lädt...",
+      "loadingSong": "Lade Songdaten …",
       "fetchingSongInfo": "Lade Song-Informationen...",
+      "reconnecting": "Verbindung wird wiederhergestellt …",
+      "reconnectingHint": "Bitte kurz warten",
       "notPlaying": "Wird nicht abgespielt",
-      "noStreamSelected": "Kein Sender ausgewählt"
+      "noStreamSelected": "Kein Sender ausgewählt",
+      "onAir": "● ON AIR",
+      "twitch": "● TWITCH",
+      "statusSeparator": " | "
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -123,10 +131,14 @@
         }
       },
       "reloadStreams": {
-        "name": "Streams neu laden §c(nur bei Problemen)§r",
+        "name": "Streams neu laden (nur bei Problemen)",
         "text": "neu laden",
-        "description": "Lädt die Stream-Liste vom Server neu. §cNur bei Problemen verwenden.§r"
+        "description": "Lädt die Stream-Liste vom Server neu. Nur bei Problemen verwenden."
       }
+    },
+    "schedule": {
+      "liveMessage": "EvilRadio ist jetzt live! ",
+      "twitchUrl": "https://www.twitch.tv/evilradiode"
     }
   }
 }

@@ -18,8 +18,12 @@ import javazoom.jl.decoder.Decoder;
 import javazoom.jl.decoder.Header;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.decoder.SampleBuffer;
+import net.labymod.api.util.logging.Logging;
 
 public class RadioPlayer {
+
+  private static final Logging LOGGING = Logging.create("EvilRadio-RadioPlayer");
+
   private SourceDataLine audioLine;
   private OpenAlAudioSession openAlSession;
   private InputStream audioStream;
@@ -253,8 +257,7 @@ public class RadioPlayer {
 
       } catch (Exception e) {
         if (!shouldStop) {
-          System.err.println("Fehler beim Abspielen des Radio-Streams: " + e.getMessage());
-          e.printStackTrace();
+          LOGGING.error("Fehler beim Abspielen des Radio-Streams: " + e.getMessage(), e);
         }
         isPlaying = false;
       } finally {
@@ -289,7 +292,7 @@ public class RadioPlayer {
       try {
         openAlSession.setVolume(this.volume);
       } catch (Exception e) {
-        System.err.println("Fehler beim Setzen der OpenAL-Lautstärke: " + e.getMessage());
+        LOGGING.warn("Fehler beim Setzen der OpenAL-Lautstärke: " + e.getMessage());
       }
     }
 
@@ -302,7 +305,7 @@ public class RadioPlayer {
           gainControl.setValue(gain);
         }
       } catch (Exception e) {
-        System.err.println("Fehler beim Setzen der Lautstärke: " + e.getMessage());
+        LOGGING.warn("Fehler beim Setzen der Lautstärke: " + e.getMessage());
       }
     }
   }

@@ -86,18 +86,18 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
     Component playStopStatus;
     if (isPlaying) {
-      playStopStatus = Component.text("▶ PLAY").color(NamedTextColor.GREEN);
+      playStopStatus = Component.translatable("evilradio.wheel.playing").color(NamedTextColor.GREEN);
     } else {
-      playStopStatus = Component.text("⏹ STOP").color(NamedTextColor.GRAY);
+      playStopStatus = Component.translatable("evilradio.wheel.stopped").color(NamedTextColor.GRAY);
     }
 
     return Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt))).color(NamedTextColor.YELLOW)
-        .append(Component.text(" | ").color(NamedTextColor.GRAY))
+        .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
         .append(playStopStatus);
   }
 
   @Override
-  protected Widget createSubtitle() {
+  protected VerticalListWidget<Widget> createSubtitle() {
     VerticalListWidget<Widget> list = new VerticalListWidget<>().addId(WHEEL_SUBTITLE_ID);
 
     if(hasEntries()) {

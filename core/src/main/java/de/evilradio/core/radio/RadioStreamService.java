@@ -46,13 +46,18 @@ public class RadioStreamService {
             object.get("streams").getAsJsonArray().forEach(jsonElement -> {
               if(jsonElement.isJsonObject()) {
                 JsonObject streamObject = jsonElement.getAsJsonObject();
+                String internalName = null;
+                if (streamObject.has("internal_name") && !streamObject.get("internal_name").isJsonNull()) {
+                  internalName = streamObject.get("internal_name").getAsString();
+                }
                 RadioStream radioStream = new RadioStream(
                     streamObject.get("id").getAsInt(),
                     streamObject.get("name").getAsString(),
                     streamObject.get("displayName").getAsString(),
                     streamObject.get("streamUrl").getAsString(),
                     streamObject.get("iconPath").getAsString(),
-                    streamObject.get("iconUrl").getAsString()
+                    streamObject.get("iconUrl").getAsString(),
+                    internalName
                 );
                 radioStream.initialize();
                 streams.add(radioStream);

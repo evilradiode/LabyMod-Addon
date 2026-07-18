@@ -21,7 +21,6 @@ CurrentSong {
       orientation: horizontal;
       space-between-entries: 2;
 
-
       .text {
         margin-top: 2;
         height: fit-content;
@@ -52,6 +51,28 @@ CurrentSong {
           left: 50%;
           alignment-x: center;
           alignment-y: center;
+        }
+      }
+    }
+
+    .progress-track {
+      position: absolute;
+      bottom: 0;
+      left: 2;
+      right: 2;
+      height: 2;
+      background-color: rgba(255, 255, 255, 0.12);
+
+      .progress-fill {
+        height: 100%;
+        width: calc(var(--current-song-progress) * 1%);
+        background-color: rgba(255, 255, 255, 0.7);
+      }
+
+      &.indeterminate {
+        .progress-fill {
+          width: 30%;
+          opacity: 0.4;
         }
       }
     }

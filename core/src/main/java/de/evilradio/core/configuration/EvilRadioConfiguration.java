@@ -17,7 +17,7 @@ import net.labymod.api.util.MethodOrder;
 @ConfigName("settings")
 public class EvilRadioConfiguration extends AddonConfig {
 
-  @SettingSection(value = "general", center = true)
+  @SettingSection("general")
 
   @SpriteSlot(x = 1)
   @SwitchSetting
@@ -37,14 +37,14 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   private final AutoStartSubSettings autoStart = new AutoStartSubSettings();
 
-  @SettingSection(value = "advanced", center = true)
+  @SettingSection("advanced")
 
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
 
   @Exclude
   private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
 
-  @SettingSection(value = "other", center = true)
+  @SettingSection("other")
 
   @MethodOrder(after = "usageStatistics")
   @ButtonSetting

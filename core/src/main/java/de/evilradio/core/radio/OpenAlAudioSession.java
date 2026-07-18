@@ -5,9 +5,21 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Queue;
 
+/**
+ * OpenAL-Ausgabe über den Minecraft-/LWJGL-Audio-Kontext.
+ *
+ * <p><b>Guideline exception (Reflection):</b> LWJGL-OpenAL ({@code org.lwjgl.openal.AL10}/
+ * {@code ALC10}) ist in LabyMod-Addons nicht als stabile Compile-Dependency über alle
+ * Minecraft-Versionen verfügbar. Direkte Imports würden den Multi-Version-Build brechen.
+ * Deshalb werden die OpenAL-APIs zur Laufzeit per Reflection gebunden, sofern die Klassen
+ * im Client-Classpath vorhanden sind. Mixin/AccessWidener sind hier nicht geeignet, weil
+ * keine Minecraft-/LabyMod-Klassen erweitert werden, sondern optionale LWJGL-APIs.
+ *
+ * <p>Ohne diese Ausnahme wäre eine versionsspezifische Hard-Dependency auf LWJGL nötig,
+ * die das Addon für ältere bzw. abweichende Game-Runner-Varianten unbrauchbar machen würde.
+ */
 public final class OpenAlAudioSession {
 
   private static final boolean AVAILABLE = probeAvailability();
@@ -138,7 +150,7 @@ public final class OpenAlAudioSession {
         bindings.alcCloseDevice,
         bindings.alcMakeContextCurrent
     );
-    session.freeBuffers.addAll(Arrays.stream(buffers).boxed().toList());
+    enqueueFreeBuffers(session, buffers);
     session.setVolume(volume);
     return session;
   }
@@ -200,7 +212,7 @@ public final class OpenAlAudioSession {
         bindings.alcCloseDevice,
         bindings.alcMakeContextCurrent
     );
-    session.freeBuffers.addAll(Arrays.stream(buffers).boxed().toList());
+    enqueueFreeBuffers(session, buffers);
     session.setVolume(volume);
     return session;
   }
@@ -312,6 +324,12 @@ public final class OpenAlAudioSession {
     }
 
     return trimmed;
+  }
+
+  private static void enqueueFreeBuffers(OpenAlAudioSession session, int[] buffers) {
+    for (int buffer : buffers) {
+      session.freeBuffers.add(buffer);
+    }
   }
 
   private static short[] bytesToShorts(byte[] bytes, int length) {

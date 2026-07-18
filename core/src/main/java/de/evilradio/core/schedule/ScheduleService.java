@@ -542,20 +542,19 @@ public class ScheduleService {
    */
   private void sendLiveNotification(ScheduleShow show) {
     this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-      Component message = Component.text("EvilRadio ist jetzt live! ")
+      Component message = Component.translatable("evilradio.schedule.liveMessage")
           .color(net.labymod.api.client.component.format.NamedTextColor.GRAY);
-      
-      // Wenn twitch=1 in der API, füge Twitch-Link hinzu
+
       if (show.isTwitch()) {
-        message = message.append(Component.text("https://www.twitch.tv/evilradiode")
-            .color(net.labymod.api.client.component.format.TextColor.color(145, 70, 255))); // Twitch-Farbe
+        message = message.append(Component.translatable("evilradio.schedule.twitchUrl")
+            .color(net.labymod.api.client.component.format.TextColor.color(145, 70, 255)));
       }
-      
+
       this.addon.labyAPI().minecraft().chatExecutor().displayClientMessage(message);
     });
-    
-    logging.info("Live-Benachrichtigung gesendet für Sendung: " + show.getShowName() + " um " + show.getStartTime() + 
-        (show.isTwitch() ? " (mit Twitch-Link)" : ""));
+
+    logging.info("Live-Benachrichtigung gesendet für Sendung: " + show.getShowName() + " um " + show.getStartTime()
+        + (show.isTwitch() ? " (mit Twitch-Link)" : ""));
   }
   
   private LocalDate parseDate(String dateStr) {
