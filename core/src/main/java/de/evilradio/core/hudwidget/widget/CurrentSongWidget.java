@@ -30,6 +30,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private static final String MAX_WIDTH_VARIABLE_KEY = "--current-song-widget-max-width";
   private static final String MIN_WIDTH_VARIABLE_KEY = "--current-song-widget-min-width";
   private static final String PROGRESS_VARIABLE_KEY = "--current-song-progress";
+  private static final String BACKGROUND_VARIABLE_KEY = "--song-widget-bg";
 
   private final CurrentSongHudWidget hudWidget;
 
@@ -73,6 +74,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.setVariable(MAX_WIDTH_VARIABLE_KEY, 300);
     this.setVariable(MIN_WIDTH_VARIABLE_KEY, 200);
     this.setVariable(PROGRESS_VARIABLE_KEY, 0);
+    this.applyBackgroundColor();
 
     if (this.editorContext) {
       this.addId("maximized");
@@ -212,6 +214,10 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
           this.coverWidget.setVisible(false);
         }
       }
+    }
+
+    if (reason.equals(CurrentSongHudWidget.BACKGROUND_COLOR_REASON)) {
+      this.applyBackgroundColor();
     }
   }
 
@@ -484,6 +490,27 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         this.progressTrack.removeId("indeterminate");
       }
     }
+  }
+
+  private void applyBackgroundColor() {
+    Integer argb = this.hudWidget.getConfig().backgroundColor().get();
+    this.setVariable(BACKGROUND_VARIABLE_KEY, toRgbaCss(argb == null ? 0 : argb));
+  }
+
+  private static String toRgbaCss(int argb) {
+    int alpha = (argb >> 24) & 0xFF;
+    int red = (argb >> 16) & 0xFF;
+    int green = (argb >> 8) & 0xFF;
+    int blue = argb & 0xFF;
+    float alphaNormalized = alpha / 255.0f;
+    return String.format(
+        java.util.Locale.ROOT,
+        "rgba(%d, %d, %d, %.3f)",
+        red,
+        green,
+        blue,
+        alphaNormalized
+    );
   }
 
   private static String stationLabel(RadioStream stream) {

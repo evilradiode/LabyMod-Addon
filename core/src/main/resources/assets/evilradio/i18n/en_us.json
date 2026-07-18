@@ -62,6 +62,10 @@
         "maxTitleLength": {
           "name": "Max Title Length",
           "description": "Set the character limit of the Song Title. When set to 0 the title length is unlimited."
+        },
+        "backgroundColor": {
+          "name": "Background Color",
+          "description": "Color and transparency of the widget background. Fully transparent keeps the background invisible."
         }
       }
     },
