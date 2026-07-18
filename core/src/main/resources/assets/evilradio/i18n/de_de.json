@@ -62,6 +62,10 @@
         "maxTitleLength": {
           "name": "Maximale Titellänge",
           "description": "Setzt die Zeichenbegrenzung des Songtitels. Wenn auf 0 gesetzt, ist die Titellänge unbegrenzt."
+        },
+        "backgroundColor": {
+          "name": "Hintergrundfarbe",
+          "description": "Farbe und Transparenz des Widget-Hintergrunds. Voll transparent lässt den Hintergrund unsichtbar."
         }
       }
     },
