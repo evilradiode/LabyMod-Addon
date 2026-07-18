@@ -45,7 +45,9 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   private final RadioManager radioManager;
   private boolean isWheelOpen = false;
   private long lastMiddleClickTime = 0;
+  private long lastVolumeScrollTime = 0;
   private static final long MIDDLE_CLICK_DEBOUNCE_MS = 200; // 200ms Debounce für Mittelklick
+  private static final long VOLUME_SCROLL_DEBOUNCE_MS = 75; // coalesciert High-Precision-Scroll-Bursts
   private Task mashupOnAirUpdateTask;
 
   public RadioWheelOverlay(EvilRadioAddon addon) {
@@ -232,7 +234,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
   /**
    * Event-Handler für Mausrad-Scroll
-   * Ändert die Lautstärke in 5er-Schritten pro erkanntem Dreh, wenn das Wheel offen ist
+   * Ändert die Lautstärke in 1er-Schritten pro erkanntem Dreh, wenn das Wheel offen ist
    */
   @Subscribe
   public void onMouseScroll(MouseScrollEvent event) {
@@ -246,23 +248,23 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     // Verhindere, dass das Event weiterverarbeitet wird
     event.setCancelled(true);
 
+    // Debounce: High-Precision-Mäuse feuern mehrere Events pro physischer Raste
+    long currentTime = System.currentTimeMillis();
+    if (currentTime - this.lastVolumeScrollTime < VOLUME_SCROLL_DEBOUNCE_MS) {
+      return;
+    }
+    this.lastVolumeScrollTime = currentTime;
+
     // Ändere die Lautstärke basierend auf der Scroll-Richtung
     float currentVolume = this.addon.configuration().volume().get();
     double scrollDelta = event.delta();
-    
+
     // Bestimme die Scroll-Richtung: positiv = nach oben, negativ = nach unten
-    // Pro erkanntem Scroll-Event ändern wir die Lautstärke um genau 5%
+    // Pro akzeptiertem Scroll-Event ändern wir die Lautstärke um genau 1
     int direction = scrollDelta > 0 ? 1 : -1;
-    float volumeChange = direction * 0.5f;
+    float newVolume = Math.clamp(currentVolume + direction, 0.0f, 100.0f);
+    newVolume = Math.round(newVolume);
 
-    // Berechne die neue Lautstärke
-    float newVolume = currentVolume + volumeChange;
-    newVolume = Math.clamp(newVolume, 0.0f, 100.0f);
-
-    // Runde auf den nächsten 5er-Schritt (0, 5, 10, 15, 20, ...)
-    newVolume = Math.round(newVolume / 0.5f) * 0.5f;
-    
-    // Setze die neue Lautstärke
     this.addon.configuration().volume().set(newVolume);
   }
 
