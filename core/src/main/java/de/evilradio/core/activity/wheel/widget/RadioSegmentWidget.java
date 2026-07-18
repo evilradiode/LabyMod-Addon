@@ -93,20 +93,18 @@ public class RadioSegmentWidget extends WheelWidget.Segment {
       
       // Zeige "On Air" und "Twitch" nur für Mashup-Streams
       if (this.isMashupStream()) {
-        boolean hasStatus = false;
         if (isOnAir) {
-          nameComponent = nameComponent.append(Component.text(" | ").color(NamedTextColor.GRAY))
-              .append(Component.text("● ON AIR").color(NamedTextColor.RED));
-          hasStatus = true;
+          nameComponent = nameComponent
+              .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+              .append(Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED));
         }
         if (isTwitch) {
-          if (hasStatus) {
-            nameComponent = nameComponent.append(Component.text(" | ").color(NamedTextColor.GRAY));
-          } else {
-            nameComponent = nameComponent.append(Component.text(" | ").color(NamedTextColor.GRAY));
-          }
-          TextColor twitchColor = TextColor.color(145, 70, 255); // #9146ff
-          nameComponent = nameComponent.append(Component.text("● TWITCH").color(twitchColor));
+          nameComponent = nameComponent
+              .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY));
+          TextColor twitchColor = TextColor.color(145, 70, 255);
+          nameComponent = nameComponent.append(
+              Component.translatable("evilradio.widget.twitch").color(twitchColor)
+          );
         }
       }
       

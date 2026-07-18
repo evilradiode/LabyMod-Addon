@@ -21,7 +21,9 @@
       "noStationsAvailable": "No stations available",
       "selectStation": "Select an Evil-Radio station",
       "volume": "Volume: %s%%",
-      "scrollInfo": "Mouse wheel ↑↓: Change volume | Middle click: Play/Pause"
+      "scrollInfo": "Mouse wheel ↑↓: Change volume | Middle click: Play/Pause",
+      "playing": "▶ PLAY",
+      "stopped": "⏹ STOP"
     },
     "notification": {
       "streamSelected": {
@@ -37,9 +39,15 @@
     },
     "widget": {
       "loading": "Loading...",
+      "loadingSong": "Loading song data …",
       "fetchingSongInfo": "Fetching song info...",
+      "reconnecting": "Reconnecting …",
+      "reconnectingHint": "Please wait a moment",
       "notPlaying": "Not playing",
-      "noStreamSelected": "No Stream selected"
+      "noStreamSelected": "No Stream selected",
+      "onAir": "● ON AIR",
+      "twitch": "● TWITCH",
+      "statusSeparator": " | "
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -123,10 +131,14 @@
         }
       },
       "reloadStreams": {
-        "name": "Reload Streams §c(only if you have problems)§r",
+        "name": "Reload Streams (only if you have problems)",
         "text": "Reload",
-        "description": "Reloads the stream list from the server. §cOnly use if you have problems.§r"
+        "description": "Reloads the stream list from the server. Only use if you have problems."
       }
+    },
+    "schedule": {
+      "liveMessage": "EvilRadio is now live! ",
+      "twitchUrl": "https://www.twitch.tv/evilradiode"
     }
   }
 }

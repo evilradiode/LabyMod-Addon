@@ -1,0 +1,41 @@
+{
+  "connect": {
+    "client": "test-client",
+    "version": "6.7.1 OSS",
+    "time": 1700000000000,
+    "subs": {
+      "station:mashup": {
+        "recoverable": true,
+        "epoch": "1",
+        "publications": [
+          {
+            "data": {
+              "np": {
+                "station": {
+                  "id": 1,
+                  "name": "Mashup",
+                  "shortcode": "mashup"
+                },
+                "live": {
+                  "is_live": true,
+                  "streamer_name": "Alina"
+                },
+                "now_playing": {
+                  "played_at": 1700000000,
+                  "duration": 200,
+                  "elapsed": 42,
+                  "song": {
+                    "id": "song-mashup-1",
+                    "art": "https://broadcast.evil-radio.de/api/station/mashup/art/test.jpg",
+                    "artist": "Test Artist",
+                    "title": "Test Title"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

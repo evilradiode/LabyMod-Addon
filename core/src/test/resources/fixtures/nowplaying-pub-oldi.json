@@ -1,0 +1,29 @@
+{
+  "channel": "station:oldi",
+  "pub": {
+    "data": {
+      "np": {
+        "station": {
+          "id": 5,
+          "name": "Oldie",
+          "shortcode": "oldi"
+        },
+        "live": {
+          "is_live": false,
+          "streamer_name": ""
+        },
+        "now_playing": {
+          "played_at": 1700000100,
+          "duration": 240,
+          "elapsed": 10,
+          "song": {
+            "id": "song-oldi-1",
+            "art": "https://broadcast.evil-radio.de/api/station/oldi/art/test.jpg",
+            "artist": "Alphaville",
+            "title": "Dance With Me"
+          }
+        }
+      }
+    }
+  }
+}

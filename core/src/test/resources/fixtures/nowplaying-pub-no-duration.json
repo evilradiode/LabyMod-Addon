@@ -1,0 +1,24 @@
+{
+  "channel": "station:techno",
+  "pub": {
+    "data": {
+      "np": {
+        "station": {
+          "id": 8,
+          "name": "Techno",
+          "shortcode": "techno"
+        },
+        "now_playing": {
+          "played_at": 1700000200,
+          "duration": 0,
+          "elapsed": 15,
+          "song": {
+            "id": "song-techno-1",
+            "artist": "DJ X",
+            "title": "Untitled Live Mix"
+          }
+        }
+      }
+    }
+  }
+}

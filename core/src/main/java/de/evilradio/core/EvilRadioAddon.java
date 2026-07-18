@@ -101,6 +101,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
         this.radioManager.stopStream();
         this.logger().info("Stream gestoppt, da Addon deaktiviert wurde");
       }
+      if (!enabled && this.currentSongService != null) {
+        this.currentSongService.stopUpdater();
+      } else if (enabled && this.currentSongService != null) {
+        this.currentSongService.startUpdater();
+      }
     });
 
   }
@@ -247,7 +252,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.userManuallyStopped = false;
     
     this.radioManager.playStream(stream);
-    this.currentSongService.fetchCurrentSong();
   }
   
   /**

@@ -74,7 +74,7 @@ public class RadioManager {
       radioPlayer.play(stream.getUrl());
 
       if (addon.currentSongService() != null) {
-        addon.currentSongService().fetchCurrentSong();
+        addon.currentSongService().switchStation(stream);
       }
 
       if (addon.currentSongHudWidget().isEnabled()) {
@@ -98,6 +98,7 @@ public class RadioManager {
 
     if (addon != null && addon.currentSongService() != null) {
       addon.currentSongService().resetCurrentSong();
+      addon.currentSongService().nowPlayingService().switchStation(null);
       if (addon.currentSongHudWidget().isEnabled()) {
         addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
       }
@@ -127,6 +128,9 @@ public class RadioManager {
 
   public void shutdown() {
     stopStream();
+    if (addon != null && addon.currentSongService() != null) {
+      addon.currentSongService().shutdown();
+    }
     if (radioPlayer != null) {
       radioPlayer.shutdown();
     }

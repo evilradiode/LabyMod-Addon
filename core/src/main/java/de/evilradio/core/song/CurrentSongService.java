@@ -4,13 +4,14 @@ import com.google.gson.JsonObject;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
+import de.evilradio.core.song.artwork.ArtworkCache;
+import de.evilradio.core.song.azuracast.AzuraCastNowPlayingService;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.gui.icon.Icon;
-import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.io.web.request.Request;
 import net.labymod.api.util.logging.Logging;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public class CurrentSongService {
 
@@ -18,38 +19,134 @@ public class CurrentSongService {
 
   private final Logging logging = Logging.create("EvilRadio-CurrentSongService");
 
-  private CurrentSong currentSong = null;
-  private String currentStreamName = null;
-  private EvilRadioAddon addon;
+  private final AtomicReference<CurrentSong> currentSong = new AtomicReference<>();
+  private final AtomicReference<NowPlayingConnectionState> connectionState =
+      new AtomicReference<>(NowPlayingConnectionState.IDLE);
+  private final AtomicReference<String> currentShortcode = new AtomicReference<>();
+  private final AtomicReference<String> currentStreamName = new AtomicReference<>();
+  private final ArtworkCache artworkCache = new ArtworkCache(32);
+  private final AzuraCastNowPlayingService nowPlayingService = new AzuraCastNowPlayingService();
 
-  private Task updaterTask;
-  
-  // Trackt, ob bereits eine Twitch-Nachricht für die aktuelle Live-Session gesendet wurde
+  private EvilRadioAddon addon;
   private boolean twitchNotificationSent = false;
 
   public CurrentSongService(EvilRadioAddon addon) {
     this.addon = addon;
+    this.nowPlayingService.setSongListener(this::onNowPlayingSong);
+    this.nowPlayingService.setStateListener(this::onConnectionState);
   }
 
   public void startUpdater() {
-    this.updaterTask = Task.builder(() -> {
-      if(this.addon.radioManager().isPlaying()) {
-        fetchCurrentSong();
-      }
-    }).repeat(1, TimeUnit.MINUTES).build();
-    this.updaterTask.execute();
+    this.nowPlayingService.start();
+    RadioStream currentStream = this.addon.radioManager() == null
+        ? null
+        : this.addon.radioManager().getCurrentStream();
+    if (currentStream != null && this.addon.radioManager().isPlaying()) {
+      switchStation(currentStream);
+    }
   }
 
   public void stopUpdater() {
-    if(this.updaterTask == null) return;
-    this.updaterTask.cancel();
+    this.nowPlayingService.stop();
+  }
+
+  public void shutdown() {
+    this.nowPlayingService.shutdown();
+  }
+
+  /**
+   * Wechselt die WebSocket-Subscription auf den angegebenen Sender.
+   */
+  public void switchStation(RadioStream stream) {
+    if (stream == null || !stream.hasAzuraCastShortcode()) {
+      logging.warn("Cannot subscribe NowPlaying – missing AzuraCast shortcode for stream "
+          + (stream == null ? "null" : stream.getName()));
+      resetCurrentSong();
+      this.nowPlayingService.switchStation(null);
+      requestHudUpdate();
+      return;
+    }
+
+    String shortcode = stream.getAzuraCastShortcode();
+    String previousShortcode = this.currentShortcode.get();
+    boolean stationChanged = previousShortcode != null && !previousShortcode.equals(shortcode);
+
+    this.currentStreamName.set(stream.getName());
+    this.currentShortcode.set(shortcode);
+    this.artworkCache.bumpGeneration();
+    this.currentSong.set(null);
+    this.connectionState.set(NowPlayingConnectionState.LOADING);
+    if (stationChanged) {
+      this.twitchNotificationSent = false;
+    }
+
+    requestHudUpdate();
+    this.nowPlayingService.switchStation(shortcode);
+  }
+
+  private void onConnectionState(NowPlayingConnectionState state, String shortcode) {
+    String active = this.currentShortcode.get();
+    if (shortcode != null && active != null && !active.equals(shortcode)) {
+      return;
+    }
+    this.connectionState.set(state == null ? NowPlayingConnectionState.DISCONNECTED : state);
+    requestHudUpdate();
+  }
+
+  private void onNowPlayingSong(CurrentSong song) {
+    if (song == null || !song.isValid()) {
+      return;
+    }
+
+    String activeShortcode = this.currentShortcode.get();
+    if (activeShortcode == null) {
+      return;
+    }
+    if (song.getStationShortcode() != null && !activeShortcode.equals(song.getStationShortcode())) {
+      return;
+    }
+
+    CurrentSong previous = this.currentSong.get();
+    boolean songChanged = previous != null
+        && (!previous.getTitle().equals(song.getTitle()) || !previous.getArtist().equals(song.getArtist()));
+
+    String cacheKey = ArtworkCache.key(activeShortcode, song.getSongId(), song.getImageUrl());
+    long artworkGeneration = this.artworkCache.currentGeneration();
+    this.artworkCache.put(cacheKey, song.getImageUrl());
+
+    this.currentSong.set(song);
+    this.connectionState.set(NowPlayingConnectionState.CONNECTED);
+    requestHudUpdate();
+
+    this.artworkCache.applyIfCurrent(artworkGeneration, song.getImageUrl(), url -> {
+      // Cover-URL ist bereits im Snapshot; Generation verhindert spätere Alt-Downloads
+    });
+
+    if (songChanged && this.addon.configuration().showSongChangeNotification().get()) {
+      RadioStream notificationStream = this.addon.radioManager().getCurrentStream();
+      Icon streamIcon = notificationStream == null ? null : notificationStream.getIcon();
+      String imageUrl = song.getImageUrl();
+      this.addon.notification(
+          Component.translatable("evilradio.notification.songChanged.title"),
+          Component.translatable("evilradio.notification.songChanged.text",
+              Component.text(song.getFormatted())),
+          imageUrl == null || imageUrl.isBlank() ? null : Icon.url(imageUrl),
+          streamIcon
+      );
+    }
   }
 
   private CurrentSong getSongFromJson(JsonObject object) {
-    if(!object.has("current")) return null;
-    if(!object.get("current").isJsonObject()) return null;
+    if (!object.has("current")) {
+      return null;
+    }
+    if (!object.get("current").isJsonObject()) {
+      return null;
+    }
     JsonObject currentSongObject = object.get("current").getAsJsonObject();
-    if (!currentSongObject.has("title") || !currentSongObject.has("artist") || !currentSongObject.has("image")) return null;
+    if (!currentSongObject.has("title") || !currentSongObject.has("artist") || !currentSongObject.has("image")) {
+      return null;
+    }
     String title = currentSongObject.get("title").getAsString();
     String artist = currentSongObject.get("artist").getAsString();
     String image = currentSongObject.get("image").getAsString();
@@ -72,148 +169,36 @@ public class CurrentSongService {
     return new CurrentSong(title, artist, image, moderatorName, onAir, twitch);
   }
 
+  /**
+   * Startet/aktualisiert die Now-Playing-Subscription für den aktuell spielenden Sender.
+   */
   public void fetchCurrentSong() {
-    // Hole den aktuellen Stream
     RadioStream currentStream = this.addon.radioManager().getCurrentStream();
     if (currentStream == null) {
       logging.warn("No current stream found, cannot fetch song info");
-      this.currentSong = null;
-      if(this.addon.currentSongHudWidget().isEnabled()) {
-        this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-      }
+      resetCurrentSong();
+      this.nowPlayingService.switchStation(null);
+      requestHudUpdate();
       return;
     }
-    
-    String streamName = currentStream.getName();
-    if (streamName == null || streamName.isEmpty()) {
-      logging.warn("Current stream has no name, cannot fetch song info");
-      this.currentSong = null;
-      this.currentStreamName = null;
-      if(this.addon.currentSongHudWidget().isEnabled()) {
-        this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-      }
-      return;
-    }
-    
-    // Prüfe, ob sich der Stream geändert hat (auch wenn currentStreamName null ist, z.B. nach resetCurrentSong())
-    boolean streamChanged = this.currentStreamName != null && !this.currentStreamName.equals(streamName);
-    // Wenn currentStreamName null ist, bedeutet das, dass der Stream zurückgesetzt wurde oder noch nicht geladen wurde
-    // In diesem Fall sollte auch keine "Neuer Song" Notification kommen
-    boolean isFirstLoadOrReset = this.currentStreamName == null;
-    
-    // Wenn sich der Stream geändert hat oder es der erste Load/Reset ist, setze currentSong auf null
-    // um keine "Neuer Song" Notification auszulösen
-    if (streamChanged || isFirstLoadOrReset) {
-      this.currentSong = null;
-    }
-    
-    // Speichere den Song und Stream-Namen vor dem Request, um später zu prüfen, ob er sich geändert hat
-    CurrentSong songBefore = this.currentSong;
-    String streamNameBefore = this.currentStreamName;
-    
-    Request.ofGson(JsonObject.class)
-        .url(API_BASE_URL + streamName)
-        .async()
-        .connectTimeout(5000)
-        .readTimeout(5000)
-        .userAgent("EvilRadio LabyMod 4 Addon")
-        .execute(response -> {
-          if(response.hasException() || response.getStatusCode() != 200) {
-            logging.error("Failed to load current song", response.hasException() ? response.exception() : new Exception("HTTP " + response.getStatusCode()));
-            this.currentSong = null;
-            if(this.addon.currentSongHudWidget().isEnabled()) {
-              this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-            }
-            return;
-          }
-          
-          JsonObject object = response.get();
-
-          CurrentSong newSong = getSongFromJson(object);
-          if(newSong == null) {
-            this.currentSong = null;
-            if(this.addon.currentSongHudWidget().isEnabled()) {
-              this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-            }
-            return;
-          }
-
-          // Prüfe erneut, ob sich der Stream geändert hat (könnte sich während des Requests geändert haben)
-          boolean streamStillChanged = streamNameBefore != null && !streamNameBefore.equals(streamName);
-          // Prüfe, ob es der erste Load/Reset war
-          boolean wasFirstLoadOrReset = streamNameBefore == null;
-
-          // Prüfe, ob sich der Song geändert hat (nur wenn bereits ein Song geladen war UND der Stream gleich geblieben ist)
-          // Beim Streamwechsel oder beim ersten Laden soll keine "Neuer Song" Notification kommen
-          boolean songChanged = !streamStillChanged && !wasFirstLoadOrReset && songBefore != null &&
-              (!songBefore.getTitle().equals(newSong.getTitle()) ||
-                  !songBefore.getArtist().equals(newSong.getArtist()));
-
-          // Alte Twitch-Erkennung deaktiviert - wird jetzt über ScheduleService mit Sendeplan-API gehandhabt
-          // Die Twitch-Status-Anzeige im Widget bleibt weiterhin aktiv
-          // Prüfe Twitch-Status für Chat-Nachricht (nur für Mashup-Stream)
-          // boolean wasTwitchLive = this.currentSong != null && this.currentSong.isTwitch();
-          // boolean isTwitchLive = newSong.isTwitch();
-          // boolean isMashupStream = streamName != null && streamName.equalsIgnoreCase("mashup");
-          
-          // Wenn Twitch nicht mehr live ist, setze die Flag zurück
-          // if (wasTwitchLive && !isTwitchLive) {
-          //   this.twitchNotificationSent = false;
-          // }
-          
-          // Wenn sich der Stream geändert hat, setze die Flag zurück
-          // if (streamStillChanged || wasFirstLoadOrReset) {
-          //   this.twitchNotificationSent = false;
-          // }
-          
-          // Sende Chat-Nachricht, wenn Twitch gerade live geworden ist (nur einmalig pro Session)
-          // if (isMashupStream && isTwitchLive && !wasTwitchLive && !this.twitchNotificationSent) {
-          //   this.twitchNotificationSent = true;
-          //   this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-          //     Component twitchMessage = Component.text("EvilRadio ist jetzt live auf Twitch! ")
-          //         .color(net.labymod.api.client.component.format.NamedTextColor.GRAY)
-          //         .append(Component.text("https://www.twitch.tv/evilradiode")
-          //             .color(net.labymod.api.client.component.format.TextColor.color(145, 70, 255))); // Twitch-Farbe
-          //     this.addon.labyAPI().minecraft().chatExecutor().displayClientMessage(twitchMessage);
-          //   });
-          // }
-
-          this.currentSong = newSong;
-          // Aktualisiere den aktuellen Stream-Namen erst nach erfolgreichem Laden
-          this.currentStreamName = streamName;
-          // Aktualisiere das Widget nach dem Setzen des aktuellen Songs
-          if(this.addon.currentSongHudWidget().isEnabled()) {
-            this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-          }
-
-          // Zeige Notification nur, wenn sich der Song geändert hat (nicht beim ersten Laden oder Streamwechsel)
-          if (songChanged && this.addon.configuration().showSongChangeNotification().get()) {
-            RadioStream notificationStream = this.addon.radioManager().getCurrentStream();
-            Icon streamIcon = null;
-            if (notificationStream != null) {
-              streamIcon = notificationStream.getIcon();
-            }
-            this.addon.notification(
-                Component.translatable("evilradio.notification.songChanged.title"),
-                Component.translatable("evilradio.notification.songChanged.text",
-                    Component.text(this.currentSong.getFormatted())),
-                Icon.url(this.currentSong.getImageUrl()),
-                streamIcon
-            );
-          }
-        });
+    switchStation(currentStream);
   }
 
   /**
    * Setzt den aktuellen Song zurück, wenn der Stream gestoppt wird.
-   * Dies verhindert, dass beim nächsten Stream-Start fälschlicherweise "Neuer Song" Notifications ausgelöst werden.
    */
   public void resetCurrentSong() {
-    this.currentSong = null;
-    this.currentStreamName = null;
-    this.twitchNotificationSent = false; // Setze auch die Twitch-Notification-Flag zurück
+    this.currentSong.set(null);
+    this.currentStreamName.set(null);
+    this.currentShortcode.set(null);
+    this.connectionState.set(NowPlayingConnectionState.IDLE);
+    this.twitchNotificationSent = false;
+    this.artworkCache.bumpGeneration();
   }
 
+  /**
+   * Legacy-REST-Abruf (Wheel/Menü/On-Air-Badges). Nicht für das Live-HUD.
+   */
   public void fetchCurrentSong(String streamName, Consumer<CurrentSong> callback) {
     if (streamName == null || streamName.isEmpty()) {
       callback.accept(null);
@@ -236,11 +221,30 @@ public class CurrentSongService {
   }
 
   public CurrentSong getCurrentSong() {
-    return currentSong;
+    return currentSong.get();
   }
 
-  public Task getUpdaterTask() {
-    return updaterTask;
+  public NowPlayingConnectionState getConnectionState() {
+    return connectionState.get();
   }
 
+  public String getCurrentShortcode() {
+    return currentShortcode.get();
+  }
+
+  public ArtworkCache artworkCache() {
+    return artworkCache;
+  }
+
+  public AzuraCastNowPlayingService nowPlayingService() {
+    return nowPlayingService;
+  }
+
+  private void requestHudUpdate() {
+    if (this.addon.currentSongHudWidget() != null && this.addon.currentSongHudWidget().isEnabled()) {
+      this.addon.labyAPI().minecraft().executeOnRenderThread(() ->
+          this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON)
+      );
+    }
+  }
 }
