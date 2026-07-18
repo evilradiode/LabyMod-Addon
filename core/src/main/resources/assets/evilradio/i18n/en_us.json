@@ -52,6 +52,11 @@
     "hudWidget": {
       "evilradio_full_widget": {
         "name": "Evil Radio Widget",
+        "header": {
+          "customization": {
+            "name": "Customization"
+          }
+        },
         "showCover": {
           "name": "Show Cover",
           "description": "Show the album cover in the widget."
@@ -71,6 +76,14 @@
         "backgroundColor": {
           "name": "Background Color",
           "description": "Color and transparency of the widget background. Fully transparent keeps the background invisible."
+        },
+        "borderColor": {
+          "name": "Border Color",
+          "description": "Color and transparency of the widget border. Fully transparent keeps the border invisible."
+        },
+        "progressBarColor": {
+          "name": "Progressbar Color",
+          "description": "Color and transparency of the song progressbar. Fully transparent keeps the progressbar invisible."
         }
       }
     },

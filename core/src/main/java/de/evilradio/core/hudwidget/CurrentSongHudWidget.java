@@ -13,6 +13,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.Switc
 import net.labymod.api.client.gui.screen.widget.widgets.input.color.ColorPickerWidget.ColorPickerSetting;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
+import net.labymod.api.configuration.settings.annotation.SettingSection;
 import net.labymod.api.util.Color;
 import net.labymod.api.util.ThreadSafe;
 
@@ -102,6 +103,8 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @IntroducedIn(namespace = "evilradio", value = "1.0.4")
     @SliderSetting(min = 0, max = 500, steps = 10)
     private final ConfigProperty<Integer> maxTitleLength = ConfigProperty.create(150);
+
+    @SettingSection("customization")
 
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
     @ColorPickerSetting(alpha = true)
