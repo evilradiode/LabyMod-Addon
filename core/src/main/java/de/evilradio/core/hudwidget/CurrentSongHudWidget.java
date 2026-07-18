@@ -31,17 +31,6 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     this.setIcon(EvilTextures.LOGO);
   }
 
-  /*@Override
-  public void initializePreConfigured(CurrentSongHudWidgetConfig config) {
-    super.initializePreConfigured(config);
-
-    config.setEnabled(true);
-    config.setAreaIdentifier(RectangleAreaPosition.TOP_RIGHT);
-    config.setX(-2);
-    config.setY(2);
-    config.setParentToTailOfChainIn(RectangleAreaPosition.TOP_RIGHT);
-  }*/
-
   @Override
   public void load(CurrentSongHudWidgetConfig config) {
     super.load(config);
