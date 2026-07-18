@@ -97,7 +97,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   }
 
   @Override
-  protected Widget createSubtitle() {
+  protected VerticalListWidget<Widget> createSubtitle() {
     VerticalListWidget<Widget> list = new VerticalListWidget<>().addId(WHEEL_SUBTITLE_ID);
 
     if(hasEntries()) {
