@@ -52,12 +52,12 @@ public class RadioStreamService {
                 }
                 RadioStream radioStream = new RadioStream(
                     streamObject.get("id").getAsInt(),
+                    internalName,
                     streamObject.get("name").getAsString(),
                     streamObject.get("displayName").getAsString(),
                     streamObject.get("streamUrl").getAsString(),
                     streamObject.get("iconPath").getAsString(),
-                    streamObject.get("iconUrl").getAsString(),
-                    internalName
+                    streamObject.get("iconUrl").getAsString()
                 );
                 radioStream.initialize();
                 streams.add(radioStream);

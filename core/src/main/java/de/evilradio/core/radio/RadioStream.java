@@ -6,42 +6,31 @@ import net.labymod.api.client.resources.ResourceLocation;
 public class RadioStream {
 
   private final int id;
+  private final String azuraCastShortcode;
   private final String url;
   private final String name;
   private final String iconPath;
   private final String displayName;
   private final String iconUrl;
-  private final String azuraCastShortcode;
 
   private Icon icon;
 
   public RadioStream(
       int id,
+      String azuraCastShortcode,
       String name,
       String displayName,
       String streamUrl,
       String iconPath,
       String iconUrl
   ) {
-    this(id, name, displayName, streamUrl, iconPath, iconUrl, null);
-  }
-
-  public RadioStream(
-      int id,
-      String name,
-      String displayName,
-      String streamUrl,
-      String iconPath,
-      String iconUrl,
-      String azuraCastShortcode
-  ) {
     this.id = id;
+    this.azuraCastShortcode = azuraCastShortcode;
     this.name = name;
     this.displayName = displayName;
     this.url = streamUrl;
     this.iconPath = iconPath;
     this.iconUrl = iconUrl;
-    this.azuraCastShortcode = StationShortcodes.resolve(azuraCastShortcode, name, displayName);
   }
 
   public RadioStream initialize() {
@@ -84,15 +73,8 @@ public class RadioStream {
     return iconUrl;
   }
 
-  /**
-   * AzuraCast-Shortcode (z.B. {@code oldi}, {@code pop_und_rap}). Nie den Anzeigenamen verwenden.
-   */
   public String getAzuraCastShortcode() {
     return azuraCastShortcode;
-  }
-
-  public boolean hasAzuraCastShortcode() {
-    return StationShortcodes.isValidShortcode(azuraCastShortcode);
   }
 
   @Override

@@ -58,9 +58,8 @@ public class CurrentSongService {
    * Wechselt die WebSocket-Subscription auf den angegebenen Sender.
    */
   public void switchStation(RadioStream stream) {
-    if (stream == null || !stream.hasAzuraCastShortcode()) {
-      logging.warn("Cannot subscribe NowPlaying – missing AzuraCast shortcode for stream "
-          + (stream == null ? "null" : stream.getName()));
+    if (stream == null) {
+      logging.warn("Cannot subscribe NowPlaying – missing AzuraCast shortcode because Stream is null.");
       resetCurrentSong();
       this.nowPlayingService.switchStation(null);
       requestHudUpdate();

@@ -1,7 +1,6 @@
 package de.evilradio.core.song.azuracast;
 
 import com.google.gson.JsonObject;
-import de.evilradio.core.radio.StationShortcodes;
 import de.evilradio.core.song.CurrentSong;
 import de.evilradio.core.song.NowPlayingConnectionState;
 import java.net.URI;
@@ -96,8 +95,8 @@ public final class AzuraCastNowPlayingService {
     if (!started.get()) {
       start();
     }
-    if (!StationShortcodes.isValidShortcode(shortcode)) {
-      logging.warn("Ignoring invalid AzuraCast shortcode: " + shortcode);
+    if (shortcode == null) {
+      logging.warn("Ignoring invalid (null) AzuraCast shortcode");
       long generation = guard.clear();
       closeSocket(false);
       publishState(NowPlayingConnectionState.IDLE, null);
