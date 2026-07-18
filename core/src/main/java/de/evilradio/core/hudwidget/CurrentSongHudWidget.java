@@ -21,7 +21,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public static final String COVER_VISIBILITY_REASON = "cover_visibility";
   public static final String SONG_CHANGE_REASON = "song_change";
   public static final String TITLE_LENGTH_CHANGE_REASON = "title_length_change";
-  public static final String BACKGROUND_COLOR_REASON = "background_color";
+  public static final String COLOR_REASON = "color_style";
 
   private final EvilRadioAddon addon;
   private HudWidgetWidget hudWidgetWidget = null;
@@ -50,11 +50,11 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     );
     config.backgroundColor.addChangeListener(
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
-            () -> this.requestUpdate(BACKGROUND_COLOR_REASON))
+            () -> this.requestUpdate(COLOR_REASON))
     );
     config.borderColor.addChangeListener(
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
-            () -> this.requestUpdate(BACKGROUND_COLOR_REASON))
+            () -> this.requestUpdate(COLOR_REASON))
     );
     config.useModernWidget.addChangeListener((property, oldValue, newValue) -> {
       if(this.hudWidgetWidget != null) {

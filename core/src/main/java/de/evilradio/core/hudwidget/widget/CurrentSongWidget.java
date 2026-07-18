@@ -220,7 +220,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       }
     }
 
-    if (reason.equals(CurrentSongHudWidget.BACKGROUND_COLOR_REASON)) {
+    if (reason.equals(CurrentSongHudWidget.COLOR_REASON)) {
       this.applyBackgroundColor();
     }
   }
