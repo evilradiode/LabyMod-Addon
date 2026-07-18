@@ -5,14 +5,15 @@ import de.evilradio.core.EvilTextures;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget.CurrentSongHudWidgetConfig;
 import de.evilradio.core.hudwidget.widget.CurrentSongWidget;
 import de.evilradio.core.hudwidget.widget.ModernCurrentSongWidget;
+import net.labymod.api.client.component.format.TextColor;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidgetConfig;
 import net.labymod.api.client.gui.hud.hudwidget.widget.WidgetHudWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
-import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.color.ColorPickerWidget.ColorPickerSetting;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
+import net.labymod.api.configuration.settings.annotation.ColorRowBreak;
 import net.labymod.api.configuration.settings.annotation.SettingSection;
 import net.labymod.api.util.Color;
 import net.labymod.api.util.ThreadSafe;
@@ -21,8 +22,20 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
   public static final String COVER_VISIBILITY_REASON = "cover_visibility";
   public static final String SONG_CHANGE_REASON = "song_change";
-  public static final String TITLE_LENGTH_CHANGE_REASON = "title_length_change";
   public static final String COLOR_REASON = "color_style";
+  public static final String SCROLL_TEXT_REASON = "scroll_text";
+
+  /** Feste Obergrenze für Songtitel (Zeichen). */
+  public static final int MAX_TITLE_LENGTH = 150;
+
+  /** Minecraft-Grau (#AAAAAA) – bisher NamedTextColor.GRAY */
+  public static final Color DEFAULT_STATION_COLOR = Color.ofRGB(170, 170, 170);
+  /** Minecraft-Weiß – bisher NamedTextColor.WHITE */
+  public static final Color DEFAULT_SONG_COLOR = Color.WHITE;
+  /** Minecraft-Grau (#AAAAAA) – bisher NamedTextColor.GRAY */
+  public static final Color DEFAULT_ARTIST_COLOR = Color.ofRGB(170, 170, 170);
+  public static final Color DEFAULT_BACKGROUND_COLOR = Color.ofRGB(0, 0, 0);
+  public static final Color DEFAULT_PROGRESS_BAR_COLOR = Color.ofRGB(255, 85, 85);
 
   private final EvilRadioAddon addon;
   private HudWidgetWidget hudWidgetWidget = null;
@@ -41,19 +54,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COVER_VISIBILITY_REASON))
     );
-    config.limitTitleLength.addChangeListener(
-        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
-            () -> this.requestUpdate(TITLE_LENGTH_CHANGE_REASON))
-    );
-    config.maxTitleLength.addChangeListener(
-        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
-            () -> this.requestUpdate(TITLE_LENGTH_CHANGE_REASON))
-    );
     config.backgroundColor.addChangeListener(
-        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
-            () -> this.requestUpdate(COLOR_REASON))
-    );
-    config.borderColor.addChangeListener(
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COLOR_REASON))
     );
@@ -61,8 +62,24 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COLOR_REASON))
     );
+    config.stationColor.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(COLOR_REASON))
+    );
+    config.songColor.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(COLOR_REASON))
+    );
+    config.artistColor.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(COLOR_REASON))
+    );
+    config.scrollLongText.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(SCROLL_TEXT_REASON))
+    );
     config.useModernWidget.addChangeListener((property, oldValue, newValue) -> {
-      if(this.hudWidgetWidget != null) {
+      if (this.hudWidgetWidget != null) {
         this.hudWidgetWidget.reInitialize();
       }
     });
@@ -72,7 +89,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public void initialize(HudWidgetWidget widget) {
     super.initialize(widget);
     this.hudWidgetWidget = widget;
-    if(this.config.useModernWidget.get()) {
+    if (this.config.useModernWidget.get()) {
       widget.addChild(new ModernCurrentSongWidget(this.addon, this, widget.accessor().isEditor()));
       widget.addId("current-song-modern");
     } else {
@@ -83,8 +100,17 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
   @Override
   public boolean isVisibleInGame() {
-    if (!this.addon.configuration().enabled().get()) return false;
+    if (!this.addon.configuration().enabled().get()) {
+      return false;
+    }
     return this.addon.radioManager().isPlaying();
+  }
+
+  public static TextColor toTextColor(Color color) {
+    if (color == null) {
+      return TextColor.color(255, 255, 255);
+    }
+    return TextColor.color(color.getRed(), color.getGreen(), color.getBlue());
   }
 
   public static class CurrentSongHudWidgetConfig extends HudWidgetConfig {
@@ -96,50 +122,59 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SwitchSetting
     private final ConfigProperty<Boolean> useModernWidget = ConfigProperty.create(false);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.0.4")
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
     @SwitchSetting
-    private final ConfigProperty<Boolean> limitTitleLength = ConfigProperty.create(true);
-
-    @IntroducedIn(namespace = "evilradio", value = "1.0.4")
-    @SliderSetting(min = 0, max = 500, steps = 10)
-    private final ConfigProperty<Integer> maxTitleLength = ConfigProperty.create(150);
+    private final ConfigProperty<Boolean> scrollLongText = ConfigProperty.create(true);
 
     @SettingSection("customization")
 
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
     @ColorPickerSetting(alpha = true)
-    private final ConfigProperty<Color> backgroundColor = ConfigProperty.create(Color.ofRGB(0, 0, 0));
+    private final ConfigProperty<Color> backgroundColor = ConfigProperty.create(DEFAULT_BACKGROUND_COLOR);
 
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
     @ColorPickerSetting(alpha = true)
-    private final ConfigProperty<Color> borderColor = ConfigProperty.create(Color.ofRGB(0, 0, 0));
+    private final ConfigProperty<Color> progressBarColor = ConfigProperty.create(DEFAULT_PROGRESS_BAR_COLOR);
 
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
-    @ColorPickerSetting(alpha = true)
-    private final ConfigProperty<Color> progressBarColor = ConfigProperty.create(Color.ofRGB(255, 85, 85));
+    @ColorRowBreak
+    @ColorPickerSetting
+    private final ConfigProperty<Color> stationColor = ConfigProperty.create(DEFAULT_STATION_COLOR);
+
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @ColorPickerSetting
+    private final ConfigProperty<Color> songColor = ConfigProperty.create(DEFAULT_SONG_COLOR);
+
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @ColorPickerSetting
+    private final ConfigProperty<Color> artistColor = ConfigProperty.create(DEFAULT_ARTIST_COLOR);
 
     public ConfigProperty<Boolean> showCover() {
       return this.showCover;
     }
 
-    public ConfigProperty<Boolean> limitTitleLength() {
-      return this.limitTitleLength;
-    }
-
-    public ConfigProperty<Integer> maxTitleLength() {
-      return maxTitleLength;
+    public ConfigProperty<Boolean> scrollLongText() {
+      return this.scrollLongText;
     }
 
     public ConfigProperty<Color> backgroundColor() {
       return this.backgroundColor;
     }
 
-    public ConfigProperty<Color> borderColor() {
-      return this.backgroundColor;
+    public ConfigProperty<Color> progressBarColor() {
+      return this.progressBarColor;
     }
 
-    public ConfigProperty<Color> progressBarColor() {
-      return progressBarColor;
+    public ConfigProperty<Color> stationColor() {
+      return this.stationColor;
+    }
+
+    public ConfigProperty<Color> songColor() {
+      return this.songColor;
+    }
+
+    public ConfigProperty<Color> artistColor() {
+      return this.artistColor;
     }
 
   }

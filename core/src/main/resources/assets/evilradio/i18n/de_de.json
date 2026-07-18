@@ -47,7 +47,9 @@
       "noStreamSelected": "Kein Sender ausgewählt",
       "onAir": "● ON AIR",
       "twitch": "● TWITCH",
-      "statusSeparator": " | "
+      "statusSeparator": " | ",
+      "adBreakTitle": "Jetzt läuft",
+      "adBreakArtist": "Werbung"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -65,25 +67,29 @@
           "name": "Moderner Widget-Stil",
           "description": "Verwende den modernen Widget-Stil."
         },
-        "limitTitleLength": {
-          "name": "Titellänge begrenzen",
-          "description": "Limitiert die Länge des Titels. Verhindert, dass der Titel zu lang ist und potenziell zu viel Platz auf dem Bildschirm einnimmt."
-        },
-        "maxTitleLength": {
-          "name": "Maximale Titellänge",
-          "description": "Setzt die Zeichenbegrenzung des Songtitels. Wenn auf 0 gesetzt, ist die Titellänge unbegrenzt."
+        "scrollLongText": {
+          "name": "Langen Text scrollen",
+          "description": "Wenn aktiv, laufen zu lange Titel/Interpreten als Lauftext durch. Wenn deaktiviert, werden sie mit … abgeschnitten."
         },
         "backgroundColor": {
           "name": "Hintergrundfarbe",
           "description": "Farbe und Transparenz des Widget-Hintergrunds. Voll transparent lässt den Hintergrund unsichtbar."
         },
-        "borderColor": {
-          "name": "Randfarbe",
-          "description": "Farbe und Transparenz des Widget-Randes. Voll transparent lässt den Rand unsichtbar."
-        },
         "progressBarColor": {
-          "name": "Progressbarfarbe",
-          "description": "Farbe und Transparenz des Song progressbaren. Voll transparent lässt den Progressbar unsichtbar."
+          "name": "Progressbar-Füllfarbe",
+          "description": "Farbe der inneren Progressbar (Fortschrittsfüllung)."
+        },
+        "stationColor": {
+          "name": "Senderfarbe",
+          "description": "Textfarbe der Senderzeile. Über den Reset-Button kannst du die Standardfarbe wiederherstellen."
+        },
+        "songColor": {
+          "name": "Songfarbe",
+          "description": "Textfarbe des Songtitels. Über den Reset-Button kannst du die Standardfarbe wiederherstellen."
+        },
+        "artistColor": {
+          "name": "Interpretfarbe",
+          "description": "Textfarbe des Interpreten. Über den Reset-Button kannst du die Standardfarbe wiederherstellen."
         }
       }
     },

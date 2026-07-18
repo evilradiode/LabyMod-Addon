@@ -201,10 +201,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.updateTrack(this.addon.currentSongService().getCurrentSong());
     }
 
-    if (reason.equals(CurrentSongHudWidget.TITLE_LENGTH_CHANGE_REASON)) {
-      this.updateTitleLength(this.addon.currentSongService().getCurrentSong());
-    }
-
     if (reason.equals(CurrentSongHudWidget.COVER_VISIBILITY_REASON)) {
       boolean showCover = this.hudWidget.getConfig().showCover().get();
       if (showCover) {
@@ -222,16 +218,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     if (reason.equals(CurrentSongHudWidget.COLOR_REASON)) {
       this.applyBackgroundColor();
+      this.updateTrack(this.addon.currentSongService().getCurrentSong());
     }
-  }
-
-  private void updateTitleLength(CurrentSong currentSong) {
-    if (currentSong == null || this.trackWidget == null) {
-      return;
-    }
-    this.lastTrackName = limitedTitle(currentSong.getTitle());
-    this.trackWidget.setComponent(Component.text(this.lastTrackName).color(NamedTextColor.WHITE));
-    this.addon.labyAPI().minecraft().executeOnRenderThread(() -> this.trackWidget.updateComponent());
   }
 
   private void updateTrack(CurrentSong currentSong) {
@@ -254,7 +242,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.lastTrackName = "";
       this.lastLivePrefix = Component.empty();
       if (isPlaying && currentStream != null) {
-        this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(NamedTextColor.GRAY));
+        this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(this.stationTextColor()));
         if (state == NowPlayingConnectionState.RECONNECTING) {
           this.statusWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
               .color(NamedTextColor.DARK_GRAY));
@@ -282,16 +270,16 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     if (streamDisplayName.isBlank() && currentSong.getStationName() != null) {
       streamDisplayName = "EvilRadio - " + currentSong.getStationName();
     }
-    this.streamWidget.setComponent(Component.text(streamDisplayName).color(NamedTextColor.GRAY));
+    this.streamWidget.setComponent(Component.text(streamDisplayName).color(this.stationTextColor()));
 
     this.lastLivePrefix = buildLivePrefix(currentStream, currentSong);
     this.renderStatusLine(currentSong);
 
     this.lastTrackName = limitedTitle(currentSong.getTitle());
-    this.trackWidget.setComponent(Component.text(this.lastTrackName).color(NamedTextColor.WHITE));
+    this.trackWidget.setComponent(Component.text(this.lastTrackName).color(this.songTextColor()));
 
     String artistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
-    this.artistWidget.setComponent(Component.text(artistName).color(NamedTextColor.GRAY));
+    this.artistWidget.setComponent(Component.text(artistName).color(this.artistTextColor()));
 
     TextRenderer textRenderer = Laby.references().textRenderer();
     float minWidgetWidth = (!hasId("no-cover") ? 44 : 0) + 30;
@@ -396,10 +384,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     if (title == null) {
       return "";
     }
-    if (this.hudWidget.getConfig().limitTitleLength().get() && this.hudWidget.getConfig().maxTitleLength().get() > 0) {
-      return title.substring(0, Math.min(title.length(), this.hudWidget.getConfig().maxTitleLength().get()));
+    int max = CurrentSongHudWidget.MAX_TITLE_LENGTH;
+    if (title.length() <= max) {
+      return title;
     }
-    return title;
+    return title.substring(0, max);
   }
 
   private static String formatTimeLabel(CurrentSong song) {
@@ -504,6 +493,18 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
   private void applyBackgroundColor() {
     this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
+  }
+
+  private TextColor stationTextColor() {
+    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().stationColor().get());
+  }
+
+  private TextColor songTextColor() {
+    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().songColor().get());
+  }
+
+  private TextColor artistTextColor() {
+    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().artistColor().get());
   }
 
   private static String stationLabel(RadioStream stream) {

@@ -36,17 +36,19 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private static final String PROGRESS_MAX_WIDTH_VARIABLE_KEY = "--modern-song-widget-progress-max-width";
 
   private static final String BACKGROUND_VARIABLE_KEY = "--modern-song-widget-bg";
-  private static final String BORDER_COLOR_VARIABLE_KEY = "--modern-song-widget-border-color";
   private static final String PROGRESS_BAR_COLOR_VARIABLE_KEY = "--modern-song-widget-progress-bar-color";
 
   private ComponentWidget streamWidget;
   private ComponentWidget statusWidget;
-  private ComponentWidget trackWidget;
-  private ComponentWidget artistWidget;
+  private MarqueeComponentWidget trackWidget;
+  private MarqueeComponentWidget artistWidget;
+  private final MarqueeCoordinator marqueeCoordinator = new MarqueeCoordinator();
 
   private IconWidget coverWidget;
   private DivWidget progressTrack;
   private DivWidget progressFill;
+
+  private static final float MAX_PLAYER_WIDTH = 220f;
 
   private String appliedCoverUrl;
   private long appliedArtworkGeneration = -1L;
@@ -55,7 +57,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private boolean lastRenderedHadDuration;
   private float progressTrackMaxWidth = 280f;
   private String lastTrackName = "";
-  private Component lastLivePrefix = Component.empty();
+  private String lastArtistName = "";
+  private Component lastLivePrefix = null;
 
   public ModernCurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget, boolean isEditorContext) {
     this.addon = addon;
@@ -74,10 +77,11 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     this.lastRenderedProgressPercent = -1;
     this.lastRenderedHadDuration = false;
     this.lastTrackName = "";
-    this.lastLivePrefix = Component.empty();
+    this.lastArtistName = "";
+    this.lastLivePrefix = null;
 
-    this.setVariable(MAX_WIDTH_VARIABLE_KEY, 300);
-    this.setVariable(MIN_WIDTH_VARIABLE_KEY, 200);
+    this.setVariable(MAX_WIDTH_VARIABLE_KEY, MAX_PLAYER_WIDTH);
+    this.setVariable(MIN_WIDTH_VARIABLE_KEY, 160);
     this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, this.progressTrackMaxWidth);
     this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
     this.applyBackgroundColor();
@@ -96,36 +100,39 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     FlexibleContentWidget player = new FlexibleContentWidget().addId("player");
 
-    FlexibleContentWidget text = new FlexibleContentWidget().addId("text");
-
     this.streamWidget = ComponentWidget.empty();
     this.streamWidget.addId("stream-name");
-    text.addContent(this.streamWidget);
+    player.addContent(this.streamWidget);
 
-    this.statusWidget = ComponentWidget.empty();
-    this.statusWidget.addId("status");
-    text.addContent(this.statusWidget);
-
-    this.trackWidget = ComponentWidget.empty();
+    this.trackWidget = new MarqueeComponentWidget();
     this.trackWidget.addId("track");
-    text.addContent(this.trackWidget);
+    player.addContent(this.trackWidget);
 
-    this.artistWidget = ComponentWidget.empty();
+    this.artistWidget = new MarqueeComponentWidget();
     this.artistWidget.addId("artist");
-    text.addContent(this.artistWidget);
+    player.addContent(this.artistWidget);
 
-    player.addFlexibleContent(text);
+    this.marqueeCoordinator.clear();
+    this.marqueeCoordinator.register(this.trackWidget);
+    this.marqueeCoordinator.register(this.artistWidget);
+    this.applyScrollMode();
 
+    FlexibleContentWidget progressRow = new FlexibleContentWidget().addId("progress-row");
     this.progressTrack = new DivWidget();
     this.progressTrack.addId("progress-track");
     this.progressFill = new DivWidget();
     this.progressFill.addId("progress-fill");
     this.progressTrack.addChild(this.progressFill);
+    progressRow.addContent(this.progressTrack);
+
+    this.statusWidget = ComponentWidget.empty();
+    this.statusWidget.addId("status");
+    progressRow.addContent(this.statusWidget);
+    player.addContent(progressRow);
 
     content.addFlexibleContent(player);
 
     this.addContent(content);
-    this.addContent(this.progressTrack);
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
   }
 
@@ -151,10 +158,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       this.updateTrack(this.addon.currentSongService().getCurrentSong());
     }
 
-    if (reason.equals(CurrentSongHudWidget.TITLE_LENGTH_CHANGE_REASON)) {
-      this.updateTitleLength(this.addon.currentSongService().getCurrentSong());
-    }
-
     if (reason.equals(CurrentSongHudWidget.COVER_VISIBILITY_REASON)) {
       boolean showCover = this.hudWidget.getConfig().showCover().get();
       if (showCover) {
@@ -172,6 +175,12 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     if (reason.equals(CurrentSongHudWidget.COLOR_REASON)) {
       this.applyBackgroundColor();
+      this.updateTrack(this.addon.currentSongService().getCurrentSong());
+    }
+
+    if (reason.equals(CurrentSongHudWidget.SCROLL_TEXT_REASON)) {
+      this.applyScrollMode();
+      this.updateTrack(this.addon.currentSongService().getCurrentSong());
     }
   }
 
@@ -185,7 +194,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     RadioStream currentStream = this.addon.radioManager().getCurrentStream();
     NowPlayingConnectionState state = this.addon.currentSongService().getConnectionState();
 
-    // Alle 4 Zeilen immer sichtbar halten
     this.streamWidget.setVisible(true);
     this.statusWidget.setVisible(true);
     this.trackWidget.setVisible(true);
@@ -193,18 +201,19 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     if (currentSong == null) {
       this.lastTrackName = "";
-      this.lastLivePrefix = Component.empty();
+      this.lastArtistName = "";
+      this.lastLivePrefix = null;
       if (isPlaying && currentStream != null) {
-        this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(NamedTextColor.GRAY));
+        this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(this.stationTextColor()));
+        this.statusWidget.setComponent(Component.empty());
         if (state == NowPlayingConnectionState.RECONNECTING) {
-          this.statusWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
+          this.trackWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
               .color(NamedTextColor.DARK_GRAY));
-          this.trackWidget.setComponent(Component.translatable("evilradio.widget.loadingSong"));
-          this.artistWidget.setComponent(Component.translatable("evilradio.widget.reconnectingHint"));
+          this.artistWidget.setComponent(Component.translatable("evilradio.widget.reconnectingHint")
+              .color(NamedTextColor.DARK_GRAY));
         } else {
-          this.statusWidget.setComponent(Component.translatable("evilradio.widget.loadingSong")
+          this.trackWidget.setComponent(Component.translatable("evilradio.widget.loadingSong")
               .color(NamedTextColor.DARK_GRAY));
-          this.trackWidget.setComponent(Component.translatable("evilradio.widget.fetchingSongInfo"));
           this.artistWidget.setComponent(Component.empty());
         }
         this.setProgressVisible(false);
@@ -220,34 +229,40 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     String streamDisplayName = stationLabel(currentStream);
     if (streamDisplayName.isBlank() && currentSong.getStationName() != null) {
-      streamDisplayName = "EvilRadio - " + currentSong.getStationName();
+      streamDisplayName = "Evil-Radio - " + currentSong.getStationName();
     }
-    this.streamWidget.setComponent(Component.text(streamDisplayName).color(NamedTextColor.GRAY));
-
     this.lastLivePrefix = buildLivePrefix(currentStream, currentSong);
+    Component streamLine = Component.text(streamDisplayName).color(this.stationTextColor());
+    if (this.lastLivePrefix != null) {
+      streamLine = streamLine
+          .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+          .append(this.lastLivePrefix);
+    }
+    this.streamWidget.setComponent(streamLine);
+
     this.renderStatusLine(currentSong);
 
     this.lastTrackName = limitedTitle(currentSong.getTitle());
-    this.trackWidget.setComponent(Component.text(this.lastTrackName).color(NamedTextColor.WHITE));
-
-    String artistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
-    this.artistWidget.setComponent(Component.text(artistName).color(NamedTextColor.GRAY));
+    this.lastArtistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
+    this.trackWidget.setMarqueeText(this.lastTrackName, this.songTextColor());
+    this.artistWidget.setMarqueeText(this.lastArtistName, this.artistTextColor());
+    this.marqueeCoordinator.onContentChanged();
 
     FontRenderer fontRenderer = Laby.references().minecraftFontRenderer();
-    float minWidgetWidth = (!hasId("no-cover") ? 44 : 0) + 30;
-    String statusSample = statusLinePlain(currentSong);
+    String timeSample = formatTimeLabel(currentSong);
     float streamNameWidth = fontRenderer.getWidth(streamDisplayName);
-    float statusWidth = fontRenderer.getWidth(statusSample);
+    float timeWidth = fontRenderer.getWidth(timeSample) * 0.7f;
     float trackWidth = fontRenderer.getWidth(this.lastTrackName);
-    float artistWidth = fontRenderer.getWidth(artistName);
-    float contentWidth = Math.max(
-        Math.max(streamNameWidth, statusWidth),
-        Math.max(trackWidth, artistWidth)
+    float artistWidth = fontRenderer.getWidth(this.lastArtistName);
+    float naturalWidth = Math.max(
+        Math.max(streamNameWidth, trackWidth),
+        Math.max(artistWidth, timeWidth > 0 ? timeWidth + 40f : 0)
     );
+    float playerWidth = Math.min(MAX_PLAYER_WIDTH, Math.max(160f, naturalWidth));
 
-    this.setVariable(MIN_WIDTH_VARIABLE_KEY, Math.max(minWidgetWidth, streamNameWidth));
-    this.setVariable(MAX_WIDTH_VARIABLE_KEY, (minWidgetWidth + contentWidth));
-    this.progressTrackMaxWidth = Math.max(40f, (minWidgetWidth + contentWidth) - 20f);
+    this.setVariable(MIN_WIDTH_VARIABLE_KEY, 160);
+    this.setVariable(MAX_WIDTH_VARIABLE_KEY, playerWidth);
+    this.progressTrackMaxWidth = Math.max(40f, playerWidth - (timeWidth > 0 ? timeWidth + 6 : 0));
     this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, this.progressTrackMaxWidth);
 
     this.applyCover(currentSong);
@@ -258,7 +273,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     String streamName = currentStream != null ? currentStream.getName() : null;
     boolean isMashup = streamName != null && streamName.equalsIgnoreCase("Mashup");
     if (!isMashup) {
-      return Component.empty();
+      return null;
     }
 
     boolean onAir = currentSong.isOnAir();
@@ -289,47 +304,16 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       );
       hasContent = true;
     }
-    return hasContent ? onAirComponent : Component.empty();
+    return hasContent ? onAirComponent : null;
   }
 
   private void renderStatusLine(CurrentSong song) {
     String timeLabel = formatTimeLabel(song);
-    String streamName = this.addon.radioManager().getCurrentStream() != null
-        ? this.addon.radioManager().getCurrentStream().getName()
-        : null;
-    boolean isMashup = streamName != null && streamName.equalsIgnoreCase("Mashup");
-    boolean hasLive = isMashup && (song.isOnAir() || song.isTwitch());
-
-    Component status;
-    if (hasLive) {
-      status = this.lastLivePrefix;
-      if (!timeLabel.isEmpty()) {
-        status = status
-            .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
-            .append(Component.text(timeLabel).color(NamedTextColor.GRAY));
-      }
-    } else if (!timeLabel.isEmpty()) {
-      status = Component.text(timeLabel).color(NamedTextColor.GRAY);
+    if (timeLabel.isEmpty()) {
+      this.statusWidget.setComponent(Component.empty());
     } else {
-      status = Component.empty();
+      this.statusWidget.setComponent(Component.text(timeLabel).color(NamedTextColor.GRAY));
     }
-    this.statusWidget.setComponent(status);
-  }
-
-  private String statusLinePlain(CurrentSong song) {
-    String timeLabel = formatTimeLabel(song);
-    String streamName = this.addon.radioManager().getCurrentStream() != null
-        ? this.addon.radioManager().getCurrentStream().getName()
-        : null;
-    boolean isMashup = streamName != null && streamName.equalsIgnoreCase("Mashup");
-    if (isMashup && (song.isOnAir() || song.isTwitch())) {
-      String live = "ON AIR";
-      if (song.getModeratorName() != null && !song.getModeratorName().isEmpty()) {
-        live = live + " | " + song.getModeratorName();
-      }
-      return timeLabel.isEmpty() ? live : live + " | " + timeLabel;
-    }
-    return timeLabel;
   }
 
   private static String formatTimeLabel(CurrentSong song) {
@@ -343,19 +327,15 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     return CurrentSong.formatTime(elapsed);
   }
 
-  private void updateTitleLength(CurrentSong currentSong) {
-    if (currentSong == null || this.trackWidget == null) return;
-    this.lastTrackName = limitedTitle(currentSong.getTitle());
-    this.trackWidget.setComponent(Component.text(this.lastTrackName).color(NamedTextColor.WHITE));
-    this.addon.labyAPI().minecraft().executeOnRenderThread(() -> this.trackWidget.updateComponent());
-  }
-
   private String limitedTitle(String title) {
-    if (title == null) return "";
-    if (this.hudWidget.getConfig().limitTitleLength().get() && this.hudWidget.getConfig().maxTitleLength().get() > 0) {
-      return title.substring(0, Math.min(title.length(), this.hudWidget.getConfig().maxTitleLength().get()));
+    if (title == null) {
+      return "";
     }
-    return title;
+    int max = CurrentSongHudWidget.MAX_TITLE_LENGTH;
+    if (title.length() <= max) {
+      return title;
+    }
+    return title.substring(0, max);
   }
 
   private void applyCover(CurrentSong currentSong) {
@@ -450,8 +430,34 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
   private void applyBackgroundColor() {
     this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
-    this.setVariable(BORDER_COLOR_VARIABLE_KEY, this.hudWidget.getConfig().borderColor().get().get());
-    this.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, this.hudWidget.getConfig().progressBarColor().get().get());
+    int progressColor = this.hudWidget.getConfig().progressBarColor().get().get();
+    this.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
+    if (this.progressFill != null) {
+      this.progressFill.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
+    }
+  }
+
+  private TextColor stationTextColor() {
+    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().stationColor().get());
+  }
+
+  private TextColor songTextColor() {
+    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().songColor().get());
+  }
+
+  private TextColor artistTextColor() {
+    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().artistColor().get());
+  }
+
+  private void applyScrollMode() {
+    boolean scroll = this.hudWidget.getConfig().scrollLongText().get();
+    if (this.trackWidget != null) {
+      this.trackWidget.setScrollMode(scroll);
+    }
+    if (this.artistWidget != null) {
+      this.artistWidget.setScrollMode(scroll);
+    }
+    this.marqueeCoordinator.onContentChanged();
   }
 
   private static String stationLabel(RadioStream stream) {

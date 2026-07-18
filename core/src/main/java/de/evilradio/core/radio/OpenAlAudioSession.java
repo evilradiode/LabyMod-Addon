@@ -259,8 +259,14 @@ public final class OpenAlAudioSession {
   }
 
   public void setVolume(float volume) throws Exception {
+    boolean wasMuted = this.volume <= 0.0f;
     this.volume = Math.max(0.0f, Math.min(1.0f, volume));
     alSourcef.invoke(null, source, alGain, this.volume);
+    // Während Mute werden keine Buffer mehr gequeued → OpenAL-Source läuft leer und stoppt.
+    // started zurücksetzen, damit startIfNeeded() nach dem Unmute erneut alSourcePlay aufruft.
+    if (wasMuted && this.volume > 0.0f) {
+      started = false;
+    }
   }
 
   public void startIfNeeded() throws Exception {

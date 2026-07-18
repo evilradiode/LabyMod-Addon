@@ -1,9 +1,13 @@
 package de.evilradio.core.song;
 
+import net.labymod.api.Laby;
+
 /**
  * Unveränderlicher Snapshot der Now-Playing-Daten eines Senders.
  */
 public final class CurrentSong {
+
+  private static final String AD_BREAK_MARKER = "START_AD_BREAK";
 
   private final int stationId;
   private final String stationName;
@@ -47,8 +51,15 @@ public final class CurrentSong {
     this.stationId = stationId;
     this.stationName = stationName;
     this.stationShortcode = stationShortcode;
-    this.title = title == null ? "" : title;
-    this.artist = artist == null ? "" : artist;
+    String rawTitle = title == null ? "" : title;
+    String rawArtist = artist == null ? "" : artist;
+    if (isAdBreakMarker(rawTitle) || isAdBreakMarker(rawArtist)) {
+      this.title = translateOrDefault("evilradio.widget.adBreakTitle", "Jetzt läuft");
+      this.artist = translateOrDefault("evilradio.widget.adBreakArtist", "Werbung");
+    } else {
+      this.title = rawTitle;
+      this.artist = rawArtist;
+    }
     this.imageUrl = imageUrl;
     this.songId = songId;
     this.moderatorName = moderatorName;
@@ -58,6 +69,22 @@ public final class CurrentSong {
     this.duration = Math.max(0L, duration);
     this.elapsedAtUpdate = Math.max(0L, elapsedAtUpdate);
     this.receivedAt = receivedAt <= 0L ? System.currentTimeMillis() : receivedAt;
+  }
+
+  private static boolean isAdBreakMarker(String value) {
+    return value != null && value.trim().equalsIgnoreCase(AD_BREAK_MARKER);
+  }
+
+  private static String translateOrDefault(String key, String fallback) {
+    try {
+      String translated = Laby.labyAPI().internationalization().getTranslation(key);
+      if (translated != null && !translated.isBlank() && !translated.equals(key)) {
+        return translated;
+      }
+    } catch (Throwable ignored) {
+      // API ggf. noch nicht bereit
+    }
+    return fallback;
   }
 
   public int getStationId() {

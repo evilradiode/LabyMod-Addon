@@ -47,7 +47,9 @@
       "noStreamSelected": "No Stream selected",
       "onAir": "● ON AIR",
       "twitch": "● TWITCH",
-      "statusSeparator": " | "
+      "statusSeparator": " | ",
+      "adBreakTitle": "Now playing",
+      "adBreakArtist": "Advertisement"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -65,25 +67,29 @@
           "name": "Use Modern Widget",
           "description": "Use the modern widget design."
         },
-        "limitTitleLength": {
-          "name": "Limit Title Length",
-          "description": "Limit the length of the title. Prevents the title from being too long and potentially taking up too much space on the screen."
-        },
-        "maxTitleLength": {
-          "name": "Max Title Length",
-          "description": "Set the character limit of the Song Title. When set to 0 the title length is unlimited."
+        "scrollLongText": {
+          "name": "Scroll long text",
+          "description": "When enabled, long titles/artists scroll as a marquee. When disabled, they are truncated with …"
         },
         "backgroundColor": {
           "name": "Background Color",
           "description": "Color and transparency of the widget background. Fully transparent keeps the background invisible."
         },
-        "borderColor": {
-          "name": "Border Color",
-          "description": "Color and transparency of the widget border. Fully transparent keeps the border invisible."
-        },
         "progressBarColor": {
-          "name": "Progressbar Color",
-          "description": "Color and transparency of the song progressbar. Fully transparent keeps the progressbar invisible."
+          "name": "Progress bar fill color",
+          "description": "Color of the inner progress bar fill."
+        },
+        "stationColor": {
+          "name": "Station color",
+          "description": "Text color of the station line. Use the reset button to restore the default color."
+        },
+        "songColor": {
+          "name": "Song color",
+          "description": "Text color of the song title. Use the reset button to restore the default color."
+        },
+        "artistColor": {
+          "name": "Artist color",
+          "description": "Text color of the artist. Use the reset button to restore the default color."
         }
       }
     },
