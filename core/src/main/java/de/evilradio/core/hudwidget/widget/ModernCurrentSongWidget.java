@@ -34,8 +34,10 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private static final String MIN_WIDTH_VARIABLE_KEY = "--modern-song-widget-min-width";
   private static final String PROGRESS_FILL_WIDTH_KEY = "--modern-song-widget-progress-width";
   private static final String PROGRESS_MAX_WIDTH_VARIABLE_KEY = "--modern-song-widget-progress-max-width";
+
   private static final String BACKGROUND_VARIABLE_KEY = "--modern-song-widget-bg";
   private static final String BORDER_COLOR_VARIABLE_KEY = "--modern-song-widget-border-color";
+  private static final String PROGRESS_BAR_COLOR_VARIABLE_KEY = "--modern-song-widget-progress-bar-color";
 
   private ComponentWidget streamWidget;
   private ComponentWidget statusWidget;
@@ -43,7 +45,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private ComponentWidget artistWidget;
 
   private IconWidget coverWidget;
-  private IconWidget stationIconWidget;
   private DivWidget progressTrack;
   private DivWidget progressFill;
 
@@ -88,22 +89,10 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     FlexibleContentWidget content = new FlexibleContentWidget().addId("content");
 
-    DivWidget coverStack = new DivWidget();
-    coverStack.addId("cover-stack");
     this.coverWidget = new IconWidget(EvilTextures.LOGO);
     this.coverWidget.addId("cover");
     this.coverWidget.setVisible(showCover);
-
-    DivWidget stationBadge = new DivWidget();
-    stationBadge.addId("station-badge");
-    this.stationIconWidget = new IconWidget(EvilTextures.LOGO);
-    this.stationIconWidget.addId("station-icon");
-    this.stationIconWidget.setVisible(showCover);
-    stationBadge.addChild(this.stationIconWidget);
-
-    coverStack.addChild(this.coverWidget);
-    coverStack.addChild(stationBadge);
-    content.addContent(coverStack);
+    content.addContent(this.coverWidget);
 
     FlexibleContentWidget player = new FlexibleContentWidget().addId("player");
 
@@ -173,21 +162,15 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
         if (this.coverWidget != null) {
           this.coverWidget.setVisible(true);
         }
-        if (this.stationIconWidget != null) {
-          this.stationIconWidget.setVisible(true);
-        }
       } else {
         this.addId("no-cover");
         if (this.coverWidget != null) {
           this.coverWidget.setVisible(false);
         }
-        if (this.stationIconWidget != null) {
-          this.stationIconWidget.setVisible(false);
-        }
       }
     }
 
-    if (reason.equals(CurrentSongHudWidget.BACKGROUND_COLOR_REASON)) {
+    if (reason.equals(CurrentSongHudWidget.COLOR_REASON)) {
       this.applyBackgroundColor();
     }
   }
@@ -212,7 +195,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       this.lastTrackName = "";
       this.lastLivePrefix = Component.empty();
       if (isPlaying && currentStream != null) {
-        this.applyStationIcon(currentStream);
         this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(NamedTextColor.GRAY));
         if (state == NowPlayingConnectionState.RECONNECTING) {
           this.statusWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
@@ -227,7 +209,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
         }
         this.setProgressVisible(false);
       } else {
-        this.applyStationIcon(null);
         this.streamWidget.setComponent(Component.empty());
         this.statusWidget.setComponent(Component.empty());
         this.trackWidget.setComponent(Component.empty());
@@ -241,7 +222,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     if (streamDisplayName.isBlank() && currentSong.getStationName() != null) {
       streamDisplayName = "EvilRadio - " + currentSong.getStationName();
     }
-    this.applyStationIcon(currentStream);
     this.streamWidget.setComponent(Component.text(streamDisplayName).color(NamedTextColor.GRAY));
 
     this.lastLivePrefix = buildLivePrefix(currentStream, currentSong);
@@ -471,16 +451,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private void applyBackgroundColor() {
     this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
     this.setVariable(BORDER_COLOR_VARIABLE_KEY, this.hudWidget.getConfig().borderColor().get().get());
-  }
-
-  private void applyStationIcon(RadioStream stream) {
-    if (this.stationIconWidget == null) {
-      return;
-    }
-    boolean showCover = this.hudWidget.getConfig().showCover().get();
-    Icon icon = stream != null ? stream.getIcon() : null;
-    this.stationIconWidget.icon().set(icon != null ? icon : EvilTextures.LOGO);
-    this.stationIconWidget.setVisible(showCover && stream != null);
+    this.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, this.hudWidget.getConfig().progressBarColor().get().get());
   }
 
   private static String stationLabel(RadioStream stream) {

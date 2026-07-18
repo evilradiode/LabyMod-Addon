@@ -56,6 +56,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COLOR_REASON))
     );
+    config.progressBarColor.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(COLOR_REASON))
+    );
     config.useModernWidget.addChangeListener((property, oldValue, newValue) -> {
       if(this.hudWidgetWidget != null) {
         this.hudWidgetWidget.reInitialize();
@@ -107,6 +111,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @ColorPickerSetting(alpha = true)
     private final ConfigProperty<Color> borderColor = ConfigProperty.create(Color.ofRGB(0, 0, 0));
 
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @ColorPickerSetting(alpha = true)
+    private final ConfigProperty<Color> progressBarColor = ConfigProperty.create(Color.ofRGB(255, 85, 85));
+
     public ConfigProperty<Boolean> showCover() {
       return this.showCover;
     }
@@ -127,10 +135,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
       return this.backgroundColor;
     }
 
-  }
+    public ConfigProperty<Color> progressBarColor() {
+      return progressBarColor;
+    }
 
-  public EvilRadioAddon addon() {
-    return addon;
   }
 
 }
