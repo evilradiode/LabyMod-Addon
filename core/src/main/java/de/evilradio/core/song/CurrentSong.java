@@ -145,7 +145,7 @@ public final class CurrentSong {
     if (!hasKnownDuration()) {
       return -1.0d;
     }
-    return Math.min(1.0d, Math.max(0.0d, (double) getCurrentElapsedSeconds() / (double) duration));
+    return Math.clamp((double) getCurrentElapsedSeconds() / (double) duration, 0.0d, 1.0d);
   }
 
   public CurrentSong withTwitch(boolean twitchLive) {
