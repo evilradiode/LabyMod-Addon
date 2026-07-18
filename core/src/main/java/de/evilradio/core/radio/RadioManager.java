@@ -77,9 +77,7 @@ public class RadioManager {
         addon.currentSongService().switchStation(stream);
       }
 
-      if (addon.currentSongHudWidget().isEnabled()) {
-        addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-      }
+      addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
     }
   }
 
@@ -99,9 +97,7 @@ public class RadioManager {
     if (addon != null && addon.currentSongService() != null) {
       addon.currentSongService().resetCurrentSong();
       addon.currentSongService().nowPlayingService().switchStation(null);
-      if (addon.currentSongHudWidget().isEnabled()) {
-        addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-      }
+      addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
     }
   }
 

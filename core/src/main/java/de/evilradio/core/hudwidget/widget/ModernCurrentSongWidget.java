@@ -2,7 +2,6 @@ package de.evilradio.core.hudwidget.widget;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
-import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
@@ -12,7 +11,7 @@ import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.component.format.TextColor;
-import net.labymod.api.client.gfx.pipeline.renderer.text.TextRenderer;
+import net.labymod.api.client.gfx.pipeline.renderer.text.FontRenderer;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.lss.property.annotation.AutoWidget;
@@ -24,18 +23,20 @@ import net.labymod.api.client.gui.screen.widget.widgets.layout.FlexibleContentWi
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
 
-@Link("widget/song-widget.lss")
+@Link("widget/song-widget-modern.lss")
 @AutoWidget
-public class CurrentSongWidget extends FlexibleContentWidget implements Updatable {
+public class ModernCurrentSongWidget extends FlexibleContentWidget implements Updatable {
 
   private final EvilRadioAddon addon;
   private final CurrentSongHudWidget hudWidget;
   private final boolean isEditorContext;
 
-  private static final String MAX_WIDTH_VARIABLE_KEY = "--current-song-widget-max-width";
-  private static final String MIN_WIDTH_VARIABLE_KEY = "--current-song-widget-min-width";
-  private static final String PROGRESS_VARIABLE_KEY = "--current-song-progress";
-  private static final String BACKGROUND_VARIABLE_KEY = "--song-widget-bg";
+  private static final String MAX_WIDTH_VARIABLE_KEY = "--modern-song-widget-max-width";
+  private static final String MIN_WIDTH_VARIABLE_KEY = "--modern-song-widget-min-width";
+  private static final String PROGRESS_VARIABLE_KEY = "--modern-song-widget-progress";
+  private static final String PROGRESS_MAX_WIDTH_VARIABLE_KEY = "--modern-song-widget-progress-max-width";
+  private static final String BACKGROUND_VARIABLE_KEY = "--modern-song-widget-bg";
+  private static final String BORDER_COLOR_VARIABLE_KEY = "--modern-song-widget-border-color";
 
   private ComponentWidget streamWidget;
   private ComponentWidget statusWidget;
@@ -43,8 +44,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private ComponentWidget artistWidget;
 
   private IconWidget coverWidget;
-  private DivWidget controlsWidget;
-  private IconWidget playPauseWidget;
   private DivWidget progressTrack;
   private DivWidget progressFill;
 
@@ -56,7 +55,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private String lastTrackName = "";
   private Component lastLivePrefix = Component.empty();
 
-  public CurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget, boolean isEditorContext) {
+  public ModernCurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget, boolean isEditorContext) {
     this.addon = addon;
     this.hudWidget = hudWidget;
     this.isEditorContext = isEditorContext;
@@ -65,6 +64,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   @Override
   public void initialize(Parent parent) {
     super.initialize(parent);
+
     this.children.clear();
     this.appliedCoverUrl = null;
     this.appliedArtworkGeneration = -1L;
@@ -79,31 +79,19 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.setVariable(PROGRESS_VARIABLE_KEY, 0);
     this.applyBackgroundColor();
 
-    if (this.isEditorContext) {
-      this.addId("maximized");
-    }
-
     boolean showCover = this.hudWidget.getConfig().showCover().get();
     if (!showCover) {
       this.addId("no-cover");
     }
 
-    boolean leftAligned = this.hudWidget.anchor().isLeft();
-    this.addId(leftAligned ? "left" : "right");
+    FlexibleContentWidget content = new FlexibleContentWidget().addId("content");
 
     this.coverWidget = new IconWidget(EvilTextures.LOGO);
     this.coverWidget.addId("cover");
     this.coverWidget.setVisible(showCover);
+    content.addContent(coverWidget);
 
-    if (leftAligned) {
-      this.addContent(this.coverWidget);
-    }
-
-    FlexibleContentWidget player = new FlexibleContentWidget();
-    player.addId("player");
-
-    FlexibleContentWidget textAndControl = new FlexibleContentWidget();
-    textAndControl.addId("text-and-control");
+    FlexibleContentWidget player = new FlexibleContentWidget().addId("player");
 
     VerticalListWidget<ComponentWidget> text = new VerticalListWidget<>();
     text.addId("text");
@@ -121,40 +109,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.artistWidget = ComponentWidget.empty();
     text.addChild(this.artistWidget);
 
-    this.controlsWidget = new DivWidget();
-    this.controlsWidget.addId("controls");
-
-    this.playPauseWidget = new IconWidget(
-        !this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY
-    );
-    this.playPauseWidget.addId("play");
-    this.playPauseWidget.setPressable(() -> {
-      this.playPauseWidget.icon().set(
-          this.addon.radioManager().isPlaying() ? SpriteControls.PLAY : SpriteControls.PAUSE
-      );
-
-      if (this.addon.radioManager().isPlaying()) {
-        this.addon.radioManager().stopStream(true);
-      } else {
-        this.addon.setUserManuallyStopped(false);
-        this.addon.radioManager().playStream(
-            this.addon.radioStreamService().getLastSelectedStream()
-        );
-      }
-    });
-    this.controlsWidget.addChild(this.playPauseWidget);
-
-    if (leftAligned) {
-      textAndControl.addFlexibleContent(text);
-      textAndControl.addContent(this.controlsWidget);
-    } else {
-      textAndControl.addContent(this.controlsWidget);
-      textAndControl.addFlexibleContent(text);
-    }
-
-    player.addFlexibleContent(textAndControl);
-
-    this.addContent(player);
+    player.addFlexibleContent(text);
 
     this.progressTrack = new DivWidget();
     this.progressTrack.addId("progress-track");
@@ -162,12 +117,10 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.progressFill.addId("progress-fill");
     this.progressTrack.addChild(this.progressFill);
 
+    content.addFlexibleContent(player);
+
+    this.addContent(content);
     this.addContent(this.progressTrack);
-
-    if (!leftAligned) {
-      this.addContent(this.coverWidget);
-    }
-
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
   }
 
@@ -175,19 +128,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   public void tick() {
     super.tick();
 
-    if (!this.isEditorContext) {
-      boolean isChatOpen = Laby.references().chatAccessor().isChatOpen();
-      if (isChatOpen) {
-        this.addId("maximized");
-      } else {
-        this.removeId("maximized");
-      }
-    }
-
     CurrentSong song = this.addon.currentSongService().getCurrentSong();
     if (song != null) {
       this.updateProgress(song);
     }
+
   }
 
   @Override
@@ -223,15 +168,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     if (reason.equals(CurrentSongHudWidget.BACKGROUND_COLOR_REASON)) {
       this.applyBackgroundColor();
     }
-  }
-
-  private void updateTitleLength(CurrentSong currentSong) {
-    if (currentSong == null || this.trackWidget == null) {
-      return;
-    }
-    this.lastTrackName = limitedTitle(currentSong.getTitle());
-    this.trackWidget.setComponent(Component.text(this.lastTrackName).color(NamedTextColor.WHITE));
-    this.addon.labyAPI().minecraft().executeOnRenderThread(() -> this.trackWidget.updateComponent());
   }
 
   private void updateTrack(CurrentSong currentSong) {
@@ -274,7 +210,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         this.artistWidget.setComponent(Component.empty());
         this.setProgressVisible(false);
       }
-      this.controlsWidget.setVisible(false);
       return;
     }
 
@@ -293,22 +228,22 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     String artistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
     this.artistWidget.setComponent(Component.text(artistName).color(NamedTextColor.GRAY));
 
-    TextRenderer textRenderer = Laby.references().textRenderer();
+    FontRenderer fontRenderer = Laby.references().minecraftFontRenderer();
     float minWidgetWidth = (!hasId("no-cover") ? 44 : 0) + 30;
     String statusSample = statusLinePlain(currentSong);
-    float streamNameWidth = textRenderer.getWidth(streamDisplayName);
-    float statusWidth = textRenderer.getWidth(statusSample);
-    float trackWidth = textRenderer.getWidth(this.lastTrackName);
-    float artistWidth = textRenderer.getWidth(artistName);
+    float streamNameWidth = fontRenderer.getWidth(streamDisplayName);
+    float statusWidth = fontRenderer.getWidth(statusSample);
+    float trackWidth = fontRenderer.getWidth(this.lastTrackName);
+    float artistWidth = fontRenderer.getWidth(artistName);
     float contentWidth = Math.max(
         Math.max(streamNameWidth, statusWidth),
         Math.max(trackWidth, artistWidth)
     );
 
     this.setVariable(MIN_WIDTH_VARIABLE_KEY, Math.max(minWidgetWidth, streamNameWidth));
-    this.setVariable(MAX_WIDTH_VARIABLE_KEY, minWidgetWidth + contentWidth);
+    this.setVariable(MAX_WIDTH_VARIABLE_KEY, (minWidgetWidth + contentWidth));
+    this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, (minWidgetWidth + contentWidth) - 20);
 
-    this.controlsWidget.setVisible(true);
     this.applyCover(currentSong);
     this.updateProgress(currentSong);
   }
@@ -391,16 +326,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     return timeLabel;
   }
 
-  private String limitedTitle(String title) {
-    if (title == null) {
-      return "";
-    }
-    if (this.hudWidget.getConfig().limitTitleLength().get() && this.hudWidget.getConfig().maxTitleLength().get() > 0) {
-      return title.substring(0, Math.min(title.length(), this.hudWidget.getConfig().maxTitleLength().get()));
-    }
-    return title;
-  }
-
   private static String formatTimeLabel(CurrentSong song) {
     if (song == null) {
       return "";
@@ -410,6 +335,21 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       return CurrentSong.formatTime(elapsed) + " / " + CurrentSong.formatTime(song.getDuration());
     }
     return CurrentSong.formatTime(elapsed);
+  }
+
+  private void updateTitleLength(CurrentSong currentSong) {
+    if (currentSong == null || this.trackWidget == null) return;
+    this.lastTrackName = limitedTitle(currentSong.getTitle());
+    this.trackWidget.setComponent(Component.text(this.lastTrackName).color(NamedTextColor.WHITE));
+    this.addon.labyAPI().minecraft().executeOnRenderThread(() -> this.trackWidget.updateComponent());
+  }
+
+  private String limitedTitle(String title) {
+    if (title == null) return "";
+    if (this.hudWidget.getConfig().limitTitleLength().get() && this.hudWidget.getConfig().maxTitleLength().get() > 0) {
+      return title.substring(0, Math.min(title.length(), this.hudWidget.getConfig().maxTitleLength().get()));
+    }
+    return title;
   }
 
   private void applyCover(CurrentSong currentSong) {
@@ -497,6 +437,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
   private void applyBackgroundColor() {
     this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
+    this.setVariable(BORDER_COLOR_VARIABLE_KEY, this.hudWidget.getConfig().borderColor().get().get());
   }
 
   private static String stationLabel(RadioStream stream) {
@@ -508,4 +449,5 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         : stream.getName();
     return name == null ? "" : "EvilRadio - " + name;
   }
+
 }

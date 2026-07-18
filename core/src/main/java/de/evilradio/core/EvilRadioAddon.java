@@ -141,6 +141,14 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     );
   }
 
+  public void requestHudWidgetUpdate(String reason) {
+    this.labyAPI().minecraft().executeOnRenderThread(() -> {
+      if(this.currentSongHudWidget.isEnabled()) {
+        this.currentSongHudWidget.requestUpdate(reason);
+      }
+    });
+  }
+
   public static EvilRadioAddon instance() {
     return instance;
   }
@@ -155,10 +163,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   public CurrentSongService currentSongService() {
     return currentSongService;
-  }
-
-  public CurrentSongHudWidget currentSongHudWidget() {
-    return currentSongHudWidget;
   }
   
   public ScheduleService scheduleService() {

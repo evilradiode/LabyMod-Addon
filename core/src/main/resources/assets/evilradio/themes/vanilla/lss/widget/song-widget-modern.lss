@@ -1,0 +1,86 @@
+ModernCurrentSong {
+  left: 0;
+  top: 0;
+  min-width: var(--modern-song-widget-min-width);
+  width: fit-content;
+  max-width: var(--modern-song-widget-max-width);
+  height: 60;
+  filter: blur(25);
+  border-radius: 15;
+  border-thickness: 2;
+  border-color: var(--modern-song-widget-border-color);
+  background-color: var(--modern-song-widget-bg);
+  box-shadow: none;
+  orientation: vertical;
+
+  .progress-track {
+    border-radius: 5;
+    height: 4;
+    width: var(--modern-song-widget-progress-max-width);
+    margin-left: 10;
+    margin-top: -1;
+    background-color: rgba(255, 255, 255, 0.12);
+
+    .progress-fill {
+      height: 100%;
+      width: calc(var(--modern-song-widget-progress) * 1%);
+      //background-color: rgba(255, 255, 255, 0.7);
+      background-color: red;
+    }
+
+    &.indeterminate {
+      .progress-fill {
+        width: 30%;
+        opacity: 0.4;
+      }
+    }
+  }
+
+  .content {
+    width: fit-content;
+    height: 90%;
+    overwrite-width: false;
+    margin: 6 0 0 6;
+    orientation: horizontal;
+
+    .player {
+        height: 100%;
+        orientation: vertical;
+        width: var(--modern-song-widget-max-width);
+        padding-left: 5;
+
+        .text {
+          margin-top: 2;
+          height: fit-content;
+
+          Component {
+            left: 0;
+            top: 0;
+            max-lines: 1;
+            overflow-strategy: clip;
+            width: 100%;
+          }
+        }
+
+    }
+
+  }
+
+  .cover {
+    width: 44;
+    height: 44;
+    right: 0;
+    top: 0;
+    margin-top: 2;
+    margin-left: 2;
+    border-radius: 10;
+    visible: true;
+  }
+
+  &.no-cover {
+    .cover {
+      visible: false;
+    }
+  }
+
+}

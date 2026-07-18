@@ -56,11 +56,10 @@ CurrentSong {
     }
 
     .progress-track {
-      position: absolute;
       bottom: 0;
-      left: 2;
-      right: 2;
-      height: 2;
+      left: 0;
+      height: 3;
+      width: 100%;
       background-color: rgba(255, 255, 255, 0.12);
 
       .progress-fill {

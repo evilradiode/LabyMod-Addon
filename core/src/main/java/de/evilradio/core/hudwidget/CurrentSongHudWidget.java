@@ -4,6 +4,7 @@ import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget.CurrentSongHudWidgetConfig;
 import de.evilradio.core.hudwidget.widget.CurrentSongWidget;
+import de.evilradio.core.hudwidget.widget.ModernCurrentSongWidget;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidgetConfig;
 import net.labymod.api.client.gui.hud.hudwidget.widget.WidgetHudWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
@@ -23,6 +24,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public static final String BACKGROUND_COLOR_REASON = "background_color";
 
   private final EvilRadioAddon addon;
+  private HudWidgetWidget hudWidgetWidget = null;
 
   public CurrentSongHudWidget(EvilRadioAddon addon) {
     super("evilradio_full_widget", CurrentSongHudWidgetConfig.class);
@@ -50,15 +52,28 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(BACKGROUND_COLOR_REASON))
     );
+    config.borderColor.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(BACKGROUND_COLOR_REASON))
+    );
+    config.useModernWidget.addChangeListener((property, oldValue, newValue) -> {
+      if(this.hudWidgetWidget != null) {
+        this.hudWidgetWidget.reInitialize();
+      }
+    });
   }
 
   @Override
   public void initialize(HudWidgetWidget widget) {
     super.initialize(widget);
-
-    CurrentSongWidget currentSongWidget = new CurrentSongWidget(this, widget.accessor().isEditor());
-    widget.addChild(currentSongWidget);
-    widget.addId("current-song");
+    this.hudWidgetWidget = widget;
+    if(this.config.useModernWidget.get()) {
+      widget.addChild(new ModernCurrentSongWidget(this.addon, this, widget.accessor().isEditor()));
+      widget.addId("current-song-modern");
+    } else {
+      widget.addChild(new CurrentSongWidget(this.addon, this, widget.accessor().isEditor()));
+      widget.addId("current-song");
+    }
   }
 
   @Override
@@ -72,6 +87,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SwitchSetting
     private final ConfigProperty<Boolean> showCover = ConfigProperty.create(true);
 
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @SwitchSetting
+    private final ConfigProperty<Boolean> useModernWidget = ConfigProperty.create(false);
+
     @IntroducedIn(namespace = "evilradio", value = "1.0.4")
     @SwitchSetting
     private final ConfigProperty<Boolean> limitTitleLength = ConfigProperty.create(true);
@@ -83,6 +102,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
     @ColorPickerSetting(alpha = true)
     private final ConfigProperty<Color> backgroundColor = ConfigProperty.create(Color.ofRGB(0, 0, 0));
+
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @ColorPickerSetting(alpha = true)
+    private final ConfigProperty<Color> borderColor = ConfigProperty.create(Color.ofRGB(0, 0, 0));
 
     public ConfigProperty<Boolean> showCover() {
       return this.showCover;
@@ -97,6 +120,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     }
 
     public ConfigProperty<Color> backgroundColor() {
+      return this.backgroundColor;
+    }
+
+    public ConfigProperty<Color> borderColor() {
       return this.backgroundColor;
     }
 

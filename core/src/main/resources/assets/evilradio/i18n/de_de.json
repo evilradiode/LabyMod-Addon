@@ -53,7 +53,12 @@
       "evilradio_full_widget": {
         "name": "Evil Radio Widget",
         "showCover": {
-          "name": "Cover anzeigen"
+          "name": "Cover anzeigen",
+          "description": "Zeige das Albumcover im Widget."
+        },
+        "useModernWidget": {
+          "name": "Moderner Widget-Stil",
+          "description": "Verwende den modernen Widget-Stil."
         },
         "limitTitleLength": {
           "name": "Titellänge begrenzen",

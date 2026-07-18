@@ -62,7 +62,7 @@ public class CurrentSongService {
       logging.warn("Cannot subscribe NowPlaying – missing AzuraCast shortcode because Stream is null.");
       resetCurrentSong();
       this.nowPlayingService.switchStation(null);
-      requestHudUpdate();
+      this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
       return;
     }
 
@@ -79,7 +79,7 @@ public class CurrentSongService {
       this.twitchNotificationSent = false;
     }
 
-    requestHudUpdate();
+    this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
     this.nowPlayingService.switchStation(shortcode);
   }
 
@@ -89,7 +89,7 @@ public class CurrentSongService {
       return;
     }
     this.connectionState.set(state == null ? NowPlayingConnectionState.DISCONNECTED : state);
-    requestHudUpdate();
+    this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
   }
 
   private void onNowPlayingSong(CurrentSong song) {
@@ -115,7 +115,7 @@ public class CurrentSongService {
 
     this.currentSong.set(song);
     this.connectionState.set(NowPlayingConnectionState.CONNECTED);
-    requestHudUpdate();
+    this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
 
     this.artworkCache.applyIfCurrent(artworkGeneration, song.getImageUrl(), url -> {
       // Cover-URL ist bereits im Snapshot; Generation verhindert spätere Alt-Downloads
@@ -177,7 +177,7 @@ public class CurrentSongService {
       logging.warn("No current stream found, cannot fetch song info");
       resetCurrentSong();
       this.nowPlayingService.switchStation(null);
-      requestHudUpdate();
+      this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
       return;
     }
     switchStation(currentStream);
@@ -239,11 +239,4 @@ public class CurrentSongService {
     return nowPlayingService;
   }
 
-  private void requestHudUpdate() {
-    if (this.addon.currentSongHudWidget() != null && this.addon.currentSongHudWidget().isEnabled()) {
-      this.addon.labyAPI().minecraft().executeOnRenderThread(() ->
-          this.addon.currentSongHudWidget().requestUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON)
-      );
-    }
-  }
 }
