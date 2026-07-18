@@ -88,23 +88,30 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     FlexibleContentWidget content = new FlexibleContentWidget().addId("content");
 
+    DivWidget coverStack = new DivWidget();
+    coverStack.addId("cover-stack");
     this.coverWidget = new IconWidget(EvilTextures.LOGO);
     this.coverWidget.addId("cover");
     this.coverWidget.setVisible(showCover);
-    content.addContent(coverWidget);
+
+    DivWidget stationBadge = new DivWidget();
+    stationBadge.addId("station-badge");
+    this.stationIconWidget = new IconWidget(EvilTextures.LOGO);
+    this.stationIconWidget.addId("station-icon");
+    this.stationIconWidget.setVisible(showCover);
+    stationBadge.addChild(this.stationIconWidget);
+
+    coverStack.addChild(this.coverWidget);
+    coverStack.addChild(stationBadge);
+    content.addContent(coverStack);
 
     FlexibleContentWidget player = new FlexibleContentWidget().addId("player");
 
     FlexibleContentWidget text = new FlexibleContentWidget().addId("text");
 
-    FlexibleContentWidget streamLine = new FlexibleContentWidget().addId("stream-line");
-    this.stationIconWidget = new IconWidget(EvilTextures.LOGO);
-    this.stationIconWidget.addId("station-icon");
     this.streamWidget = ComponentWidget.empty();
     this.streamWidget.addId("stream-name");
-    streamLine.addContent(this.stationIconWidget);
-    streamLine.addContent(this.streamWidget);
-    text.addContent(streamLine);
+    text.addContent(this.streamWidget);
 
     this.statusWidget = ComponentWidget.empty();
     this.statusWidget.addId("status");
@@ -166,10 +173,16 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
         if (this.coverWidget != null) {
           this.coverWidget.setVisible(true);
         }
+        if (this.stationIconWidget != null) {
+          this.stationIconWidget.setVisible(true);
+        }
       } else {
         this.addId("no-cover");
         if (this.coverWidget != null) {
           this.coverWidget.setVisible(false);
+        }
+        if (this.stationIconWidget != null) {
+          this.stationIconWidget.setVisible(false);
         }
       }
     }
@@ -464,9 +477,10 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     if (this.stationIconWidget == null) {
       return;
     }
+    boolean showCover = this.hudWidget.getConfig().showCover().get();
     Icon icon = stream != null ? stream.getIcon() : null;
     this.stationIconWidget.icon().set(icon != null ? icon : EvilTextures.LOGO);
-    this.stationIconWidget.setVisible(stream != null);
+    this.stationIconWidget.setVisible(showCover && stream != null);
   }
 
   private static String stationLabel(RadioStream stream) {
