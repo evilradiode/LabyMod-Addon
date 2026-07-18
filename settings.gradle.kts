@@ -1,7 +1,7 @@
 rootProject.name = "evilradio"
 
 pluginManagement {
-    val labyGradlePluginVersion = "0.8.1"
+    val labyGradlePluginVersion = "0.8.2"
     buildscript {
         repositories {
             maven("https://maven.laby.net/api/v1/maven/release/")
