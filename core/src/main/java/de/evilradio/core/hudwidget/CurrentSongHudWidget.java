@@ -92,7 +92,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     private final ConfigProperty<Integer> maxTitleLength = ConfigProperty.create(150);
 
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
-    @ColorPickerSetting(alpha = true, chroma = true)
+    @ColorPickerSetting(alpha = true)
     private final ConfigProperty<Color> backgroundColor = ConfigProperty.create(Color.ofRGB(0, 0, 0));
 
     public ConfigProperty<Boolean> showCover() {
