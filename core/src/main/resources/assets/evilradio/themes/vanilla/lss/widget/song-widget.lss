@@ -7,7 +7,7 @@ CurrentSong {
   max-width: calc(var(--current-song-widget-max-width) * 2);
 
   orientation: horizontal;
-  background-color: rgba(0, 0, 0, 0);
+  background-color: var(--song-widget-bg);
 
   .player {
     height: 100%;
@@ -93,7 +93,7 @@ CurrentSong {
   }
 
   &.maximized {
-      background-color: #1a1a1a;
+      background-color: var(--song-widget-bg);
 
       .minimized-bar {
         visible: false;

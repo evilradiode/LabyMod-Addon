@@ -9,6 +9,7 @@ import net.labymod.api.client.gui.hud.hudwidget.widget.WidgetHudWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
+import net.labymod.api.client.gui.screen.widget.widgets.input.color.ColorPickerWidget.ColorPickerSetting;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.ThreadSafe;
@@ -18,6 +19,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public static final String COVER_VISIBILITY_REASON = "cover_visibility";
   public static final String SONG_CHANGE_REASON = "song_change";
   public static final String TITLE_LENGTH_CHANGE_REASON = "title_length_change";
+  public static final String BACKGROUND_COLOR_REASON = "background_color";
 
   private final EvilRadioAddon addon;
 
@@ -54,6 +56,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(TITLE_LENGTH_CHANGE_REASON))
     );
+    config.backgroundColor.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(BACKGROUND_COLOR_REASON))
+    );
   }
 
   @Override
@@ -84,6 +90,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SliderSetting(min = 0, max = 500, steps = 10)
     private final ConfigProperty<Integer> maxTitleLength = ConfigProperty.create(150);
 
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @ColorPickerSetting(alpha = true)
+    private final ConfigProperty<Integer> backgroundColor = ConfigProperty.create(0x00000000);
+
     public ConfigProperty<Boolean> showCover() {
       return this.showCover;
     }
@@ -94,6 +104,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
     public ConfigProperty<Integer> maxTitleLength() {
       return maxTitleLength;
+    }
+
+    public ConfigProperty<Integer> backgroundColor() {
+      return this.backgroundColor;
     }
 
   }
