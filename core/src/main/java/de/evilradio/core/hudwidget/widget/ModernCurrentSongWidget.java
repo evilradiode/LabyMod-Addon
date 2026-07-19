@@ -511,6 +511,12 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     if (this.artistWidget != null) {
       this.artistWidget.setScrollMode(scroll);
     }
+    if (this.previousTrackWidget != null) {
+      this.previousTrackWidget.setScrollMode(scroll);
+    }
+    if (this.previousArtistWidget != null) {
+      this.previousArtistWidget.setScrollMode(scroll);
+    }
     this.marqueeCoordinator.onContentChanged();
   }
 
