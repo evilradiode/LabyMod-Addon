@@ -12,7 +12,7 @@ ModernCurrentSong {
     max-width: 300;
     height: fit-content;
     filter: blur(var(--modern-song-widget-blur));
-    border-radius: 15;
+    border-radius: 10;
     border-thickness: 2;
     border-color: var(--modern-song-widget-border-color);
     background-color: var(--modern-song-widget-bg);
@@ -125,6 +125,7 @@ ModernCurrentSong {
     background-color: var(--modern-song-widget-bg);
     box-shadow: none;
     orientation: vertical;
+    margin-bottom: 2;
 
     .previous-song-content {
       width: fit-content;
@@ -139,7 +140,7 @@ ModernCurrentSong {
         height: 20;
         right: 0;
         top: 0;
-        margin-left: 2;
+        margin: 1 0 0 2;
         border-radius: 5;
         visible: true;
       }
@@ -155,6 +156,8 @@ ModernCurrentSong {
         .previous-song-label {
           width: 100%;
           font-size: 0.8;
+          text-color: gray;
+          margin-bottom: 2;
         }
 
         .previous-song-artist {

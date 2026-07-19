@@ -95,6 +95,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         this.hudWidgetWidget.reInitialize();
       }
     });
+    config.showLastSong.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(TOGGLE_PREVIOUS_SONG_REASON))
+    );
   }
 
   @Override
