@@ -1,4 +1,4 @@
-package de.evilradio.core.hudwidget.widget;
+package de.evilradio.core.activity.widget;
 
 import java.util.ArrayList;
 import java.util.List;

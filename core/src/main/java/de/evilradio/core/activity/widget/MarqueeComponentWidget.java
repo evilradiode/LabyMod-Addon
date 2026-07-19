@@ -1,4 +1,4 @@
-package de.evilradio.core.hudwidget.widget;
+package de.evilradio.core.activity.widget;
 
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;

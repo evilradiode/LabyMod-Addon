@@ -2,6 +2,8 @@ package de.evilradio.core.hudwidget.widget;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
+import de.evilradio.core.activity.widget.MarqueeComponentWidget;
+import de.evilradio.core.activity.widget.MarqueeCoordinator;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
