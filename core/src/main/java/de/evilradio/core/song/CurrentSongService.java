@@ -20,6 +20,7 @@ public class CurrentSongService {
   private final Logging logging = Logging.create("EvilRadio-CurrentSongService");
 
   private final AtomicReference<CurrentSong> currentSong = new AtomicReference<>();
+  private final AtomicReference<CurrentSong> previousSong = new AtomicReference<>();
   private final AtomicReference<NowPlayingConnectionState> connectionState =
       new AtomicReference<>(NowPlayingConnectionState.IDLE);
   private final AtomicReference<String> currentShortcode = new AtomicReference<>();
@@ -33,6 +34,7 @@ public class CurrentSongService {
   public CurrentSongService(EvilRadioAddon addon) {
     this.addon = addon;
     this.nowPlayingService.setSongListener(this::onNowPlayingSong);
+    this.nowPlayingService.setPreviousSongListener(this::onPreviousSong);
     this.nowPlayingService.setStateListener(this::onConnectionState);
   }
 
@@ -74,6 +76,7 @@ public class CurrentSongService {
     this.currentShortcode.set(shortcode);
     this.artworkCache.bumpGeneration();
     this.currentSong.set(null);
+    this.previousSong.set(null);
     this.connectionState.set(NowPlayingConnectionState.LOADING);
     if (stationChanged) {
       this.twitchNotificationSent = false;
@@ -135,6 +138,19 @@ public class CurrentSongService {
     }
   }
 
+  private void onPreviousSong(CurrentSong song) {
+    if (song != null && song.isValid()) {
+      String activeShortcode = this.currentShortcode.get();
+      if (activeShortcode != null
+          && song.getStationShortcode() != null
+          && !activeShortcode.equals(song.getStationShortcode())) {
+        return;
+      }
+    }
+    this.previousSong.set(song != null && song.isValid() ? song : null);
+    this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+  }
+
   private CurrentSong getSongFromJson(JsonObject object) {
     if (!object.has("current")) {
       return null;
@@ -188,6 +204,7 @@ public class CurrentSongService {
    */
   public void resetCurrentSong() {
     this.currentSong.set(null);
+    this.previousSong.set(null);
     this.currentStreamName.set(null);
     this.currentShortcode.set(null);
     this.connectionState.set(NowPlayingConnectionState.IDLE);
@@ -221,6 +238,10 @@ public class CurrentSongService {
 
   public CurrentSong getCurrentSong() {
     return currentSong.get();
+  }
+
+  public CurrentSong getPreviousSong() {
+    return previousSong.get();
   }
 
   public NowPlayingConnectionState getConnectionState() {

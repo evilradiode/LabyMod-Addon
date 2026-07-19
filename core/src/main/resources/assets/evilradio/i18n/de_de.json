@@ -49,7 +49,8 @@
       "twitch": "● TWITCH",
       "statusSeparator": " | ",
       "adBreakTitle": "Jetzt läuft",
-      "adBreakArtist": "Werbung"
+      "adBreakArtist": "Werbung",
+      "previousSong": "Vorheriger Song"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -64,16 +65,28 @@
           "description": "Zeige das Albumcover im Widget."
         },
         "useModernWidget": {
-          "name": "Moderner Widget-Stil",
+          "name": "Modernes Widget nutzen",
           "description": "Verwende den modernen Widget-Stil."
+        },
+        "showLastSong": {
+          "name": "Vorheriger Song anzeigen",
+          "description": "Zeige den letzten Song im Widget. (Nur Modernes Widget)"
         },
         "scrollLongText": {
           "name": "Langen Text scrollen",
           "description": "Wenn aktiv, laufen zu lange Titel/Interpreten als Lauftext durch. Wenn deaktiviert, werden sie mit … abgeschnitten."
         },
+        "backgroundBlur": {
+          "name": "Hintergrund Blur",
+          "description": "Blur des Hintergrunds des Widgets. (Nur Modernes Widget)"
+        },
         "backgroundColor": {
           "name": "Hintergrundfarbe",
           "description": "Farbe und Transparenz des Widget-Hintergrunds. Voll transparent lässt den Hintergrund unsichtbar."
+        },
+        "borderColor": {
+          "name": "Randfarbe",
+          "description": "Farbe und Transparenz des Widget-Randes. Voll transparent lässt den Rand unsichtbar."
         },
         "progressBarColor": {
           "name": "Progressbar-Füllfarbe",

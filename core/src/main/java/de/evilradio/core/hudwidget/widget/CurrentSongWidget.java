@@ -12,7 +12,7 @@ import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.component.format.TextColor;
-import net.labymod.api.client.gfx.pipeline.renderer.text.TextRenderer;
+import net.labymod.api.client.gfx.pipeline.renderer.text.FontRenderer;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.lss.property.annotation.AutoWidget;
@@ -36,6 +36,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private static final String MIN_WIDTH_VARIABLE_KEY = "--current-song-widget-min-width";
   private static final String PROGRESS_FILL_WIDTH_KEY = "--current-song-progress-width";
   private static final String BACKGROUND_VARIABLE_KEY = "--song-widget-bg";
+
+  private static final float MAX_PLAYER_WIDTH = 220f;
 
   private ComponentWidget streamWidget;
   private ComponentWidget statusWidget;
@@ -75,8 +77,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.lastTrackName = "";
     this.lastLivePrefix = Component.empty();
 
-    this.setVariable(MAX_WIDTH_VARIABLE_KEY, 300);
-    this.setVariable(MIN_WIDTH_VARIABLE_KEY, 200);
+    this.setVariable(MAX_WIDTH_VARIABLE_KEY, MAX_PLAYER_WIDTH);
+    this.setVariable(MIN_WIDTH_VARIABLE_KEY, 160);
     this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
     this.applyBackgroundColor();
 
@@ -281,13 +283,13 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     String artistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
     this.artistWidget.setComponent(Component.text(artistName).color(this.artistTextColor()));
 
-    TextRenderer textRenderer = Laby.references().textRenderer();
+    FontRenderer fontRenderer = Laby.references().minecraftFontRenderer();
     float minWidgetWidth = (!hasId("no-cover") ? 44 : 0) + 30;
     String statusSample = statusLinePlain(currentSong);
-    float streamNameWidth = textRenderer.getWidth(streamDisplayName);
-    float statusWidth = textRenderer.getWidth(statusSample);
-    float trackWidth = textRenderer.getWidth(this.lastTrackName);
-    float artistWidth = textRenderer.getWidth(artistName);
+    float streamNameWidth = fontRenderer.getWidth(streamDisplayName);
+    float statusWidth = fontRenderer.getWidth(statusSample);
+    float trackWidth = fontRenderer.getWidth(this.lastTrackName);
+    float artistWidth = fontRenderer.getWidth(artistName);
     float contentWidth = Math.max(
         Math.max(streamNameWidth, statusWidth),
         Math.max(trackWidth, artistWidth)

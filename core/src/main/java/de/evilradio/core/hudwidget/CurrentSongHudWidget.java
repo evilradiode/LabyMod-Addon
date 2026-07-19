@@ -9,11 +9,13 @@ import net.labymod.api.client.component.format.TextColor;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidgetConfig;
 import net.labymod.api.client.gui.hud.hudwidget.widget.WidgetHudWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.color.ColorPickerWidget.ColorPickerSetting;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.configuration.settings.annotation.ColorRowBreak;
+import net.labymod.api.configuration.settings.annotation.SettingRequires;
 import net.labymod.api.configuration.settings.annotation.SettingSection;
 import net.labymod.api.util.Color;
 import net.labymod.api.util.ThreadSafe;
@@ -24,6 +26,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public static final String SONG_CHANGE_REASON = "song_change";
   public static final String COLOR_REASON = "color_style";
   public static final String SCROLL_TEXT_REASON = "scroll_text";
+  public static final String TOGGLE_PREVIOUS_SONG_REASON = "toggle_previous_song";
 
   /** Feste Obergrenze für Songtitel (Zeichen). */
   public static final int MAX_TITLE_LENGTH = 150;
@@ -35,6 +38,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   /** Minecraft-Grau (#AAAAAA) – bisher NamedTextColor.GRAY */
   public static final Color DEFAULT_ARTIST_COLOR = Color.ofRGB(170, 170, 170);
   public static final Color DEFAULT_BACKGROUND_COLOR = Color.ofRGB(0, 0, 0);
+  public static final Color DEFAULT_BORDER_COLOR = Color.ofRGB(85, 85, 85);
   public static final Color DEFAULT_PROGRESS_BAR_COLOR = Color.ofRGB(255, 85, 85);
 
   private final EvilRadioAddon addon;
@@ -54,7 +58,15 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COVER_VISIBILITY_REASON))
     );
+    config.backgroundBlur.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(COLOR_REASON))
+    );
     config.backgroundColor.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(COLOR_REASON))
+    );
+    config.borderColor.addChangeListener(
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COLOR_REASON))
     );
@@ -122,6 +134,11 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SwitchSetting
     private final ConfigProperty<Boolean> useModernWidget = ConfigProperty.create(false);
 
+    @SettingRequires("useModernWidget")
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @SwitchSetting
+    private final ConfigProperty<Boolean> showLastSong = ConfigProperty.create(false);
+
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
     @SwitchSetting
     private final ConfigProperty<Boolean> scrollLongText = ConfigProperty.create(true);
@@ -129,8 +146,16 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SettingSection("customization")
 
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @SliderSetting(min = 0, max = 100)
+    private final ConfigProperty<Integer> backgroundBlur = ConfigProperty.create(25);
+
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
     @ColorPickerSetting(alpha = true)
     private final ConfigProperty<Color> backgroundColor = ConfigProperty.create(DEFAULT_BACKGROUND_COLOR);
+
+    @IntroducedIn(namespace = "evilradio", value = "1.0.5")
+    @ColorPickerSetting(alpha = true)
+    private final ConfigProperty<Color> borderColor = ConfigProperty.create(DEFAULT_BORDER_COLOR);
 
     @IntroducedIn(namespace = "evilradio", value = "1.0.5")
     @ColorPickerSetting(alpha = true)
@@ -153,12 +178,24 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
       return this.showCover;
     }
 
+    public ConfigProperty<Boolean> showLastSong() {
+      return showLastSong;
+    }
+
     public ConfigProperty<Boolean> scrollLongText() {
       return this.scrollLongText;
     }
 
+    public ConfigProperty<Integer> backgroundBlur() {
+      return backgroundBlur;
+    }
+
     public ConfigProperty<Color> backgroundColor() {
       return this.backgroundColor;
+    }
+
+    public ConfigProperty<Color> borderColor() {
+      return borderColor;
     }
 
     public ConfigProperty<Color> progressBarColor() {

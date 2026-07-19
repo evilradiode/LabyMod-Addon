@@ -1,10 +1,10 @@
 CurrentSong {
   top: 0;
   left: 0;
-  height: 44;
-  min-width: calc(var(--current-song-widget-min-width) + 100);
   width: fit-content;
-  max-width: calc(var(--current-song-widget-max-width) * 2);
+  height: fit-content;
+  min-width: var(--current-song-widget-min-width);
+  max-width: var(--current-song-widget-max-width);
 
   orientation: horizontal;
   background-color: var(--song-widget-bg);
@@ -22,7 +22,7 @@ CurrentSong {
       space-between-entries: 2;
 
       .text {
-        margin-top: 2;
+        margin-top: 0;
         height: fit-content;
 
         Component {
@@ -56,7 +56,7 @@ CurrentSong {
     }
 
     .progress-track {
-      height: 3;
+      height: 2;
       width: 100%;
       margin-top: 1;
       background-color: rgba(255, 255, 255, 0.12);
@@ -64,7 +64,7 @@ CurrentSong {
       .progress-fill {
         top: 0;
         left: 0;
-        height: 3;
+        height: 2;
         width: var(--current-song-progress-width);
         background-color: rgba(220, 50, 50, 0.9);
       }

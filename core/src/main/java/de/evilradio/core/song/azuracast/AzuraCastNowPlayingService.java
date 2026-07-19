@@ -53,7 +53,12 @@ public final class AzuraCastNowPlayingService {
       new AtomicReference<>(NowPlayingConnectionState.IDLE);
   private final StringBuilder textBuffer = new StringBuilder();
 
+  private final AtomicReference<CurrentSong> currentSong = new AtomicReference<>();
+  private final AtomicReference<CurrentSong> previousSong = new AtomicReference<>();
+
   private volatile Consumer<CurrentSong> songListener = song -> {
+  };
+  private volatile Consumer<CurrentSong> previousSongListener = song -> {
   };
   private volatile BiConsumer<NowPlayingConnectionState, String> stateListener = (state, shortcode) -> {
   };
@@ -61,6 +66,29 @@ public final class AzuraCastNowPlayingService {
   public void setSongListener(Consumer<CurrentSong> songListener) {
     this.songListener = songListener == null ? song -> {
     } : songListener;
+  }
+
+  /**
+   * Listener für den zuletzt gespielten Song. Wird mit {@code null} aufgerufen, wenn keine
+   * Verlaufsdaten vorliegen.
+   */
+  public void setPreviousSongListener(Consumer<CurrentSong> previousSongListener) {
+    this.previousSongListener = previousSongListener == null ? song -> {
+    } : previousSongListener;
+  }
+
+  /**
+   * Der aktuell laufende Song des abonnierten Senders oder {@code null}.
+   */
+  public CurrentSong currentSong() {
+    return currentSong.get();
+  }
+
+  /**
+   * Der zuletzt gespielte Song des abonnierten Senders oder {@code null}.
+   */
+  public CurrentSong previousSong() {
+    return previousSong.get();
   }
 
   public void setStateListener(BiConsumer<NowPlayingConnectionState, String> stateListener) {
@@ -114,6 +142,7 @@ public final class AzuraCastNowPlayingService {
     long generation = guard.switchTo(normalized);
     cancelReconnect();
     closeSocket(false);
+    resetSongs();
     publishState(NowPlayingConnectionState.LOADING, normalized);
     logging.info("Switching NowPlaying subscription to station:" + normalized + " generation=" + generation);
     connect(generation, normalized, false);
@@ -129,6 +158,7 @@ public final class AzuraCastNowPlayingService {
     guard.clear();
     cancelReconnect();
     closeSocket(false);
+    resetSongs();
     publishState(NowPlayingConnectionState.IDLE, null);
   }
 
@@ -138,6 +168,7 @@ public final class AzuraCastNowPlayingService {
     cancelReconnect();
     guard.clear();
     closeSocket(false);
+    resetSongs();
     publishState(NowPlayingConnectionState.IDLE, null);
     logging.info("AzuraCast NowPlaying service stopped");
   }
@@ -259,7 +290,13 @@ public final class AzuraCastNowPlayingService {
       return;
     }
 
+    CurrentSong previous = publication.get().previousSong();
+
+    currentSong.set(song);
+    previousSong.set(previous);
+
     songListener.accept(song);
+    previousSongListener.accept(previous);
   }
 
   private void scheduleReconnect(long generation, String shortcode) {
@@ -311,6 +348,11 @@ public final class AzuraCastNowPlayingService {
     if (!triggerReconnect) {
       // no-op: caller decides whether to reconnect
     }
+  }
+
+  private void resetSongs() {
+    currentSong.set(null);
+    previousSong.set(null);
   }
 
   private void publishState(NowPlayingConnectionState state, String shortcode) {

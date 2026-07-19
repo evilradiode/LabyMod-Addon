@@ -38,6 +38,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private static final String PROGRESS_MAX_WIDTH_VARIABLE_KEY = "--modern-song-widget-progress-max-width";
 
   private static final String BACKGROUND_VARIABLE_KEY = "--modern-song-widget-bg";
+  private static final String BORDER_COLOR_VARIABLE_KEY = "--modern-song-widget-border-color";
+  private static final String BACKGROUND_BLUR_VARIABLE_KEY = "--modern-song-widget-blur";
   private static final String PROGRESS_BAR_COLOR_VARIABLE_KEY = "--modern-song-widget-progress-bar-color";
 
   private ComponentWidget streamWidget;
@@ -45,6 +47,11 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private MarqueeComponentWidget trackWidget;
   private MarqueeComponentWidget artistWidget;
   private final MarqueeCoordinator marqueeCoordinator = new MarqueeCoordinator();
+
+  private FlexibleContentWidget previousSongContainer;
+  private IconWidget previousSongIconWidget;
+  private MarqueeComponentWidget previousTrackWidget;
+  private MarqueeComponentWidget previousArtistWidget;
 
   private IconWidget coverWidget;
   private DivWidget progressTrack;
@@ -93,6 +100,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       this.addId("no-cover");
     }
 
+    FlexibleContentWidget songContainer = new FlexibleContentWidget().addId("song-container");
+
     FlexibleContentWidget content = new FlexibleContentWidget().addId("content");
 
     this.coverWidget = new IconWidget(EvilTextures.LOGO);
@@ -117,7 +126,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     this.marqueeCoordinator.clear();
     this.marqueeCoordinator.register(this.trackWidget);
     this.marqueeCoordinator.register(this.artistWidget);
-    this.applyScrollMode();
 
     FlexibleContentWidget progressRow = new FlexibleContentWidget().addId("progress-row");
     this.progressTrack = new DivWidget();
@@ -134,8 +142,40 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     content.addFlexibleContent(player);
 
-    this.addContent(content);
-    this.updateTrack(this.addon.currentSongService().getCurrentSong());
+    songContainer.addContent(content);
+    this.addContent(songContainer);
+
+    if(this.hudWidget.getConfig().showLastSong().get()) {
+      this.previousSongContainer = new FlexibleContentWidget().addId("previous-song-container");
+      this.previousSongContainer.setVisible(this.hudWidget.getConfig().showLastSong().get());
+
+      FlexibleContentWidget previousSongContent = new FlexibleContentWidget().addId("previous-song-content");
+
+      this.previousSongIconWidget = new IconWidget(EvilTextures.LOGO).addId("previous-song-cover");
+      previousSongContent.addContent(this.previousSongIconWidget);
+
+      FlexibleContentWidget previousSongPlayer = new FlexibleContentWidget().addId("previous-player");
+
+      previousSongPlayer.addContent(ComponentWidget.i18n("evilradio.widget.previousSong").addId("previous-song-label"));
+
+      this.previousArtistWidget = new MarqueeComponentWidget();
+      this.previousArtistWidget.addId("previous-song-artist");
+      this.previousTrackWidget = new MarqueeComponentWidget();
+      this.previousTrackWidget.addId("previous-song-track");
+      previousSongPlayer.addContent(this.previousArtistWidget);
+      previousSongPlayer.addContent(this.previousTrackWidget);
+      previousSongContent.addFlexibleContent(previousSongPlayer);
+      this.previousSongContainer.addContent(previousSongContent);
+      this.addContent(this.previousSongContainer);
+    }
+
+    this.marqueeCoordinator.register(this.previousArtistWidget);
+    this.marqueeCoordinator.register(this.previousTrackWidget);
+
+    this.applyScrollMode();
+
+    this.updateTrack(this.addon.currentSongService().getCurrentSong(), this.addon.currentSongService()
+        .getPreviousSong());
   }
 
   @Override
@@ -157,7 +197,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     }
 
     if (reason.equals(CurrentSongHudWidget.SONG_CHANGE_REASON)) {
-      this.updateTrack(this.addon.currentSongService().getCurrentSong());
+      this.updateTrack(this.addon.currentSongService().getCurrentSong(), this.addon.currentSongService()
+          .getPreviousSong());
     }
 
     if (reason.equals(CurrentSongHudWidget.COVER_VISIBILITY_REASON)) {
@@ -177,16 +218,18 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     if (reason.equals(CurrentSongHudWidget.COLOR_REASON)) {
       this.applyBackgroundColor();
-      this.updateTrack(this.addon.currentSongService().getCurrentSong());
+      this.updateTrack(this.addon.currentSongService().getCurrentSong(), this.addon.currentSongService()
+          .getPreviousSong());
     }
 
     if (reason.equals(CurrentSongHudWidget.SCROLL_TEXT_REASON)) {
       this.applyScrollMode();
-      this.updateTrack(this.addon.currentSongService().getCurrentSong());
+      this.updateTrack(this.addon.currentSongService().getCurrentSong(), this.addon.currentSongService()
+          .getPreviousSong());
     }
   }
 
-  private void updateTrack(CurrentSong currentSong) {
+  private void updateTrack(CurrentSong currentSong, CurrentSong previousSong) {
     if (this.trackWidget == null || this.artistWidget == null || this.streamWidget == null
         || this.statusWidget == null) {
       return;
@@ -260,14 +303,21 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
         Math.max(streamNameWidth, trackWidth),
         Math.max(artistWidth, timeWidth > 0 ? timeWidth + 40f : 0)
     );
-    float playerWidth = Math.min(MAX_PLAYER_WIDTH, Math.max(160f, naturalWidth));
+    float playerWidth = Math.clamp(naturalWidth, 160f, MAX_PLAYER_WIDTH);
 
     this.setVariable(MIN_WIDTH_VARIABLE_KEY, 160);
     this.setVariable(MAX_WIDTH_VARIABLE_KEY, playerWidth);
     this.progressTrackMaxWidth = Math.max(40f, playerWidth - (timeWidth > 0 ? timeWidth + 6 : 0));
     this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, this.progressTrackMaxWidth);
 
-    this.applyCover(currentSong);
+    if(this.previousArtistWidget != null && this.previousTrackWidget != null) {
+      this.previousArtistWidget.setMarqueeText(previousSong.getArtist(), this.artistTextColor());
+      this.previousTrackWidget.setMarqueeText(limitedTitle(previousSong.getTitle()), this.songTextColor());
+      this.marqueeCoordinator.onContentChanged();
+    }
+
+    this.applyCover(currentSong, this.coverWidget);
+    this.applyCover(previousSong, this.previousSongIconWidget);
     this.updateProgress(currentSong);
   }
 
@@ -340,8 +390,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     return title.substring(0, max);
   }
 
-  private void applyCover(CurrentSong currentSong) {
-    if (this.coverWidget == null || currentSong == null) {
+  private void applyCover(CurrentSong currentSong, IconWidget coverWidget) {
+    if (coverWidget == null || currentSong == null) {
       return;
     }
 
@@ -364,14 +414,14 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       }
       this.appliedCoverUrl = artworkUrl;
       this.appliedArtworkGeneration = generation;
-      this.coverWidget.icon().set(Icon.url(artworkUrl));
+      coverWidget.icon().set(Icon.url(artworkUrl));
     });
 
     if (url == null || url.isBlank()) {
       if (this.appliedCoverUrl != null) {
         return;
       }
-      this.coverWidget.icon().set(EvilTextures.LOGO);
+      coverWidget.icon().set(EvilTextures.LOGO);
     }
   }
 
@@ -432,6 +482,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
   private void applyBackgroundColor() {
     this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
+    this.setVariable(BORDER_COLOR_VARIABLE_KEY, this.hudWidget.getConfig().borderColor().get().get());
+    this.setVariable(BACKGROUND_BLUR_VARIABLE_KEY, this.hudWidget.getConfig().backgroundBlur().get());
     int progressColor = this.hudWidget.getConfig().progressBarColor().get().get();
     this.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
     if (this.progressFill != null) {

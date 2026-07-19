@@ -1,23 +1,31 @@
 ModernCurrentSong {
   left: 0;
   top: 0;
-  min-width: 220;
   width: fit-content;
-  max-width: 300;
   height: fit-content;
-  filter: blur(25);
-  border-radius: 15;
-  border-thickness: 0;
-  background-color: var(--modern-song-widget-bg);
-  box-shadow: none;
-  orientation: vertical;
+
+  .song-container {
+    left: 0;
+    top: 0;
+    min-width: 220;
+    width: fit-content;
+    max-width: 300;
+    height: fit-content;
+    filter: blur(var(--modern-song-widget-blur));
+    border-radius: 15;
+    border-thickness: 2;
+    border-color: var(--modern-song-widget-border-color);
+    background-color: var(--modern-song-widget-bg);
+    box-shadow: none;
+    orientation: vertical;
+  }
 
   .content {
     width: fit-content;
     max-width: 100%;
     height: fit-content;
     overwrite-width: false;
-    margin: 4 8 3 4;
+    margin: 4 4 4 4;
     orientation: horizontal;
 
     .player {
@@ -100,6 +108,88 @@ ModernCurrentSong {
         }
       }
     }
+  }
+
+  .previous-song-container {
+    left: 0;
+    top: 0;
+    margin-top: 2;
+    min-width: 220;
+    width: fit-content;
+    max-width: 300;
+    height: fit-content;
+    filter: blur(var(--modern-song-widget-blur));
+    border-radius: 10;
+    border-thickness: 2;
+    border-color: var(--modern-song-widget-border-color);
+    background-color: var(--modern-song-widget-bg);
+    box-shadow: none;
+    orientation: vertical;
+
+    .previous-song-content {
+      width: fit-content;
+      max-width: 100%;
+      height: fit-content;
+      overwrite-width: false;
+      margin: 4 4 4 4;
+      orientation: horizontal;
+
+      .previous-song-cover {
+        width: 20;
+        height: 20;
+        right: 0;
+        top: 0;
+        margin-left: 2;
+        border-radius: 5;
+        visible: true;
+      }
+
+      .previous-player {
+        height: fit-content;
+        orientation: vertical;
+        width: var(--modern-song-widget-max-width);
+        max-width: 220;
+        padding-left: 5;
+        padding-right: 2;
+
+        .previous-song-label {
+          width: 100%;
+          font-size: 0.8;
+        }
+
+        .previous-song-artist {
+          width: 100%;
+          height: fit-content;
+
+          .marquee-label {
+            left: 0;
+            top: 0;
+            max-lines: 1;
+            overflow-strategy: clip;
+            width: 100%;
+            font-size: 0.7;
+          }
+        }
+
+        .previous-song-track {
+          width: 100%;
+          height: fit-content;
+
+          .marquee-label {
+            left: 0;
+            top: 0;
+            max-lines: 1;
+            font-size: 0.7;
+            overflow-strategy: clip;
+            width: 100%;
+            font-size: 0.7;
+          }
+        }
+
+      }
+
+    }
+
   }
 
   .cover {
