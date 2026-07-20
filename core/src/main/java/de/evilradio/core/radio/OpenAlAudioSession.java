@@ -223,12 +223,19 @@ public final class OpenAlAudioSession {
   }
 
   public void queuePcm(byte[] pcmData, int length) throws Exception {
-    if (length <= 0 || volume <= 0.0f) {
+    if (length <= 0) {
       return;
     }
 
     int buffer = acquireBuffer();
-    short[] samples = applyVolume(bytesToShorts(pcmData, length));
+    int sampleCount = length / 2;
+    short[] samples;
+    if (this.volume <= 0.0f) {
+      // Stille queuen, damit der Decode-Thread weiter am OpenAL-Pacing hängt
+      samples = new short[sampleCount];
+    } else {
+      samples = applyVolume(bytesToShorts(pcmData, length));
+    }
     int format = channels == 1 ? alFormatMono16 : alFormatStereo16;
     alBufferData.invoke(null, buffer, format, samples, sampleRate);
     alSourceQueueBuffers.invoke(null, source, buffer);

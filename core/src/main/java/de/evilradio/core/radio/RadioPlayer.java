@@ -36,6 +36,7 @@ public class RadioPlayer {
   private volatile String currentStreamUrl;
   private volatile String outputDeviceName;
   private volatile LongSupplier sharedContextSupplier;
+  private final AudioSpectrumAnalyzer spectrum = new AudioSpectrumAnalyzer();
 
   public RadioPlayer() {
     this.executorService = Executors.newSingleThreadExecutor(r -> {
@@ -87,6 +88,8 @@ public class RadioPlayer {
 
         int sampleRate = header.frequency();
         int channels = header.mode() == Header.SINGLE_CHANNEL ? 1 : 2;
+        this.spectrum.configure(sampleRate, channels);
+        this.spectrum.reset();
 
         AudioFormat audioFormat = new AudioFormat(
             AudioFormat.Encoding.PCM_SIGNED,
@@ -279,6 +282,7 @@ public class RadioPlayer {
     shouldStop = true;
     isPlaying = false;
     currentStreamUrl = null;
+    this.spectrum.reset();
 
     // Streams schließen, damit blockierende Reads/OpenAL abbrechen
     try {
@@ -336,6 +340,14 @@ public class RadioPlayer {
     return volume;
   }
 
+  public boolean isPlaying() {
+    return isPlaying;
+  }
+
+  public AudioSpectrumAnalyzer spectrum() {
+    return this.spectrum;
+  }
+
   private boolean isOutputActive() {
     if (openAlSession != null) {
       return true;
@@ -344,9 +356,8 @@ public class RadioPlayer {
   }
 
   private void writeAudioSafe(byte[] buffer, int length) {
-    if (volume <= 0.0f) {
-      return;
-    }
+    // Spektrum immer aus Roh-PCM (unabhängig von der Lautstärke)
+    this.spectrum.feedPcm(buffer, length);
 
     try {
       if (openAlSession != null) {
@@ -356,8 +367,20 @@ public class RadioPlayer {
       }
 
       if (audioLine != null && audioLine.isOpen()) {
-        audioLine.write(buffer, 0, length);
+        if (this.volume > 0.001f) {
+          audioLine.write(buffer, 0, length);
+        } else {
+          // Ohne Write kein Blocking → Decoder rennt durch; grob anhand der Bytes drosseln
+          int bytesPerFrame = Math.max(1, audioLine.getFormat().getFrameSize());
+          float frameRate = audioLine.getFormat().getFrameRate();
+          if (frameRate > 0) {
+            long sleepMs = Math.max(1L, Math.round((length / (double) bytesPerFrame) / frameRate * 1000.0));
+            Thread.sleep(sleepMs);
+          }
+        }
       }
+    } catch (InterruptedException interrupted) {
+      Thread.currentThread().interrupt();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -390,10 +413,6 @@ public class RadioPlayer {
       }
     } catch (Exception ignored) {
     }
-  }
-
-  public boolean isPlaying() {
-    return isPlaying;
   }
 
   public void shutdown() {

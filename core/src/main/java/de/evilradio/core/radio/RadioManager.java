@@ -29,6 +29,10 @@ public class RadioManager {
     return radioPlayer != null && radioPlayer.isPlaying();
   }
 
+  public AudioSpectrumAnalyzer spectrum() {
+    return this.radioPlayer.spectrum();
+  }
+
   public void playStream(RadioStream stream) {
     boolean playbackActive = isPlaying();
 
@@ -64,6 +68,7 @@ public class RadioManager {
 
     if (stream != null && addon != null && addon.configuration().usageBasedSorting().get()) {
       addon.configuration().usageStatistics().incrementStreamUsage(stream.getId());
+      addon.radioStreamService().refreshSortOrder();
     }
 
     if (radioPlayer != null && stream != null) {
