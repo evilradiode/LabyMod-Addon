@@ -23,6 +23,10 @@ import java.util.Queue;
 public final class OpenAlAudioSession {
 
   private static final boolean AVAILABLE = probeAvailability();
+  /** Mehr Buffer = mehr Toleranz gegen Netzwerk-/GC-Hiccups (vorher nur 3 ≈ ~70 ms). */
+  private static final int BUFFER_COUNT = 12;
+  /** Erst starten, wenn genug PCM vorgehalten ist – verhindert sofortigen Underrun. */
+  private static final int PREBUFFER_COUNT = 4;
 
   private final long sharedContext;
   private final boolean ownsContext;
@@ -32,6 +36,9 @@ public final class OpenAlAudioSession {
   private final int alFormatMono16;
   private final int alFormatStereo16;
   private final int alBuffersProcessed;
+  private final int alBuffersQueued;
+  private final int alSourceState;
+  private final int alPlaying;
   private final int alGain;
   private final Method alGetSourcei;
   private final Method alSourceUnqueueBuffers;
@@ -61,6 +68,9 @@ public final class OpenAlAudioSession {
       int alFormatMono16,
       int alFormatStereo16,
       int alBuffersProcessed,
+      int alBuffersQueued,
+      int alSourceState,
+      int alPlaying,
       int alGain,
       Method alGetSourcei,
       Method alSourceUnqueueBuffers,
@@ -83,6 +93,9 @@ public final class OpenAlAudioSession {
     this.alFormatMono16 = alFormatMono16;
     this.alFormatStereo16 = alFormatStereo16;
     this.alBuffersProcessed = alBuffersProcessed;
+    this.alBuffersQueued = alBuffersQueued;
+    this.alSourceState = alSourceState;
+    this.alPlaying = alPlaying;
     this.alGain = alGain;
     this.alGetSourcei = alGetSourcei;
     this.alSourceUnqueueBuffers = alSourceUnqueueBuffers;
@@ -122,34 +135,12 @@ public final class OpenAlAudioSession {
     }
 
     int source = (int) bindings.alGenSources.invoke(null);
-    int[] buffers = new int[3];
+    int[] buffers = new int[BUFFER_COUNT];
     for (int i = 0; i < buffers.length; i++) {
       buffers[i] = (int) bindings.alGenBuffers.invoke(null);
     }
 
-    OpenAlAudioSession session = new OpenAlAudioSession(
-        minecraftContext,
-        false,
-        0L,
-        source,
-        buffers,
-        bindings.alFormatMono16,
-        bindings.alFormatStereo16,
-        bindings.alBuffersProcessed,
-        bindings.alGain,
-        bindings.alGetSourcei,
-        bindings.alSourceUnqueueBuffers,
-        bindings.alBufferData,
-        bindings.alSourceQueueBuffers,
-        bindings.alSourcePlay,
-        bindings.alSourceStop,
-        bindings.alSourcef,
-        bindings.alDeleteSources,
-        bindings.alDeleteBuffers,
-        bindings.alcDestroyContext,
-        bindings.alcCloseDevice,
-        bindings.alcMakeContextCurrent
-    );
+    OpenAlAudioSession session = newSession(minecraftContext, false, 0L, source, buffers, bindings);
     enqueueFreeBuffers(session, buffers);
     session.setVolume(volume);
     return session;
@@ -184,20 +175,37 @@ public final class OpenAlAudioSession {
     }
 
     int source = (int) bindings.alGenSources.invoke(null);
-    int[] buffers = new int[3];
+    int[] buffers = new int[BUFFER_COUNT];
     for (int i = 0; i < buffers.length; i++) {
       buffers[i] = (int) bindings.alGenBuffers.invoke(null);
     }
 
-    OpenAlAudioSession session = new OpenAlAudioSession(
+    OpenAlAudioSession session = newSession(context, true, device, source, buffers, bindings);
+    enqueueFreeBuffers(session, buffers);
+    session.setVolume(volume);
+    return session;
+  }
+
+  private static OpenAlAudioSession newSession(
+      long context,
+      boolean ownsContext,
+      long device,
+      int source,
+      int[] buffers,
+      OpenAlBindings bindings
+  ) {
+    return new OpenAlAudioSession(
         context,
-        true,
+        ownsContext,
         device,
         source,
         buffers,
         bindings.alFormatMono16,
         bindings.alFormatStereo16,
         bindings.alBuffersProcessed,
+        bindings.alBuffersQueued,
+        bindings.alSourceState,
+        bindings.alPlaying,
         bindings.alGain,
         bindings.alGetSourcei,
         bindings.alSourceUnqueueBuffers,
@@ -212,9 +220,6 @@ public final class OpenAlAudioSession {
         bindings.alcCloseDevice,
         bindings.alcMakeContextCurrent
     );
-    enqueueFreeBuffers(session, buffers);
-    session.setVolume(volume);
-    return session;
   }
 
   public void configureFormat(int sampleRate, int channels) {
@@ -226,6 +231,9 @@ public final class OpenAlAudioSession {
     if (length <= 0) {
       return;
     }
+
+    makeContextCurrent();
+    reclaimProcessedBuffers();
 
     int buffer = acquireBuffer();
     int sampleCount = length / 2;
@@ -253,14 +261,29 @@ public final class OpenAlAudioSession {
     return scaled;
   }
 
+  private void makeContextCurrent() throws Exception {
+    if (sharedContext != 0L) {
+      alcMakeContextCurrent.invoke(null, sharedContext);
+    }
+  }
+
+  private void reclaimProcessedBuffers() throws Exception {
+    int processed = (int) alGetSourcei.invoke(null, source, alBuffersProcessed);
+    for (int i = 0; i < processed; i++) {
+      freeBuffers.add((int) alSourceUnqueueBuffers.invoke(null, source));
+    }
+  }
+
   private int acquireBuffer() throws Exception {
     while (freeBuffers.isEmpty()) {
-      int processed = (int) alGetSourcei.invoke(null, source, alBuffersProcessed);
-      if (processed > 0) {
-        freeBuffers.add((int) alSourceUnqueueBuffers.invoke(null, source));
-      } else {
-        Thread.sleep(5L);
+      reclaimProcessedBuffers();
+      if (!freeBuffers.isEmpty()) {
+        break;
       }
+      // Nach Underrun bleibt die Source auf STOPPED – ohne Restart blockiert der Thread endlos,
+      // weil queued Buffer nie „processed“ werden.
+      ensurePlaying();
+      Thread.sleep(5L);
     }
     return freeBuffers.poll();
   }
@@ -268,22 +291,53 @@ public final class OpenAlAudioSession {
   public void setVolume(float volume) throws Exception {
     boolean wasMuted = this.volume <= 0.0f;
     this.volume = Math.max(0.0f, Math.min(1.0f, volume));
+    makeContextCurrent();
     alSourcef.invoke(null, source, alGain, this.volume);
-    // Während Mute werden keine Buffer mehr gequeued → OpenAL-Source läuft leer und stoppt.
-    // started zurücksetzen, damit startIfNeeded() nach dem Unmute erneut alSourcePlay aufruft.
+    // Nach Unmute Playback neu anstoßen (ensurePlaying prüft den echten Source-State).
     if (wasMuted && this.volume > 0.0f) {
       started = false;
+      ensurePlaying();
     }
   }
 
-  public void startIfNeeded() throws Exception {
-    if (!started && volume > 0.0f) {
+  /**
+   * Startet die Source nach Prebuffer bzw. nach OpenAL-Underrun erneut.
+   * OpenAL setzt die Source bei leerer Queue auf {@code AL_STOPPED}; ohne Restart bleibt es still,
+   * obwohl weiter PCM gequeued und das Spektrum gefüttert wird.
+   */
+  public void ensurePlaying() throws Exception {
+    if (volume <= 0.0f) {
+      return;
+    }
+
+    makeContextCurrent();
+    int queued = (int) alGetSourcei.invoke(null, source, alBuffersQueued);
+    if (queued <= 0) {
+      return;
+    }
+
+    // Beim ersten Start etwas vorhalten, damit ein kurzer Hiccup nicht sofort stoppt
+    if (!started && queued < PREBUFFER_COUNT) {
+      return;
+    }
+
+    int state = (int) alGetSourcei.invoke(null, source, alSourceState);
+    if (state != alPlaying) {
       alSourcePlay.invoke(null, source);
       started = true;
     }
   }
 
+  public void startIfNeeded() throws Exception {
+    ensurePlaying();
+  }
+
   public void close() {
+    try {
+      makeContextCurrent();
+    } catch (Exception ignored) {
+    }
+
     try {
       alSourceStop.invoke(null, source);
     } catch (Exception ignored) {
@@ -371,6 +425,9 @@ public final class OpenAlAudioSession {
     private final int alFormatMono16;
     private final int alFormatStereo16;
     private final int alBuffersProcessed;
+    private final int alBuffersQueued;
+    private final int alSourceState;
+    private final int alPlaying;
     private final int alGain;
     private final Method alGenSources;
     private final Method alGenBuffers;
@@ -391,6 +448,9 @@ public final class OpenAlAudioSession {
         int alFormatMono16,
         int alFormatStereo16,
         int alBuffersProcessed,
+        int alBuffersQueued,
+        int alSourceState,
+        int alPlaying,
         int alGain,
         Method alGenSources,
         Method alGenBuffers,
@@ -410,6 +470,9 @@ public final class OpenAlAudioSession {
       this.alFormatMono16 = alFormatMono16;
       this.alFormatStereo16 = alFormatStereo16;
       this.alBuffersProcessed = alBuffersProcessed;
+      this.alBuffersQueued = alBuffersQueued;
+      this.alSourceState = alSourceState;
+      this.alPlaying = alPlaying;
       this.alGain = alGain;
       this.alGenSources = alGenSources;
       this.alGenBuffers = alGenBuffers;
@@ -435,6 +498,9 @@ public final class OpenAlAudioSession {
           getIntConstant(al10, "AL_FORMAT_MONO16"),
           getIntConstant(al10, "AL_FORMAT_STEREO16"),
           getIntConstant(al10, "AL_BUFFERS_PROCESSED"),
+          getIntConstant(al10, "AL_BUFFERS_QUEUED"),
+          getIntConstant(al10, "AL_SOURCE_STATE"),
+          getIntConstant(al10, "AL_PLAYING"),
           getIntConstant(al10, "AL_GAIN"),
           al10.getMethod("alGenSources"),
           al10.getMethod("alGenBuffers"),

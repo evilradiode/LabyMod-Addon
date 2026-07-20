@@ -103,22 +103,24 @@ public class RadioPlayer {
 
         boolean openAlPlayback = false;
         if (OpenAlAudioSession.isAvailable()) {
-          long sharedOpenAlContext = sharedContextSupplier != null ? sharedContextSupplier.getAsLong() : 0L;
-          if (sharedOpenAlContext != 0L) {
-            try {
-              openAlSession = OpenAlAudioSession.openShared(sharedOpenAlContext, volume);
-              openAlSession.configureFormat(sampleRate, channels);
-              openAlPlayback = true;
-            } catch (Exception ignored) {
-            }
+          // Eigenes Gerät bevorzugt: Shared-Minecraft-Kontext ist thread-lokal und kollidiert
+          // mit dem Game-Audio-Thread → zufällige Stille trotz weiterlaufendem Decode/Equalizer.
+          try {
+            openAlSession = OpenAlAudioSession.openDevice(outputDeviceName, volume);
+            openAlSession.configureFormat(sampleRate, channels);
+            openAlPlayback = true;
+          } catch (Exception ignored) {
           }
 
           if (!openAlPlayback) {
-            try {
-              openAlSession = OpenAlAudioSession.openDevice(outputDeviceName, volume);
-              openAlSession.configureFormat(sampleRate, channels);
-              openAlPlayback = true;
-            } catch (Exception ignored) {
+            long sharedOpenAlContext = sharedContextSupplier != null ? sharedContextSupplier.getAsLong() : 0L;
+            if (sharedOpenAlContext != 0L) {
+              try {
+                openAlSession = OpenAlAudioSession.openShared(sharedOpenAlContext, volume);
+                openAlSession.configureFormat(sampleRate, channels);
+                openAlPlayback = true;
+              } catch (Exception ignored) {
+              }
             }
           }
         }
@@ -144,7 +146,8 @@ public class RadioPlayer {
 
         isPlaying = true;
 
-        byte[] buffer = new byte[4096];
+        // ~46 ms Stereo@44.1 kHz pro Chunk; mit 12 OpenAL-Buffern ≈ 0,5 s Vorhalt
+        byte[] buffer = new byte[8192];
         while (!shouldStop && isOutputActive() && bitstream != null) {
           try {
             if (bitstream == null) {
