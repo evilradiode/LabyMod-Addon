@@ -28,11 +28,14 @@ public class RadioStationRowWidget extends DivWidget {
   private ComponentWidget nameWidget;
   private ComponentWidget songWidget;
   private ComponentWidget artistWidget;
+  private ComponentWidget timeWidget;
   private boolean focused;
   private boolean onAir;
   private boolean twitch;
   private @Nullable CurrentSong song;
   private @Nullable String appliedCoverKey;
+  private long lastRenderedElapsed = -1L;
+  private boolean lastRenderedHadDuration;
 
   public RadioStationRowWidget(RadioStream stream, boolean playing) {
     this.stream = stream;
@@ -63,11 +66,15 @@ public class RadioStationRowWidget extends DivWidget {
       this.addChild(this.songWidget);
       this.artistWidget = ComponentWidget.empty().addId("row-artist");
       this.addChild(this.artistWidget);
+      this.timeWidget = ComponentWidget.empty().addId("row-time");
+      this.timeWidget.setVisible(false);
+      this.addChild(this.timeWidget);
       this.applySong();
     } else {
       this.coverWidget = null;
       this.songWidget = null;
       this.artistWidget = null;
+      this.timeWidget = null;
       this.addId("coming-soon");
     }
     if (this.playing) {
@@ -98,7 +105,16 @@ public class RadioStationRowWidget extends DivWidget {
 
   public void setSong(@Nullable CurrentSong song) {
     this.song = song;
+    this.lastRenderedElapsed = -1L;
+    this.lastRenderedHadDuration = false;
     this.applySong();
+  }
+
+  /**
+   * Aktualisiert nur die Playtime-Anzeige, wenn sich die Sekunde geändert hat.
+   */
+  public void tickPlaytime() {
+    this.updatePlaytime(false);
   }
 
   private void applySong() {
@@ -111,6 +127,7 @@ public class RadioStationRowWidget extends DivWidget {
           Component.translatable("evilradio.picker.loadingSong").color(NamedTextColor.DARK_GRAY));
       this.artistWidget.setComponent(Component.empty());
       this.applyCover(null);
+      this.updatePlaytime(true);
       return;
     }
 
@@ -124,6 +141,32 @@ public class RadioStationRowWidget extends DivWidget {
       this.artistWidget.setComponent(Component.text(artist).color(NamedTextColor.DARK_GRAY));
     }
     this.applyCover(this.song.getImageUrl());
+    this.updatePlaytime(true);
+  }
+
+  private void updatePlaytime(boolean force) {
+    if (this.timeWidget == null) {
+      return;
+    }
+    if (this.song == null || !this.song.isValid() || !this.song.hasKnownDuration()) {
+      if (force || this.lastRenderedHadDuration || this.lastRenderedElapsed >= 0L) {
+        this.timeWidget.setComponent(Component.empty());
+        this.timeWidget.setVisible(false);
+        this.lastRenderedElapsed = -1L;
+        this.lastRenderedHadDuration = false;
+      }
+      return;
+    }
+
+    long elapsed = this.song.getCurrentElapsedSeconds();
+    if (!force && this.lastRenderedHadDuration && elapsed == this.lastRenderedElapsed) {
+      return;
+    }
+    this.lastRenderedElapsed = elapsed;
+    this.lastRenderedHadDuration = true;
+    String label = CurrentSong.formatTime(elapsed) + " / " + CurrentSong.formatTime(this.song.getDuration());
+    this.timeWidget.setComponent(Component.text(label).color(NamedTextColor.DARK_GRAY));
+    this.timeWidget.setVisible(true);
   }
 
   private void applyCover(@Nullable String imageUrl) {

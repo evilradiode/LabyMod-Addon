@@ -192,17 +192,37 @@ public final class CurrentSong {
   }
 
   /**
-   * Aktuell verstrichene Sekunden seit dem letzten Update, begrenzt auf {@code [0, duration]}.
+   * Aktuell verstrichene Sekunden, bevorzugt über {@code played_at} (absolut),
+   * damit HUD und Picker trotz unterschiedlicher Update-Zeitpunkte gleich laufen.
    */
   public long getCurrentElapsedSeconds() {
-    long elapsed = elapsedAtUpdate + Math.max(0L, (System.currentTimeMillis() - receivedAt) / 1000L);
+    long elapsed = this.elapsedFromPlayedAt();
+    if (elapsed < 0L) {
+      elapsed = this.elapsedAtUpdate
+          + Math.max(0L, (System.currentTimeMillis() - this.receivedAt) / 1000L);
+    }
     if (elapsed < 0L) {
       return 0L;
     }
     if (hasKnownDuration()) {
-      return Math.min(duration, elapsed);
+      return Math.min(this.duration, elapsed);
     }
     return elapsed;
+  }
+
+  /**
+   * @return verstrichene Sekunden ab {@code played_at}, oder {@code -1} wenn unbekannt
+   */
+  private long elapsedFromPlayedAt() {
+    if (this.playedAt >= 1_000_000_000_000L) {
+      // Unix-Millis
+      return (System.currentTimeMillis() - this.playedAt) / 1000L;
+    }
+    if (this.playedAt >= 1_000_000_000L) {
+      // Unix-Sekunden
+      return (System.currentTimeMillis() / 1000L) - this.playedAt;
+    }
+    return -1L;
   }
 
   /**

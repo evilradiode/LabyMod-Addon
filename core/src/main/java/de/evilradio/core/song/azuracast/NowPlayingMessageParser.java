@@ -207,6 +207,10 @@ public final class NowPlayingMessageParser {
     long playedAt = longOrZero(entry, "played_at");
     long duration = Math.round(doubleOrZero(entry, "duration"));
     long elapsed = Math.round(doubleOrZero(entry, "elapsed"));
+    // Absolute Startzeit rekonstruieren, falls AzuraCast kein played_at liefert
+    if (playedAt <= 0L && elapsed >= 0L && receivedAt > 0L) {
+      playedAt = (receivedAt / 1000L) - elapsed;
+    }
 
     return Optional.of(new CurrentSong(
         stationId,

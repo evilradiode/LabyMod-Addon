@@ -45,6 +45,8 @@ import org.jetbrains.annotations.Nullable;
 public class RadioStationListActivity extends SimpleActivity {
 
   private static final String OPEN_ANIMATION_ID = "picker-open";
+  private static final String PICKER_PANEL_BLUR_VAR = "--picker-panel-blur";
+  private static final float PICKER_PANEL_BLUR = 18.0F;
   private static final String EQ_BAR_HEIGHT_VAR = "--eq-bar-height";
   private static final String EQ_BAR_BOTTOM_VAR = "--eq-bar-bottom";
   private static final String EQ_BAR_LEFT_VAR = "--eq-bar-left";
@@ -72,6 +74,7 @@ public class RadioStationListActivity extends SimpleActivity {
   private IconWidget coverWidget;
   private ComponentWidget coverSongWidget;
   private ComponentWidget coverStationWidget;
+  private ComponentWidget coverTimeWidget;
   private DivWidget equalizerWidget;
   private final List<DivWidget> equalizerBars = new ArrayList<>();
   private final List<DivWidget> equalizerPeaks = new ArrayList<>();
@@ -80,6 +83,8 @@ public class RadioStationListActivity extends SimpleActivity {
   private final float[] peakHolds = new float[EQ_BAR_COUNT];
   private @Nullable EqualizerStyle appliedEqualizerStyle;
   private @Nullable String appliedCoverKey;
+  private long lastNowPlayingElapsed = -1L;
+  private boolean lastNowPlayingHadDuration;
   private float equalizerLayoutWidth = -1.0F;
 
   private int selectedIndex;
@@ -105,6 +110,8 @@ public class RadioStationListActivity extends SimpleActivity {
     this.appliedEqualizerStyle = null;
     this.equalizerLayoutWidth = -1.0F;
     this.keyboardFocus = false;
+    this.lastNowPlayingElapsed = -1L;
+    this.lastNowPlayingHadDuration = false;
 
     RadioStream previouslySelected = null;
     if (!this.displayStreams.isEmpty()
@@ -126,6 +133,7 @@ public class RadioStationListActivity extends SimpleActivity {
 
     VerticalListWidget<Widget> panel = new VerticalListWidget<>().addId("picker-panel");
     panel.animationDuration().set(180);
+    panel.setVariable(PICKER_PANEL_BLUR_VAR, PICKER_PANEL_BLUR);
     this.panelWidget = panel;
 
     DivWidget header = new DivWidget().addId("picker-header");
@@ -165,14 +173,17 @@ public class RadioStationListActivity extends SimpleActivity {
     VerticalListWidget<Widget> coverTexts = new VerticalListWidget<>().addId("picker-cover-texts");
     this.coverStationWidget = ComponentWidget.empty().addId("picker-cover-station");
     this.coverSongWidget = ComponentWidget.empty().addId("picker-cover-song");
+    this.coverTimeWidget = ComponentWidget.empty().addId("picker-cover-time");
+    this.coverTimeWidget.setVisible(false);
     coverTexts.addChild(this.coverStationWidget);
     coverTexts.addChild(this.coverSongWidget);
+    coverTexts.addChild(this.coverTimeWidget);
     coverStrip.addChild(coverTexts);
     this.equalizerStyleButton = ButtonWidget.text("EQ", this::cycleEqualizerStyle)
         .addId("picker-eq-toggle");
     coverStrip.addChild(this.equalizerStyleButton);
-    this.playPauseButton = ButtonWidget.component(
-        this.playPauseLabel(),
+    this.playPauseButton = ButtonWidget.text(
+        this.playPauseIcon(),
         this::togglePlayPause
     ).addId("picker-play-pause");
     coverStrip.addChild(this.playPauseButton);
@@ -394,7 +405,42 @@ public class RadioStationListActivity extends SimpleActivity {
           Component.translatable("evilradio.picker.noSongInfo").color(NamedTextColor.DARK_GRAY));
     }
 
+    this.updateNowPlayingPlaytime(song, true);
     this.updateEqualizer(playing);
+  }
+
+  private void updateNowPlayingPlaytime(@Nullable CurrentSong song, boolean force) {
+    if (this.coverTimeWidget == null) {
+      return;
+    }
+    if (song == null || !song.isValid() || !song.hasKnownDuration()) {
+      if (force || this.lastNowPlayingHadDuration || this.lastNowPlayingElapsed >= 0L) {
+        this.coverTimeWidget.setComponent(Component.empty());
+        this.coverTimeWidget.setVisible(false);
+        this.lastNowPlayingElapsed = -1L;
+        this.lastNowPlayingHadDuration = false;
+      }
+      return;
+    }
+
+    long elapsed = song.getCurrentElapsedSeconds();
+    if (!force && this.lastNowPlayingHadDuration && elapsed == this.lastNowPlayingElapsed) {
+      return;
+    }
+    this.lastNowPlayingElapsed = elapsed;
+    this.lastNowPlayingHadDuration = true;
+    String label = CurrentSong.formatTime(elapsed) + " / " + CurrentSong.formatTime(song.getDuration());
+    this.coverTimeWidget.setComponent(Component.text(label).color(NamedTextColor.DARK_GRAY));
+    this.coverTimeWidget.setVisible(true);
+  }
+
+  private void tickPlaytimes() {
+    RadioStream current = this.controller.radioManager().getCurrentStream();
+    CurrentSong song = current != null ? this.resolveSongFor(current) : null;
+    this.updateNowPlayingPlaytime(song, false);
+    for (RadioStationRowWidget row : this.rows) {
+      row.tickPlaytime();
+    }
   }
 
   private void updateEqualizer(boolean playing) {
@@ -475,8 +521,8 @@ public class RadioStationListActivity extends SimpleActivity {
     }
     float width = this.equalizerWidget.bounds().getWidth();
     if (width <= 1.0F) {
-      // Bounds oft erst nach erstem Layout verfügbar
-      width = 186.0F;
+      // Bounds oft erst nach erstem Layout verfügbar (nach Cover bis vor EQ/Play)
+      width = 198.0F;
     }
     if (Math.abs(width - this.equalizerLayoutWidth) < 0.5F) {
       return;
@@ -646,13 +692,14 @@ public class RadioStationListActivity extends SimpleActivity {
     super.tick();
     this.updateHoverSelection();
     this.syncControls();
+    this.tickPlaytimes();
     // Sichtbarkeit + Bars jeden Tick syncen (sonst bleibt EQ manchmal unsichtbar bis Reopen)
     this.updateEqualizer(this.controller.radioManager().isPlaying());
   }
 
   private void syncControls() {
     if (this.playPauseButton != null) {
-      this.playPauseButton.updateComponent(this.playPauseLabel());
+      this.playPauseButton.updateComponent(Component.text(this.playPauseIcon()));
     }
     if (this.volumeSlider != null && !this.volumeSlider.isDragging()) {
       float volume = this.addon.configuration().volume().get();
@@ -662,10 +709,8 @@ public class RadioStationListActivity extends SimpleActivity {
     }
   }
 
-  private Component playPauseLabel() {
-    return this.controller.radioManager().isPlaying()
-        ? Component.translatable("evilradio.wheel.stopped")
-        : Component.translatable("evilradio.wheel.playing");
+  private String playPauseIcon() {
+    return this.controller.radioManager().isPlaying() ? "⏹" : "▶";
   }
 
   private void togglePlayPause() {
