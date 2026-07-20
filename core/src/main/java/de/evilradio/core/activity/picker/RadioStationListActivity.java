@@ -4,6 +4,8 @@ import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.activity.picker.widget.RadioStationRowWidget;
 import de.evilradio.core.configuration.EqualizerStyle;
+import de.evilradio.core.configuration.StationPickerSubSettings;
+import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.AudioSpectrumAnalyzer;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
@@ -45,8 +47,10 @@ import org.jetbrains.annotations.Nullable;
 public class RadioStationListActivity extends SimpleActivity {
 
   private static final String OPEN_ANIMATION_ID = "picker-open";
+  private static final String PICKER_PANEL_BG_VAR = "--picker-panel-bg";
+  private static final String PICKER_PANEL_BORDER_VAR = "--picker-panel-border";
   private static final String PICKER_PANEL_BLUR_VAR = "--picker-panel-blur";
-  private static final float PICKER_PANEL_BLUR = 18.0F;
+  private static final String PICKER_ROW_BG_VAR = "--picker-row-bg";
   private static final String EQ_BAR_HEIGHT_VAR = "--eq-bar-height";
   private static final String EQ_BAR_BOTTOM_VAR = "--eq-bar-bottom";
   private static final String EQ_BAR_LEFT_VAR = "--eq-bar-left";
@@ -133,8 +137,8 @@ public class RadioStationListActivity extends SimpleActivity {
 
     VerticalListWidget<Widget> panel = new VerticalListWidget<>().addId("picker-panel");
     panel.animationDuration().set(180);
-    panel.setVariable(PICKER_PANEL_BLUR_VAR, PICKER_PANEL_BLUR);
     this.panelWidget = panel;
+    this.applyPanelAppearance();
 
     DivWidget header = new DivWidget().addId("picker-header");
     header.addChild(new IconWidget(EvilTextures.LOGO).addId("picker-logo"));
@@ -179,9 +183,15 @@ public class RadioStationListActivity extends SimpleActivity {
     coverTexts.addChild(this.coverSongWidget);
     coverTexts.addChild(this.coverTimeWidget);
     coverStrip.addChild(coverTexts);
-    this.equalizerStyleButton = ButtonWidget.text("EQ", this::cycleEqualizerStyle)
-        .addId("picker-eq-toggle");
-    coverStrip.addChild(this.equalizerStyleButton);
+    boolean equalizerEnabled = this.isEqualizerFeatureEnabled();
+    if (equalizerEnabled) {
+      this.equalizerStyleButton = ButtonWidget.text("EQ", this::cycleEqualizerStyle)
+          .addId("picker-eq-toggle");
+      coverStrip.addChild(this.equalizerStyleButton);
+    } else {
+      this.equalizerStyleButton = null;
+      coverStrip.addId("no-eq");
+    }
     this.playPauseButton = ButtonWidget.text(
         this.playPauseIcon(),
         this::togglePlayPause
@@ -196,6 +206,7 @@ public class RadioStationListActivity extends SimpleActivity {
       RadioStream stream = this.displayStreams.get(i);
       boolean playing = this.isPlaying(stream);
       RadioStationRowWidget row = new RadioStationRowWidget(stream, playing);
+      this.applyRowAppearance(row);
       // Kein sticky Focus beim Öffnen – nur Hover/Tastatur
       row.setFocusedRow(false);
       if (StationPickerController.isMashup(stream)) {
@@ -391,12 +402,15 @@ public class RadioStationListActivity extends SimpleActivity {
       this.coverStationWidget.setComponent(
           Component.text(current.getDisplayName())
               .color(playing ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+      StationPickerSubSettings picker = this.addon.configuration().stationPicker();
       if (song != null && song.isValid()) {
         this.coverSongWidget.setComponent(
-            Component.text(song.getFormatted()).color(NamedTextColor.GRAY));
+            Component.text(song.getFormatted())
+                .color(CurrentSongHudWidget.toTextColor(picker.songColor().get())));
       } else {
         this.coverSongWidget.setComponent(
-            Component.translatable("evilradio.picker.loadingSong").color(NamedTextColor.DARK_GRAY));
+            Component.translatable("evilradio.picker.loadingSong")
+                .color(CurrentSongHudWidget.toTextColor(picker.artistColor().get())));
       }
     } else {
       this.coverStationWidget.setComponent(
@@ -430,7 +444,9 @@ public class RadioStationListActivity extends SimpleActivity {
     this.lastNowPlayingElapsed = elapsed;
     this.lastNowPlayingHadDuration = true;
     String label = CurrentSong.formatTime(elapsed) + " / " + CurrentSong.formatTime(song.getDuration());
-    this.coverTimeWidget.setComponent(Component.text(label).color(NamedTextColor.DARK_GRAY));
+    this.coverTimeWidget.setComponent(Component.text(label).color(
+        CurrentSongHudWidget.toTextColor(
+            this.addon.configuration().stationPicker().timeColor().get())));
     this.coverTimeWidget.setVisible(true);
   }
 
@@ -443,14 +459,37 @@ public class RadioStationListActivity extends SimpleActivity {
     }
   }
 
+  private void applyPanelAppearance() {
+    if (this.panelWidget == null) {
+      return;
+    }
+    StationPickerSubSettings picker = this.addon.configuration().stationPicker();
+    this.panelWidget.setVariable(PICKER_PANEL_BG_VAR, picker.backgroundColor().get().get());
+    this.panelWidget.setVariable(PICKER_PANEL_BORDER_VAR, picker.borderColor().get().get());
+    this.panelWidget.setVariable(PICKER_PANEL_BLUR_VAR, (float) picker.backgroundBlur().get());
+  }
+
+  private void applyRowAppearance(RadioStationRowWidget row) {
+    if (row == null) {
+      return;
+    }
+    int rowBg = this.addon.configuration().stationPicker().rowBackgroundColor().get().get();
+    row.setVariable(PICKER_ROW_BG_VAR, rowBg);
+  }
+
+  private boolean isEqualizerFeatureEnabled() {
+    return Boolean.TRUE.equals(this.addon.configuration().stationPicker().showEqualizer().get());
+  }
+
   private void updateEqualizer(boolean playing) {
     if (this.equalizerWidget == null) {
       return;
     }
+    boolean featureEnabled = this.isEqualizerFeatureEnabled();
     EqualizerStyle style = this.addon.configuration().equalizerStyle().get();
     this.applyEqualizerStyle(style);
     this.syncEqualizerStyleButton();
-    boolean showEq = playing && style.isEnabled();
+    boolean showEq = featureEnabled && playing && style.isEnabled();
     if (playing) {
       if (this.nowPlayingStrip != null) {
         this.nowPlayingStrip.addId("playing");
@@ -472,6 +511,9 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void cycleEqualizerStyle() {
+    if (!this.isEqualizerFeatureEnabled()) {
+      return;
+    }
     EqualizerStyle next = this.addon.configuration().equalizerStyle().get().next();
     this.addon.configuration().equalizerStyle().set(next);
     this.updateEqualizer(this.controller.radioManager().isPlaying());
@@ -479,6 +521,11 @@ public class RadioStationListActivity extends SimpleActivity {
 
   private void syncEqualizerStyleButton() {
     if (this.equalizerStyleButton == null) {
+      return;
+    }
+    boolean featureEnabled = this.isEqualizerFeatureEnabled();
+    this.equalizerStyleButton.setVisible(featureEnabled);
+    if (!featureEnabled) {
       return;
     }
     EqualizerStyle style = this.addon.configuration().equalizerStyle().get();

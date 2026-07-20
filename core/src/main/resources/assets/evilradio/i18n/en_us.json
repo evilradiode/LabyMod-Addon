@@ -140,12 +140,48 @@
         "name": "Radio Menu Keybind",
         "description": "Key to open the radio menu"
       },
-      "stationPickerStyle": {
+      "stationPicker": {
         "name": "Station menu style",
-        "description": "Choose between the classic hexagon wheel and the list with preview.",
-        "type": {
-          "wheel": "Classic Wheel",
-          "listPreview": "List + Preview"
+        "description": "Wheel or list + preview. Submenu: list look and equalizer.",
+        "style": {
+          "name": "Menu style",
+          "description": "Classic hexagon wheel or list with preview.",
+          "type": {
+            "wheel": "Classic Wheel",
+            "listPreview": "List + Preview"
+          }
+        },
+        "backgroundColor": {
+          "name": "List background",
+          "description": "Color and transparency of the list menu (including alpha)."
+        },
+        "borderColor": {
+          "name": "List border",
+          "description": "Border color of the list menu (including alpha)."
+        },
+        "rowBackgroundColor": {
+          "name": "Row background",
+          "description": "Background color of station rows (including alpha)."
+        },
+        "backgroundBlur": {
+          "name": "List blur",
+          "description": "Background blur of the list menu (0 = off)."
+        },
+        "showEqualizer": {
+          "name": "Show equalizer",
+          "description": "Equalizer and EQ button in the list menu. Off = removed completely."
+        },
+        "songColor": {
+          "name": "Song color",
+          "description": "Text color for the song title in the list."
+        },
+        "artistColor": {
+          "name": "Artist color",
+          "description": "Text color for the artist in the list."
+        },
+        "timeColor": {
+          "name": "Time color",
+          "description": "Text color for playtime in the list."
         }
       },
       "showSongChangeNotification": {

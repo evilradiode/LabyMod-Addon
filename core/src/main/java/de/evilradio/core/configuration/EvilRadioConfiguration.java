@@ -7,8 +7,6 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.Butto
 import net.labymod.api.client.gui.screen.widget.widgets.input.KeybindWidget.KeyBindSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
-import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
-import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
@@ -30,10 +28,7 @@ public class EvilRadioConfiguration extends AddonConfig {
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @DropdownSetting
-  @DropdownEntryTranslationPrefix("evilradio.settings.stationPickerStyle.type")
-  private final ConfigProperty<StationPickerStyle> stationPickerStyle =
-      new ConfigProperty<>(StationPickerStyle.WHEEL);
+  private final StationPickerSubSettings stationPicker = new StationPickerSubSettings();
 
   @SwitchSetting
   private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
@@ -74,8 +69,12 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.radioMenuKeybind;
   }
 
+  public StationPickerSubSettings stationPicker() {
+    return this.stationPicker;
+  }
+
   public ConfigProperty<StationPickerStyle> stationPickerStyle() {
-    return this.stationPickerStyle;
+    return this.stationPicker.style();
   }
 
   public ConfigProperty<EqualizerStyle> equalizerStyle() {

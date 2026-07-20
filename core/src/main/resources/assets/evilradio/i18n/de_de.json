@@ -140,12 +140,48 @@
         "name": "Radio-Menü Tastenkürzel",
         "description": "Taste zum Öffnen des Radio-Menüs"
       },
-      "stationPickerStyle": {
+      "stationPicker": {
         "name": "Sender-Menü Stil",
-        "description": "Wähle zwischen dem klassischen Hexagon-Wheel und der Liste mit Preview.",
-        "type": {
-          "wheel": "Klassisches Wheel",
-          "listPreview": "Liste + Preview"
+        "description": "Wheel oder Liste + Preview. Untermenü: Look der Liste und Equalizer.",
+        "style": {
+          "name": "Menü-Stil",
+          "description": "Klassisches Hexagon-Wheel oder Liste mit Preview.",
+          "type": {
+            "wheel": "Klassisches Wheel",
+            "listPreview": "Liste + Preview"
+          }
+        },
+        "backgroundColor": {
+          "name": "Listen-Hintergrund",
+          "description": "Farbe und Transparenz des Listen-Menüs (inkl. Alpha)."
+        },
+        "borderColor": {
+          "name": "Listen-Rahmen",
+          "description": "Rahmenfarbe des Listen-Menüs (inkl. Alpha)."
+        },
+        "rowBackgroundColor": {
+          "name": "Zeilen-Hintergrund",
+          "description": "Hintergrundfarbe der Sender-Zeilen (inkl. Alpha)."
+        },
+        "backgroundBlur": {
+          "name": "Listen-Blur",
+          "description": "Hintergrund-Unschärfe des Listen-Menüs (0 = aus)."
+        },
+        "showEqualizer": {
+          "name": "Equalizer anzeigen",
+          "description": "Equalizer und EQ-Button im Listen-Menü. Aus = komplett entfernt."
+        },
+        "songColor": {
+          "name": "Song-Farbe",
+          "description": "Textfarbe für den Songtitel in der Liste."
+        },
+        "artistColor": {
+          "name": "Interpret-Farbe",
+          "description": "Textfarbe für den Interpreten in der Liste."
+        },
+        "timeColor": {
+          "name": "Zeit-Farbe",
+          "description": "Textfarbe für die Playtime in der Liste."
         }
       },
       "showSongChangeNotification": {

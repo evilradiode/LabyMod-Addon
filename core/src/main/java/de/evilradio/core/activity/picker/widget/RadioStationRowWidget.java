@@ -1,7 +1,10 @@
 package de.evilradio.core.activity.picker.widget;
 
+import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.activity.picker.StationPickerController;
+import de.evilradio.core.configuration.StationPickerSubSettings;
+import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
 import net.labymod.api.client.component.Component;
@@ -122,9 +125,13 @@ public class RadioStationRowWidget extends DivWidget {
       return;
     }
 
+    StationPickerSubSettings picker = EvilRadioAddon.instance().configuration().stationPicker();
+    TextColor songColor = CurrentSongHudWidget.toTextColor(picker.songColor().get());
+    TextColor artistColor = CurrentSongHudWidget.toTextColor(picker.artistColor().get());
+
     if (this.song == null || !this.song.isValid()) {
       this.songWidget.setComponent(
-          Component.translatable("evilradio.picker.loadingSong").color(NamedTextColor.DARK_GRAY));
+          Component.translatable("evilradio.picker.loadingSong").color(artistColor));
       this.artistWidget.setComponent(Component.empty());
       this.applyCover(null);
       this.updatePlaytime(true);
@@ -134,11 +141,11 @@ public class RadioStationRowWidget extends DivWidget {
     String title = this.song.getTitle();
     String artist = this.song.getArtist();
     this.songWidget.setComponent(
-        Component.text(title == null || title.isBlank() ? "—" : title).color(NamedTextColor.GRAY));
+        Component.text(title == null || title.isBlank() ? "—" : title).color(songColor));
     if (artist == null || artist.isBlank()) {
       this.artistWidget.setComponent(Component.empty());
     } else {
-      this.artistWidget.setComponent(Component.text(artist).color(NamedTextColor.DARK_GRAY));
+      this.artistWidget.setComponent(Component.text(artist).color(artistColor));
     }
     this.applyCover(this.song.getImageUrl());
     this.updatePlaytime(true);
@@ -165,7 +172,9 @@ public class RadioStationRowWidget extends DivWidget {
     this.lastRenderedElapsed = elapsed;
     this.lastRenderedHadDuration = true;
     String label = CurrentSong.formatTime(elapsed) + " / " + CurrentSong.formatTime(this.song.getDuration());
-    this.timeWidget.setComponent(Component.text(label).color(NamedTextColor.DARK_GRAY));
+    TextColor timeColor = CurrentSongHudWidget.toTextColor(
+        EvilRadioAddon.instance().configuration().stationPicker().timeColor().get());
+    this.timeWidget.setComponent(Component.text(label).color(timeColor));
     this.timeWidget.setVisible(true);
   }
 

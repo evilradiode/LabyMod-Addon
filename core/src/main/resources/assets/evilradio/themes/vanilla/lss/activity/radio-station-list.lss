@@ -14,11 +14,11 @@
   height: fit-content;
   alignment-x: center;
   alignment-y: center;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--picker-panel-bg);
   filter: blur(var(--picker-panel-blur));
   border-radius: 12;
   border-thickness: 1;
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--picker-panel-border);
   padding: 12 14 12 14;
   space-between-entries: 10;
   animation-duration: 180;
@@ -49,7 +49,7 @@
 }
 
 .picker-close-x {
-  right: 8;
+  right: 4;
   top: 50%;
   width: 16;
   height: 16;
@@ -58,8 +58,12 @@
   border-radius: 4;
   border-thickness: 1;
   border-color: rgba(255, 90, 90, 0.55);
-  padding: 0;
   text-align: center;
+}
+
+/* Text sitzt als Kind .button-text – Padding schrumpft nur die Box */
+.picker-close-x .button-text {
+  margin-right: 1.5;
 }
 
 .picker-close-x:hover {
@@ -83,6 +87,10 @@
   bottom: 4;
   opacity: 0.45;
   interactable: false;
+}
+
+.picker-now-playing.no-eq .picker-eq {
+  right: 26;
 }
 
 .picker-eq-bar {

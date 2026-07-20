@@ -4,6 +4,7 @@ import de.evilradio.core.configuration.AutoStartSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.listener.GameListener;
+import de.evilradio.core.listener.StationPickerSettingsListener;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
@@ -74,6 +75,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     // Event-Bus registrieren für Event-Handler
     this.labyAPI().eventBus().registerListener(new GameListener(this));
+    this.labyAPI().eventBus().registerListener(new StationPickerSettingsListener(this));
 
     this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
     this.labyAPI().eventBus().registerListener(new RadioStationListOpener(this));
