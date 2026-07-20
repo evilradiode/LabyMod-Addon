@@ -4,6 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import de.evilradio.core.song.CurrentSong;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -34,8 +36,17 @@ public final class NowPlayingMessageParser {
   }
 
   public static Optional<ParsedPublication> extractPublication(JsonObject message) {
+    List<ParsedPublication> all = extractAllPublications(message);
+    return all.isEmpty() ? Optional.empty() : Optional.of(all.get(0));
+  }
+
+  /**
+   * Alle Now-Playing-Publikationen einer Nachricht (wichtig bei Multi-Subscribe-Connect).
+   */
+  public static List<ParsedPublication> extractAllPublications(JsonObject message) {
+    List<ParsedPublication> result = new ArrayList<>();
     if (message == null) {
-      return Optional.empty();
+      return result;
     }
 
     if (message.has("connect") && message.get("connect").isJsonObject()) {
@@ -52,13 +63,11 @@ public final class NowPlayingMessageParser {
             continue;
           }
           JsonElement last = publications.get(publications.size() - 1);
-          Optional<NowPlayingSnapshot> snapshot = parsePublicationElement(channel, last);
-          if (snapshot.isPresent()) {
-            return Optional.of(ParsedPublication.of(channel, snapshot.get()));
-          }
+          parsePublicationElement(channel, last)
+              .ifPresent(snapshot -> result.add(ParsedPublication.of(channel, snapshot)));
         }
       }
-      if (connect.has("data") && connect.get("data").isJsonArray()) {
+      if (result.isEmpty() && connect.has("data") && connect.get("data").isJsonArray()) {
         var data = connect.getAsJsonArray("data");
         if (!data.isEmpty()) {
           JsonElement last = data.get(data.size() - 1);
@@ -66,21 +75,22 @@ public final class NowPlayingMessageParser {
           if (snapshot.isPresent()) {
             String shortcode = snapshot.get().current().getStationShortcode();
             String channel = shortcode == null ? null : "station:" + shortcode;
-            return Optional.of(ParsedPublication.of(channel, snapshot.get()));
+            result.add(ParsedPublication.of(channel, snapshot.get()));
           }
         }
       }
+      return result;
     }
 
     if (message.has("pub")) {
       String channel = message.has("channel") && !message.get("channel").isJsonNull()
           ? message.get("channel").getAsString()
           : null;
-      return parsePublicationElement(channel, message.get("pub"))
-          .map(snapshot -> ParsedPublication.of(channel, snapshot));
+      parsePublicationElement(channel, message.get("pub"))
+          .ifPresent(snapshot -> result.add(ParsedPublication.of(channel, snapshot)));
     }
 
-    return Optional.empty();
+    return result;
   }
 
   public static Optional<CurrentSong> parseNowPlayingPayload(JsonObject npRoot) {
@@ -151,14 +161,16 @@ public final class NowPlayingMessageParser {
     if (np.has("song_history") && np.get("song_history").isJsonArray()) {
       var history = np.getAsJsonArray("song_history");
       // AzuraCast liefert die zuletzt gespielten Songs zuerst.
-      if (!history.isEmpty() && history.get(0).isJsonObject()) {
-        previous = parseSongEntry(history.get(0).getAsJsonObject(),
+      // Werbung (START_AD_BREAK) überspringen – „Vorheriger Song“ soll ein echter Track sein.
+      for (int i = 0; i < history.size(); i++) {
+        if (!history.get(i).isJsonObject()) {
+          continue;
+        }
+        CurrentSong candidate = parseSongEntry(history.get(i).getAsJsonObject(),
             stationId, stationName, stationShortcode, false, null, receivedAt).orElse(null);
-      }
-      if(previous != null && previous.getArtist().equals("START_AD_BREAK")) {
-        if (!history.isEmpty() && history.get(1).isJsonObject()) {
-          previous = parseSongEntry(history.get(1).getAsJsonObject(),
-              stationId, stationName, stationShortcode, false, null, receivedAt).orElse(null);
+        if (candidate != null && !candidate.isAdBreak()) {
+          previous = candidate;
+          break;
         }
       }
     }
@@ -247,22 +259,7 @@ public final class NowPlayingMessageParser {
     if (song == null) {
       return null;
     }
-    return new CurrentSong(
-        song.getStationId(),
-        song.getStationName(),
-        shortcode,
-        song.getTitle(),
-        song.getArtist(),
-        song.getImageUrl(),
-        song.getSongId(),
-        song.getModeratorName(),
-        song.isOnAir(),
-        song.isTwitch(),
-        song.getPlayedAt(),
-        song.getDuration(),
-        song.getElapsedAtUpdate(),
-        song.getReceivedAt()
-    );
+    return song.withStationShortcode(shortcode);
   }
 
   private static String textOrEmpty(JsonObject object, String key) {

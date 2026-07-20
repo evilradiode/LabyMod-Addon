@@ -1,11 +1,23 @@
 package de.evilradio.core.song;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.artwork.ArtworkCache;
 import de.evilradio.core.song.azuracast.AzuraCastNowPlayingService;
+import de.evilradio.core.song.azuracast.NowPlayingMessageParser;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import net.labymod.api.client.component.Component;
@@ -16,6 +28,8 @@ import net.labymod.api.util.logging.Logging;
 public class CurrentSongService {
 
   private final String API_BASE_URL = "https://api.evil-radio.de/?radioInfo=";
+  private static final String AZURACAST_NOWPLAYING_URL =
+      "https://broadcast.evil-radio.de/api/nowplaying";
 
   private final Logging logging = Logging.create("EvilRadio-CurrentSongService");
 
@@ -27,9 +41,14 @@ public class CurrentSongService {
   private final AtomicReference<String> currentStreamName = new AtomicReference<>();
   private final ArtworkCache artworkCache = new ArtworkCache(32);
   private final AzuraCastNowPlayingService nowPlayingService = new AzuraCastNowPlayingService();
+  private final HttpClient httpClient = HttpClient.newBuilder()
+      .connectTimeout(Duration.ofSeconds(8))
+      .build();
 
   private EvilRadioAddon addon;
   private boolean twitchNotificationSent = false;
+  private final AtomicReference<Boolean> pendingStreamSelectedNotification =
+      new AtomicReference<>(false);
 
   public CurrentSongService(EvilRadioAddon addon) {
     this.addon = addon;
@@ -95,6 +114,14 @@ public class CurrentSongService {
     this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
   }
 
+  /**
+   * Zeigt die nächste gültige WS-Now-Playing-Nachricht als „Sender gewählt“-Toast
+   * (statt eines separaten REST-Abrufs).
+   */
+  public void armStreamSelectedNotification() {
+    this.pendingStreamSelectedNotification.set(true);
+  }
+
   private void onNowPlayingSong(CurrentSong song) {
     if (song == null || !song.isValid()) {
       return;
@@ -111,6 +138,8 @@ public class CurrentSongService {
     CurrentSong previous = this.currentSong.get();
     boolean songChanged = previous != null
         && (!previous.getTitle().equals(song.getTitle()) || !previous.getArtist().equals(song.getArtist()));
+    boolean streamSelectedToast = Boolean.TRUE.equals(
+        this.pendingStreamSelectedNotification.getAndSet(false));
 
     String cacheKey = ArtworkCache.key(activeShortcode, song.getSongId(), song.getImageUrl());
     long artworkGeneration = this.artworkCache.currentGeneration();
@@ -124,7 +153,16 @@ public class CurrentSongService {
       // Cover-URL ist bereits im Snapshot; Generation verhindert spätere Alt-Downloads
     });
 
-    if (songChanged && this.addon.configuration().showSongChangeNotification().get()) {
+    if (streamSelectedToast) {
+      if (song.isAdBreak()) {
+        // Werbung nicht im Toast – auf nächsten echten Track warten.
+        this.pendingStreamSelectedNotification.set(true);
+      } else {
+        this.pushStreamSelectedNotification(song);
+      }
+    } else if (songChanged
+        && !song.isAdBreak()
+        && this.addon.configuration().showSongChangeNotification().get()) {
       RadioStream notificationStream = this.addon.radioManager().getCurrentStream();
       Icon streamIcon = notificationStream == null ? null : notificationStream.getIcon();
       String imageUrl = song.getImageUrl();
@@ -138,7 +176,45 @@ public class CurrentSongService {
     }
   }
 
+  private void pushStreamSelectedNotification(CurrentSong song) {
+    RadioStream stream = this.addon.radioManager().getCurrentStream();
+    String stationName = stream != null ? stream.getDisplayName() : song.getStationName();
+    if (stationName == null || stationName.isBlank()) {
+      stationName = this.currentStreamName.get();
+    }
+    if (stationName == null) {
+      stationName = "";
+    }
+
+    Component title = Component.translatable(
+        "evilradio.notification.streamSelected.titleWithStation",
+        Component.text(stationName)
+    );
+    String songText = song.getFormatted();
+    final Component text;
+    final Icon artwork;
+    if (songText != null && !songText.isBlank()) {
+      text = Component.translatable(
+          "evilradio.notification.streamSelected.textWithSong",
+          Component.text(songText)
+      );
+      String imageUrl = song.getImageUrl();
+      artwork = imageUrl == null || imageUrl.isBlank() ? null : Icon.url(imageUrl);
+    } else {
+      text = Component.translatable("evilradio.notification.streamSelected.text");
+      artwork = null;
+    }
+
+    final Icon streamIcon = stream == null ? null : stream.getIcon();
+    this.addon.labyAPI().minecraft().executeOnRenderThread(() ->
+        this.addon.notification(title, text, artwork, streamIcon));
+  }
+
   private void onPreviousSong(CurrentSong song) {
+    // Werbung nie als „Vorheriger Song“ anzeigen – letzten echten Track behalten.
+    if (song != null && song.isAdBreak()) {
+      return;
+    }
     if (song != null && song.isValid()) {
       String activeShortcode = this.currentShortcode.get();
       if (activeShortcode != null
@@ -209,6 +285,7 @@ public class CurrentSongService {
     this.currentShortcode.set(null);
     this.connectionState.set(NowPlayingConnectionState.IDLE);
     this.twitchNotificationSent = false;
+    this.pendingStreamSelectedNotification.set(false);
     this.artworkCache.bumpGeneration();
   }
 
@@ -234,6 +311,61 @@ public class CurrentSongService {
           JsonObject object = response.get();
           callback.accept(getSongFromJson(object));
         });
+  }
+
+  /**
+   * Ein Request für Now-Playing aller Stationen (AzuraCast). Key = Station-Shortcode.
+   */
+  public void fetchAllNowPlaying(Consumer<Map<String, CurrentSong>> callback) {
+    if (callback == null) {
+      return;
+    }
+    HttpRequest request = HttpRequest.newBuilder(URI.create(AZURACAST_NOWPLAYING_URL))
+        .timeout(Duration.ofSeconds(8))
+        .header("User-Agent", "EvilRadio LabyMod 4 Addon")
+        .GET()
+        .build();
+
+    CompletableFuture.supplyAsync(() -> {
+      try {
+        HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200 || response.body() == null || response.body().isBlank()) {
+          return Map.<String, CurrentSong>of();
+        }
+        return parseAllNowPlaying(response.body());
+      } catch (Exception error) {
+        this.logging.warn("Failed to fetch all now-playing – " + error.getMessage());
+        return Map.<String, CurrentSong>of();
+      }
+    }).thenAccept(callback);
+  }
+
+  private static Map<String, CurrentSong> parseAllNowPlaying(String body) {
+    Map<String, CurrentSong> songs = new HashMap<>();
+    JsonElement root = JsonParser.parseString(body);
+    if (root == null || !root.isJsonArray()) {
+      return songs;
+    }
+    JsonArray array = root.getAsJsonArray();
+    for (JsonElement element : array) {
+      if (element == null || !element.isJsonObject()) {
+        continue;
+      }
+      var snapshot = NowPlayingMessageParser.parseNowPlayingSnapshot(element.getAsJsonObject());
+      if (snapshot.isEmpty()) {
+        continue;
+      }
+      CurrentSong song = snapshot.get().current();
+      if (song == null || !song.isValid()) {
+        continue;
+      }
+      String shortcode = song.getStationShortcode();
+      if (shortcode == null || shortcode.isBlank()) {
+        continue;
+      }
+      songs.put(shortcode.trim(), song);
+    }
+    return songs;
   }
 
   public CurrentSong getCurrentSong() {

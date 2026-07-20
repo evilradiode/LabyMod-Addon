@@ -23,6 +23,7 @@ public final class CurrentSong {
   private final long duration;
   private final long elapsedAtUpdate;
   private final long receivedAt;
+  private final boolean adBreak;
 
   public CurrentSong(String title, String artist, String imageUrl) {
     this(0, null, null, title, artist, imageUrl, null, null, false, false, 0L, 0L, 0L, System.currentTimeMillis());
@@ -53,7 +54,8 @@ public final class CurrentSong {
     this.stationShortcode = stationShortcode;
     String rawTitle = title == null ? "" : title;
     String rawArtist = artist == null ? "" : artist;
-    if (isAdBreakMarker(rawTitle) || isAdBreakMarker(rawArtist)) {
+    this.adBreak = isAdBreakMarker(rawTitle) || isAdBreakMarker(rawArtist);
+    if (this.adBreak) {
       this.title = translateOrDefault("evilradio.widget.adBreakTitle", "Jetzt läuft");
       this.artist = translateOrDefault("evilradio.widget.adBreakArtist", "Werbung");
     } else {
@@ -69,6 +71,40 @@ public final class CurrentSong {
     this.duration = Math.max(0L, duration);
     this.elapsedAtUpdate = Math.max(0L, elapsedAtUpdate);
     this.receivedAt = receivedAt <= 0L ? System.currentTimeMillis() : receivedAt;
+  }
+
+  private CurrentSong(
+      int stationId,
+      String stationName,
+      String stationShortcode,
+      String title,
+      String artist,
+      String imageUrl,
+      String songId,
+      String moderatorName,
+      boolean onAir,
+      boolean twitch,
+      long playedAt,
+      long duration,
+      long elapsedAtUpdate,
+      long receivedAt,
+      boolean adBreak
+  ) {
+    this.stationId = stationId;
+    this.stationName = stationName;
+    this.stationShortcode = stationShortcode;
+    this.title = title == null ? "" : title;
+    this.artist = artist == null ? "" : artist;
+    this.imageUrl = imageUrl;
+    this.songId = songId;
+    this.moderatorName = moderatorName;
+    this.onAir = onAir;
+    this.twitch = twitch;
+    this.playedAt = playedAt;
+    this.duration = Math.max(0L, duration);
+    this.elapsedAtUpdate = Math.max(0L, elapsedAtUpdate);
+    this.receivedAt = receivedAt <= 0L ? System.currentTimeMillis() : receivedAt;
+    this.adBreak = adBreak;
   }
 
   private static boolean isAdBreakMarker(String value) {
@@ -147,6 +183,10 @@ public final class CurrentSong {
     return title != null && !title.isBlank();
   }
 
+  public boolean isAdBreak() {
+    return adBreak;
+  }
+
   public boolean hasKnownDuration() {
     return duration > 0L;
   }
@@ -190,7 +230,28 @@ public final class CurrentSong {
         playedAt,
         duration,
         elapsedAtUpdate,
-        receivedAt
+        receivedAt,
+        adBreak
+    );
+  }
+
+  public CurrentSong withStationShortcode(String shortcode) {
+    return new CurrentSong(
+        stationId,
+        stationName,
+        shortcode,
+        title,
+        artist,
+        imageUrl,
+        songId,
+        moderatorName,
+        onAir,
+        twitch,
+        playedAt,
+        duration,
+        elapsedAtUpdate,
+        receivedAt,
+        adBreak
     );
   }
 
