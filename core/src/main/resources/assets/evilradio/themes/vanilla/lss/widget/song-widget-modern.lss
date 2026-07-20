@@ -46,6 +46,7 @@ ModernCurrentSong {
         margin-top: 2;
         width: 100%;
         height: 9;
+        stencil-translation: true;
 
         .marquee-label {
           left: 0;
@@ -60,6 +61,7 @@ ModernCurrentSong {
         margin-top: 2;
         width: 100%;
         height: 9;
+        stencil-translation: true;
 
         .marquee-label {
           left: 0;
@@ -163,6 +165,7 @@ ModernCurrentSong {
         .previous-song-artist {
           width: 100%;
           height: fit-content;
+          stencil-translation: true;
 
           .marquee-label {
             left: 0;
@@ -177,12 +180,12 @@ ModernCurrentSong {
         .previous-song-track {
           width: 100%;
           height: fit-content;
+          stencil-translation: true;
 
           .marquee-label {
             left: 0;
             top: 0;
             max-lines: 1;
-            font-size: 0.7;
             overflow-strategy: clip;
             width: 100%;
             font-size: 0.7;

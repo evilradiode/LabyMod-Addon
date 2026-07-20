@@ -320,23 +320,33 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, this.progressTrackMaxWidth);
 
     if(this.previousArtistWidget != null && this.previousTrackWidget != null) {
-      String previousTrackName = limitedTitle(previousSong.getTitle());
-      String previousArtistName = previousSong.getArtist();
+      if (previousSong == null) {
+        if (this.previousSongContainer != null) {
+          this.previousSongContainer.setVisible(false);
+        }
+      } else {
+        if (this.previousSongContainer != null) {
+          this.previousSongContainer.setVisible(this.hudWidget.getConfig().showLastSong().get());
+        }
 
-      float previousTrackWidth = fontRenderer.getWidth(previousTrackName);
-      float previousArtistWidth = fontRenderer.getWidth(previousArtistName);
-      float previousNaturalWidth = Math.max(previousTrackWidth, previousArtistWidth);
-      float previousPlayerWidth = Math.clamp(previousNaturalWidth, 160f, MAX_PLAYER_WIDTH);
+        String previousTrackName = limitedTitle(previousSong.getTitle());
+        String previousArtistName = previousSong.getArtist();
 
-      this.setVariable(PREVIOUS_MAX_WIDTH_VARIABLE_KEY, previousPlayerWidth);
+        float previousTrackWidth = fontRenderer.getWidth(previousTrackName);
+        float previousArtistWidth = fontRenderer.getWidth(previousArtistName);
+        float previousNaturalWidth = Math.max(previousTrackWidth, previousArtistWidth);
+        float previousPlayerWidth = Math.clamp(previousNaturalWidth, 160f, MAX_PLAYER_WIDTH);
 
-      this.previousArtistWidget.setMarqueeText(previousArtistName, this.artistTextColor());
-      this.previousTrackWidget.setMarqueeText(previousTrackName, this.songTextColor());
-      this.marqueeCoordinator.onContentChanged();
+        this.setVariable(PREVIOUS_MAX_WIDTH_VARIABLE_KEY, previousPlayerWidth);
+
+        this.previousArtistWidget.setMarqueeText(previousArtistName, this.artistTextColor());
+        this.previousTrackWidget.setMarqueeText(previousTrackName, this.songTextColor());
+        this.marqueeCoordinator.onContentChanged();
+        this.applyCover(previousSong, this.previousSongIconWidget);
+      }
     }
 
     this.applyCover(currentSong, this.coverWidget);
-    this.applyCover(previousSong, this.previousSongIconWidget);
     this.updateProgress(currentSong);
   }
 
