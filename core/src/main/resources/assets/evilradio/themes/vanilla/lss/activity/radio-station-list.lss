@@ -1,0 +1,232 @@
+@keyframes picker-open {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.picker-panel {
+  left: 50%;
+  top: 50%;
+  width: 320;
+  height: fit-content;
+  alignment-x: center;
+  alignment-y: center;
+  background-color: rgba(8, 8, 12, 0.88);
+  border-radius: 10;
+  border-thickness: 1;
+  border-color: rgba(255, 255, 255, 0.12);
+  padding: 12 14 12 14;
+  space-between-entries: 10;
+  animation-duration: 180;
+}
+
+.picker-header {
+  width: 100%;
+  height: 30;
+}
+
+.picker-logo {
+  left: 0;
+  top: 50%;
+  width: 28;
+  height: 28;
+  alignment-y: center;
+  border-radius: 4;
+}
+
+.picker-title {
+  left: 50%;
+  width: fit-content;
+  height: fit-content;
+  alignment-x: center;
+  alignment-y: center;
+  font-size: 1.05;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
+}
+
+.picker-close-x {
+  right: 8;
+  top: 50%;
+  width: 16;
+  height: 16;
+  alignment-y: center;
+  background-color: rgba(180, 40, 40, 0.55);
+  border-radius: 4;
+  border-thickness: 1;
+  border-color: rgba(255, 90, 90, 0.7);
+  padding: 0;
+  text-align: center;
+}
+
+.picker-close-x:hover {
+  background-color: rgba(220, 50, 50, 0.85);
+}
+
+.picker-now-playing {
+  width: 100%;
+  height: 48;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: 6;
+  padding: 6;
+}
+
+.picker-eq {
+  left: 42;
+  right: 100;
+  top: 4;
+  bottom: 4;
+  opacity: 0.65;
+  interactable: false;
+}
+
+.picker-eq-bar {
+  left: var(--eq-bar-left);
+  width: 3;
+  height: var(--eq-bar-height);
+  bottom: var(--eq-bar-bottom);
+  border-radius: 1;
+  background-color: rgba(255, 70, 70, 0.9);
+  interactable: false;
+}
+
+.picker-eq-peak {
+  left: var(--eq-bar-left);
+  width: 3;
+  height: 2;
+  bottom: var(--eq-peak-bottom);
+  border-radius: 0;
+  background-color: rgba(255, 220, 120, 0.95);
+  opacity: 0;
+  interactable: false;
+}
+
+.picker-eq.eq-peaks .picker-eq-peak {
+  opacity: 1;
+}
+
+.picker-eq.eq-peaks .picker-eq-bar {
+  background-color: rgba(80, 220, 120, 0.9);
+}
+
+.picker-eq.eq-mirror .picker-eq-bar {
+  background-color: rgba(90, 180, 255, 0.9);
+}
+
+.picker-eq.eq-scope .picker-eq-bar {
+  background-color: rgba(120, 255, 180, 0.95);
+}
+
+.picker-eq.eq-dots .picker-eq-bar {
+  border-radius: 1.5;
+  background-color: rgba(255, 160, 60, 0.95);
+}
+
+.picker-cover {
+  left: 0;
+  top: 50%;
+  width: 36;
+  height: 36;
+  alignment-y: center;
+  border-radius: 4;
+}
+
+.picker-cover-texts {
+  left: 44;
+  top: 50%;
+  width: 148;
+  height: fit-content;
+  alignment-y: center;
+  space-between-entries: 2;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4;
+  padding: 2 5 2 5;
+  interactable: false;
+}
+
+.picker-cover-station {
+  width: 100%;
+  height: fit-content;
+  font-size: 0.8;
+  text-shadow: 0 0 4 rgba(0, 0, 0, 1);
+}
+
+.picker-cover-song {
+  width: 100%;
+  height: fit-content;
+  font-size: 0.65;
+  text-shadow: 0 0 4 rgba(0, 0, 0, 1);
+}
+
+.picker-eq-toggle {
+  right: 74;
+  top: 50%;
+  width: 22;
+  height: 22;
+  alignment-y: center;
+  padding: 0;
+  background-color: rgba(255, 70, 70, 0.45);
+  border-radius: 4;
+  border-thickness: 1;
+  border-color: rgba(255, 120, 120, 0.7);
+  text-align: center;
+}
+
+.picker-eq-toggle:hover {
+  background-color: rgba(255, 70, 70, 0.7);
+}
+
+.picker-eq-toggle.off {
+  background-color: rgba(60, 60, 70, 0.55);
+  border-color: rgba(140, 140, 150, 0.45);
+  opacity: 0.7;
+}
+
+.picker-eq-toggle.off:hover {
+  background-color: rgba(80, 80, 90, 0.7);
+  opacity: 1;
+}
+
+.picker-play-pause {
+  right: 0;
+  top: 50%;
+  width: 70;
+  height: 22;
+  alignment-y: center;
+}
+
+.station-scroll {
+  width: 100%;
+  height: 260;
+}
+
+.station-scroll Scrollbar {
+  use-lss-position: true;
+  right: 0;
+  top: 3;
+  bottom: 3;
+  width: 4;
+  margin-left: 8;
+}
+
+.station-list {
+  width: 100%;
+  height: fit-content;
+  space-between-entries: 3;
+}
+
+.picker-footer {
+  width: 100%;
+  height: fit-content;
+  space-between-entries: 6;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: 6;
+  padding: 8;
+}
+
+.picker-volume-slider {
+  width: 100%;
+  height: 16;
+}

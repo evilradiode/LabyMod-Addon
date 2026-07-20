@@ -7,8 +7,11 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.Butto
 import net.labymod.api.client.gui.screen.widget.widgets.input.KeybindWidget.KeyBindSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
+import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.annotation.SpriteSlot;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.configuration.settings.annotation.SettingSection;
@@ -26,6 +29,12 @@ public class EvilRadioConfiguration extends AddonConfig {
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
 
+  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @DropdownSetting
+  @DropdownEntryTranslationPrefix("evilradio.settings.stationPickerStyle.type")
+  private final ConfigProperty<StationPickerStyle> stationPickerStyle =
+      new ConfigProperty<>(StationPickerStyle.WHEEL);
+
   @SwitchSetting
   private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
 
@@ -40,6 +49,10 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SettingSection("advanced")
 
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
+
+  @Exclude
+  private final ConfigProperty<EqualizerStyle> equalizerStyle =
+      new ConfigProperty<>(EqualizerStyle.BARS);
 
   @Exclude
   private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
@@ -59,6 +72,14 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Key> radioMenuKeybind() {
     return this.radioMenuKeybind;
+  }
+
+  public ConfigProperty<StationPickerStyle> stationPickerStyle() {
+    return this.stationPickerStyle;
+  }
+
+  public ConfigProperty<EqualizerStyle> equalizerStyle() {
+    return this.equalizerStyle;
   }
 
   public ConfigProperty<Boolean> showSongChangeNotification() {

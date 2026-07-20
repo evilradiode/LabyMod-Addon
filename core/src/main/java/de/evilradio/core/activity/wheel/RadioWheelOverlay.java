@@ -1,15 +1,16 @@
 package de.evilradio.core.activity.wheel;
 
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import java.util.List;
 import de.evilradio.core.EvilRadioAddon;
-import de.evilradio.core.radio.RadioManager;
-import de.evilradio.core.radio.RadioStream;
+import de.evilradio.core.activity.picker.StationPickerController;
 import de.evilradio.core.activity.wheel.widget.RadioSegmentWidget;
 import de.evilradio.core.activity.wheel.widget.RadioWheelWidget;
+import de.evilradio.core.configuration.StationPickerStyle;
+import de.evilradio.core.radio.RadioStream;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
-import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.screen.Parent;
 import net.labymod.api.client.gui.screen.ScreenContext;
 import net.labymod.api.client.gui.screen.activity.AutoActivity;
@@ -22,16 +23,15 @@ import net.labymod.api.client.gui.screen.widget.AbstractWidget;
 import net.labymod.api.client.gui.screen.widget.Widget;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.WheelWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.event.Subscribe;
 import net.labymod.api.event.client.input.KeyEvent;
 import net.labymod.api.event.client.input.MouseButtonEvent;
 import net.labymod.api.event.client.input.MouseScrollEvent;
-import net.labymod.api.client.gui.screen.widget.widgets.WheelWidget;
 import net.labymod.api.util.CharSequences;
 import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.math.MathHelper;
-import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.Nullable;
 
 @Link("activity/radio-wheel.lss")
@@ -42,17 +42,13 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   private static final String SUBTITLE_INFO_CONTROLS_ID = "subtitle-info-controls";
 
   private final EvilRadioAddon addon;
-  private final RadioManager radioManager;
+  private final StationPickerController controller;
   private boolean isWheelOpen = false;
-  private long lastMiddleClickTime = 0;
-  private long lastVolumeScrollTime = 0;
-  private static final long MIDDLE_CLICK_DEBOUNCE_MS = 200; // 200ms Debounce für Mittelklick
   private Task mashupOnAirUpdateTask;
 
   public RadioWheelOverlay(EvilRadioAddon addon) {
     this.addon = addon;
-    this.radioManager = addon.radioManager();
-    // Event-Bus registrieren für Mouse-Events
+    this.controller = new StationPickerController(addon);
     addon.labyAPI().eventBus().registerListener(this);
   }
 
@@ -60,7 +56,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   protected void closeInteractionOverlay() {
     this.isWheelOpen = false;
     this.stopMashupOnAirUpdateTask();
-    this.playStream(null, false);
+    this.controller.playStream(this.findSelectedStream(), null);
     super.closeInteractionOverlay();
   }
 
@@ -79,38 +75,19 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     return Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
   }
 
-  private Component getControlsLine() {
-    float volume = this.addon.configuration().volume().get();
-    int volumeInt = Math.round(volume);
-
-    boolean isPlaying = this.radioManager.isPlaying();
-
-    Component playStopStatus;
-    if (isPlaying) {
-      playStopStatus = Component.translatable("evilradio.wheel.playing").color(NamedTextColor.GREEN);
-    } else {
-      playStopStatus = Component.translatable("evilradio.wheel.stopped").color(NamedTextColor.GRAY);
-    }
-
-    return Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt))).color(NamedTextColor.YELLOW)
-        .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
-        .append(playStopStatus);
-  }
-
   @Override
   protected VerticalListWidget<Widget> createSubtitle() {
     VerticalListWidget<Widget> list = new VerticalListWidget<>().addId(WHEEL_SUBTITLE_ID);
 
-    if(hasEntries()) {
+    if (hasEntries()) {
       list.addChild(this.createPageBar());
     }
 
-    VerticalListWidget<ComponentWidget> infoSubtitle = new VerticalListWidget<ComponentWidget>().addId(SUBTITLE_INFO_ID);
-    infoSubtitle.addChild(ComponentWidget.component(getControlsLine()).addId(SUBTITLE_INFO_CONTROLS_ID));
-
-    // Dritte Zeile: Info über Mausrad und Mittelklick
-    Component scrollInfoLine = Component.translatable("evilradio.wheel.scrollInfo").color(NamedTextColor.GRAY);
-    infoSubtitle.addChild(ComponentWidget.component(scrollInfoLine));
+    VerticalListWidget<ComponentWidget> infoSubtitle =
+        new VerticalListWidget<ComponentWidget>().addId(SUBTITLE_INFO_ID);
+    infoSubtitle.addChild(
+        ComponentWidget.component(this.controller.controlsLine()).addId(SUBTITLE_INFO_CONTROLS_ID));
+    infoSubtitle.addChild(ComponentWidget.component(this.controller.scrollInfoLine()));
 
     list.addChild(infoSubtitle);
     return list;
@@ -141,19 +118,17 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
         return segment;
       }
 
-      RadioStream currentStream = this.radioManager.getCurrentStream();
-      boolean isActive = currentStream != null && currentStream.equals(stream) && this.radioManager.isPlaying();
+      RadioStream currentStream = this.controller.radioManager().getCurrentStream();
+      boolean isActive = currentStream != null && currentStream.equals(stream)
+          && this.controller.radioManager().isPlaying();
 
       RadioSegmentWidget segment = new RadioSegmentWidget(this.addon, stream, isActive);
       segment.addId("radio-wrapper");
-      boolean isComingSoon = stream.getUrl() == null || stream.getUrl().isEmpty();
-      
-      if (isComingSoon) {
+      if (!StationPickerController.isPlayable(stream)) {
         segment.addId("coming-soon");
       }
 
-      // Prüfe sofort den On Air Status für Mashup-Streams
-      if (stream.getName() != null && stream.getName().equalsIgnoreCase("mashup")) {
+      if (StationPickerController.isMashup(stream)) {
         this.updateMashupSegmentOnAirStatus(segment);
       }
 
@@ -186,7 +161,7 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
 
   @Override
   protected void onKey(Key key, KeyEvent.State state) {
-    if(key == Key.ESCAPE) {
+    if (key == Key.ESCAPE) {
       this.isWheelOpen = false;
       this.closeInteraction();
       return;
@@ -195,106 +170,76 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     if (mappedPosition != Integer.MIN_VALUE) {
       RadioStream stream = this.findStreamByPosition(mappedPosition);
       if (stream != null) {
-        this.playStream(stream, true);
+        this.controller.playStream(stream, this::closeInteraction);
       }
     }
   }
 
   @Override
   protected void renderInteractionOverlay(ScreenContext context) {
-    // Versuche, den Titel-Widget direkt zu aktualisieren, falls vorhanden
     if (this.isWheelOpen && this.hasEntries()) {
       this.updateTitleWidgetIfPossible();
     }
   }
 
-  /**
-   * Versucht, den Titel-Widget direkt zu aktualisieren
-   * Dies ist notwendig, da createTitleComponent() möglicherweise nur einmal aufgerufen wird
-   */
   private void updateTitleWidgetIfPossible() {
     Widget container = this.document.findFirstChildIf(widget -> widget.hasId(CONTAINER_ID));
-    if(container == null) return;
-    if(!(container instanceof DivWidget containerDiv)) return;
-
-    Widget subtitle = containerDiv.findFirstChildIf(widget -> widget.hasId(WHEEL_SUBTITLE_ID));
-    if(subtitle == null) return;
-    if(!(subtitle instanceof VerticalListWidget<?> subtitleWidget)) return;
-
-    Widget subtitleInfo = subtitleWidget.findFirstChildIf(widget -> widget.hasId(SUBTITLE_INFO_ID));
-    if(subtitleInfo == null) return;
-    if(!(subtitleInfo instanceof VerticalListWidget<?> subtitleInfoWidget)) return;
-
-    Widget subtitleControls = subtitleInfoWidget.findFirstChildIf(widget -> widget.hasId(SUBTITLE_INFO_CONTROLS_ID));
-    if(subtitleControls == null) return;
-    if(!(subtitleControls instanceof ComponentWidget subtitleControlsWidget)) return;
-    subtitleControlsWidget.setComponent(this.getControlsLine());
-  }
-
-  /**
-   * Event-Handler für Mausrad-Scroll
-   * Ändert die Lautstärke in 1er-Schritten pro erkanntem Dreh, wenn das Wheel offen ist
-   */
-  @Subscribe
-  public void onMouseScroll(MouseScrollEvent event) {
-    // Nur verarbeiten, wenn das Wheel offen ist
-    if (!this.isWheelOpen) return;
-
-    // Prüfe, ob die Taste zum Öffnen des Wheels gedrückt gehalten wird
-    Key openKey = this.getKeyToOpen();
-    if (openKey == null) return;
-
-    // Verhindere, dass das Event weiterverarbeitet wird
-    event.setCancelled(true);
-
-    // Ändere die Lautstärke basierend auf der Scroll-Richtung
-    float currentVolume = this.addon.configuration().volume().get();
-    double scrollDelta = event.delta();
-
-    // Bestimme die Scroll-Richtung: positiv = nach oben, negativ = nach unten
-    // Pro akzeptiertem Scroll-Event ändern wir die Lautstärke um genau 1
-    int direction = scrollDelta > 0 ? 1 : -1;
-    float newVolume = Math.clamp(currentVolume + direction, 0.0f, 100.0f);
-    newVolume = Math.round(newVolume);
-
-    this.addon.configuration().volume().set(newVolume);
-  }
-
-  /**
-   * Event-Handler für Maus-Button-Klicks
-   * Togglet Play/Stop bei Mittelklick, wenn das Wheel offen ist
-   */
-  @Subscribe
-  public void onMouseButton(MouseButtonEvent event) {
-    // Nur verarbeiten, wenn das Wheel offen ist
-    if (!this.isWheelOpen) {
+    if (container == null) {
+      return;
+    }
+    if (!(container instanceof DivWidget containerDiv)) {
       return;
     }
 
-    // Prüfe, ob es ein Mittelklick ist
-    MouseButton button = event.button();
-    if (button == MouseButton.MIDDLE) {
-      long currentTime = System.currentTimeMillis();
-      
-      // Debounce: Verhindere mehrfache Auslösung bei einem Klick (Press + Release)
-      if (currentTime - this.lastMiddleClickTime < MIDDLE_CLICK_DEBOUNCE_MS) {
-        event.setCancelled(true);
-        return;
-      }
-      
-      this.lastMiddleClickTime = currentTime;
-      
-      // Verhindere, dass das Event weiterverarbeitet wird
-      event.setCancelled(true);
-      
-      // Toggle Play/Stop
-      this.radioManager.togglePlayStop();
+    Widget subtitle = containerDiv.findFirstChildIf(widget -> widget.hasId(WHEEL_SUBTITLE_ID));
+    if (!(subtitle instanceof VerticalListWidget<?> subtitleWidget)) {
+      return;
     }
+
+    Widget subtitleInfo = subtitleWidget.findFirstChildIf(widget -> widget.hasId(SUBTITLE_INFO_ID));
+    if (!(subtitleInfo instanceof VerticalListWidget<?> subtitleInfoWidget)) {
+      return;
+    }
+
+    Widget subtitleControls =
+        subtitleInfoWidget.findFirstChildIf(widget -> widget.hasId(SUBTITLE_INFO_CONTROLS_ID));
+    if (!(subtitleControls instanceof ComponentWidget subtitleControlsWidget)) {
+      return;
+    }
+    subtitleControlsWidget.setComponent(this.controller.controlsLine());
+  }
+
+  @Subscribe
+  public void onMouseScroll(MouseScrollEvent event) {
+    if (!this.isWheelOpen) {
+      return;
+    }
+    if (this.getKeyToOpen() == null) {
+      return;
+    }
+    event.setCancelled(true);
+    this.controller.adjustVolumeByScroll(event.delta());
+  }
+
+  @Subscribe
+  public void onMouseButton(MouseButtonEvent event) {
+    if (!this.isWheelOpen) {
+      return;
+    }
+    if (event.button() != MouseButton.MIDDLE) {
+      return;
+    }
+    event.setCancelled(true);
+    this.controller.handleMiddleClick();
   }
 
   @Override
   protected boolean shouldOpenInteractionMenu() {
-    return this.addon.configuration().enabled().get();
+    if (!this.addon.configuration().enabled().get()) {
+      return false;
+    }
+    StationPickerStyle style = this.addon.configuration().stationPickerStyle().get();
+    return style == null || style.isWheel();
   }
 
   @Override
@@ -304,7 +249,9 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
   }
 
   private void refreshStreams() {
-    int maxPages = MathHelper.ceil((float) this.addon.radioStreamService().streams().size() / (float) this.getSegmentCount()) - 1;
+    int maxPages = MathHelper.ceil(
+        (float) this.addon.radioStreamService().streams().size() / (float) this.getSegmentCount())
+        - 1;
     PageNavigator pageNavigator = this.pageNavigator();
     pageNavigator.setMaximumPage(maxPages);
     pageNavigator.setMinimumPage(0);
@@ -317,78 +264,20 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     return pagePosition >= streams.size() ? null : streams.get(pagePosition);
   }
 
-  private void playStream(RadioStream forcedStream, boolean closeMenu) {
-    RadioStream stream = forcedStream;
-    if(forcedStream == null) {
-      stream = this.findSelectedStream();
-    }
-    final RadioStream finalStream = stream;
-    if (finalStream != null && finalStream.getUrl() != null && !finalStream.getUrl().isEmpty()) {
-      this.radioManager.playStream(finalStream);
-
-      // Nur REST für Toast – WS-Subscribe macht playStream bereits
-      this.addon.currentSongService().fetchCurrentSong(finalStream.getName(), (currentSong) -> {
-        Component notificationTitle;
-        Component notificationText;
-        Icon icon = null;
-        
-        if (currentSong != null) {
-          String songText = currentSong.getFormatted();
-          if (!songText.isEmpty()) {
-            // Zeige Sender im Titel und Song im Text an
-            notificationTitle = Component.translatable("evilradio.notification.streamSelected.titleWithStation", 
-                Component.text(finalStream.getDisplayName())
-            );
-            notificationText = Component.translatable("evilradio.notification.streamSelected.textWithSong", 
-                Component.text(songText)
-            );
-            icon = Icon.url(currentSong.getImageUrl());
-          } else {
-            // Nur Sender anzeigen, wenn kein Song verfügbar ist
-            notificationTitle = Component.translatable("evilradio.notification.streamSelected.titleWithStation", 
-                Component.text(finalStream.getDisplayName())
-            );
-            notificationText = Component.translatable("evilradio.notification.streamSelected.text");
-          }
-        } else {
-          // Nur Sender anzeigen, wenn keine Song-Informationen verfügbar sind
-          notificationTitle = Component.translatable("evilradio.notification.streamSelected.titleWithStation", 
-              Component.text(finalStream.getDisplayName())
-          );
-          notificationText = Component.translatable("evilradio.notification.streamSelected.text");
-        }
-        
-        this.addon.notification(notificationTitle, notificationText, icon, finalStream.getIcon());
-      });
-    }
-
-    if (closeMenu) {
-      this.closeInteraction();
-    }
-  }
-
   private @Nullable RadioStream findSelectedStream() {
-    for(AbstractWidget<?> child : this.wheelWidget().getChildren()) {
+    for (AbstractWidget<?> child : this.wheelWidget().getChildren()) {
       if (child instanceof RadioSegmentWidget radioSegmentWidget) {
         if (radioSegmentWidget.isSelectable() && radioSegmentWidget.isSegmentSelected()) {
           return radioSegmentWidget.getStream();
         }
       }
     }
-
     return null;
   }
 
-  /**
-   * Startet den periodischen Task zum Aktualisieren des On Air Status für Mashup-Streams
-   */
   private void startMashupOnAirUpdateTask() {
     this.stopMashupOnAirUpdateTask();
-    
-    // Aktualisiere sofort beim Öffnen
     this.updateMashupOnAirStatus();
-    
-    // Dann periodisch alle 30 Sekunden
     this.mashupOnAirUpdateTask = Task.builder(() -> {
       if (this.isWheelOpen) {
         this.updateMashupOnAirStatus();
@@ -397,9 +286,6 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     this.mashupOnAirUpdateTask.execute();
   }
 
-  /**
-   * Stoppt den periodischen Task zum Aktualisieren des On Air Status
-   */
   private void stopMashupOnAirUpdateTask() {
     if (this.mashupOnAirUpdateTask != null) {
       this.mashupOnAirUpdateTask.cancel();
@@ -407,62 +293,23 @@ public class RadioWheelOverlay extends AbstractWheelInteractionOverlayActivity {
     }
   }
 
-  /**
-   * Aktualisiert den On Air Status für ein einzelnes Mashup-Segment
-   */
   private void updateMashupSegmentOnAirStatus(RadioSegmentWidget segment) {
-    // Hole den On Air und Twitch Status für Mashup
-    this.addon.currentSongService().fetchCurrentSong("mashup", (currentSong) -> {
-      boolean isOnAir = currentSong != null && currentSong.isOnAir();
-      boolean isTwitch = currentSong != null && currentSong.isTwitch();
-      
-      // Aktualisiere das Segment auf dem Render-Thread
-      this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-        segment.updateOnAirAndTwitchStatus(isOnAir, isTwitch);
-      });
-    });
+    this.controller.fetchMashupStatus(segment::updateOnAirAndTwitchStatus);
   }
 
-  /**
-   * Aktualisiert den On Air Status für alle Mashup-Streams im Wheel
-   */
   private void updateMashupOnAirStatus() {
-    if (!this.isWheelOpen) {
+    if (!this.isWheelOpen || this.controller.findMashupStream() == null) {
       return;
     }
 
-    // Finde den Mashup-Stream ohne Streams-API
-    RadioStream mashupStream = null;
-    List<RadioStream> streams = this.addon.radioStreamService().streams();
-    for (RadioStream stream : streams) {
-      if (stream != null && stream.getName() != null && stream.getName().equalsIgnoreCase("mashup")) {
-        mashupStream = stream;
-        break;
-      }
-    }
-
-    if (mashupStream == null) {
-      return;
-    }
-
-    // Hole den On Air und Twitch Status für Mashup
-    this.addon.currentSongService().fetchCurrentSong("mashup", (currentSong) -> {
-      boolean isOnAir = currentSong != null && currentSong.isOnAir();
-      boolean isTwitch = currentSong != null && currentSong.isTwitch();
-      
-      // Aktualisiere alle Mashup-Segmente im Wheel
-      this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-        for (AbstractWidget<?> child : this.wheelWidget().getChildren()) {
-          if (child instanceof RadioSegmentWidget radioSegmentWidget) {
-            RadioStream stream = radioSegmentWidget.getStream();
-            if (stream != null && stream.getName() != null && stream.getName().equalsIgnoreCase("mashup")) {
-              radioSegmentWidget.updateOnAirAndTwitchStatus(isOnAir, isTwitch);
-            }
+    this.controller.fetchMashupStatus((isOnAir, isTwitch) -> {
+      for (AbstractWidget<?> child : this.wheelWidget().getChildren()) {
+        if (child instanceof RadioSegmentWidget radioSegmentWidget) {
+          if (StationPickerController.isMashup(radioSegmentWidget.getStream())) {
+            radioSegmentWidget.updateOnAirAndTwitchStatus(isOnAir, isTwitch);
           }
         }
-      });
+      }
     });
   }
-
 }
-

@@ -81,4 +81,20 @@ public class RadioStream {
   public String toString() {
     return name;
   }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) {
+      return true;
+    }
+    if (!(other instanceof RadioStream stream)) {
+      return false;
+    }
+    return this.id == stream.id;
+  }
+
+  @Override
+  public int hashCode() {
+    return Integer.hashCode(this.id);
+  }
 }

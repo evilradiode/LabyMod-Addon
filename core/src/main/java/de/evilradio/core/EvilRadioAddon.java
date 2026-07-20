@@ -9,6 +9,7 @@ import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
 import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSongService;
+import de.evilradio.core.activity.picker.RadioStationListOpener;
 import de.evilradio.core.activity.wheel.RadioWheelOverlay;
 import net.labymod.api.Laby;
 import net.labymod.api.addon.LabyAddon;
@@ -75,6 +76,12 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.labyAPI().eventBus().registerListener(new GameListener(this));
 
     this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
+    this.labyAPI().eventBus().registerListener(new RadioStationListOpener(this));
+
+    // Falls ein früherer Listen-Overlay-Crash die Kamera gelockt hat.
+    if (Laby.references().cameraLockController().isLocked()) {
+      Laby.references().cameraLockController().unlock();
+    }
 
     this.labyAPI().hudWidgetRegistry().categoryRegistry().register(HUD_WIDGET_CATEGORY);
     this.labyAPI().hudWidgetRegistry().register(this.currentSongHudWidget = new CurrentSongHudWidget(this));

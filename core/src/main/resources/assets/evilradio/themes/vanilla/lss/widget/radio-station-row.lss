@@ -1,0 +1,86 @@
+RadioStationRow {
+  width: 100%;
+  height: 48;
+  background-color: rgba(255, 255, 255, 0.04);
+  background-color-transition-duration: 120;
+  border-radius: 5;
+  border-thickness: 0;
+  border-color: rgba(0, 0, 0, 0);
+  padding: 4 6 4 6;
+}
+
+RadioStationRow:hover,
+RadioStationRow.focused {
+  background-color: rgba(220, 40, 40, 0.35);
+  border-thickness: 1;
+  border-color: rgba(255, 80, 80, 0.55);
+}
+
+RadioStationRow.playing {
+  background-color: rgba(40, 120, 60, 0.22);
+  border-thickness: 1;
+  border-color: rgba(80, 220, 100, 0.75);
+}
+
+RadioStationRow.playing:hover,
+RadioStationRow.playing.focused {
+  background-color: rgba(220, 40, 40, 0.35);
+  border-thickness: 1;
+  border-color: rgba(255, 80, 80, 0.55);
+}
+
+RadioStationRow.coming-soon {
+  opacity: 0.55;
+  height: 28;
+}
+
+RadioStationRow .row-station-icon {
+  left: 2;
+  top: 50%;
+  width: 24;
+  height: 24;
+  alignment-y: center;
+  border-radius: 3;
+}
+
+RadioStationRow .row-cover {
+  left: 30;
+  top: 50%;
+  width: 36;
+  height: 36;
+  alignment-y: center;
+  border-radius: 3;
+}
+
+RadioStationRow .row-name {
+  left: 72;
+  top: 2;
+  width: 200;
+  height: fit-content;
+  font-size: 0.74;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.75);
+}
+
+RadioStationRow .row-song {
+  left: 72;
+  top: 16;
+  width: 200;
+  height: fit-content;
+  font-size: 0.62;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.75);
+}
+
+RadioStationRow .row-artist {
+  left: 72;
+  top: 28;
+  width: 200;
+  height: fit-content;
+  font-size: 0.58;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.75);
+}
+
+RadioStationRow.coming-soon .row-name {
+  left: 32;
+  top: 50%;
+  alignment-y: center;
+}

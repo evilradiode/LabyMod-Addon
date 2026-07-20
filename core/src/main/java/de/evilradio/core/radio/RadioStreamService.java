@@ -2,10 +2,12 @@ package de.evilradio.core.radio;
 
 import com.google.gson.JsonObject;
 import de.evilradio.core.EvilRadioAddon;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import net.labymod.api.util.io.web.request.Request;
 import net.labymod.api.util.logging.Logging;
-import java.util.ArrayList;
-import java.util.List;
 
 public class RadioStreamService {
 
@@ -13,8 +15,9 @@ public class RadioStreamService {
 
   private RadioStream lastSelectedStream;
 
-  private List<RadioStream> streams = new ArrayList<>();
-  private EvilRadioAddon addon;
+  private final List<RadioStream> streams = new ArrayList<>();
+  private final CopyOnWriteArrayList<Runnable> changeListeners = new CopyOnWriteArrayList<>();
+  private final EvilRadioAddon addon;
 
   public RadioStreamService(EvilRadioAddon addon) {
     this.addon = addon;
@@ -25,26 +28,26 @@ public class RadioStreamService {
   }
 
   public void loadStreams(Runnable callback) {
-    streams.clear();
     String uuid = this.addon.labyAPI().getUniqueId().toString();
     Request.ofGson(JsonObject.class)
-        .url("https://api.evil-radio.de/streams?uuid="+uuid)
+        .url("https://api.evil-radio.de/streams?uuid=" + uuid)
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
         .addHeader("User-Agent", "EvilRadio LabyMod 4 Addon")
         .execute(response -> {
-          if(response.hasException()) {
+          if (response.hasException()) {
             logging.error("Failed to load streams", response.exception());
             if (callback != null) {
-              callback.run();
+              this.runOnRenderThread(callback);
             }
             return;
           }
           JsonObject object = response.get();
-          if(object.has("streams") && object.get("streams").isJsonArray()) {
+          List<RadioStream> loaded = new ArrayList<>();
+          if (object.has("streams") && object.get("streams").isJsonArray()) {
             object.get("streams").getAsJsonArray().forEach(jsonElement -> {
-              if(jsonElement.isJsonObject()) {
+              if (jsonElement.isJsonObject()) {
                 JsonObject streamObject = jsonElement.getAsJsonObject();
                 String internalName = null;
                 if (streamObject.has("internal_name") && !streamObject.get("internal_name").isJsonNull()) {
@@ -60,17 +63,34 @@ public class RadioStreamService {
                     streamObject.get("iconUrl").getAsString()
                 );
                 radioStream.initialize();
-                streams.add(radioStream);
+                loaded.add(radioStream);
               }
             });
-            // Sortiere Streams nach Nutzung
-            sortStreamsByUsage();
           }
-          logging.info("Loaded " + streams.size() + " radio streams");
+
+          synchronized (this.streams) {
+            this.streams.clear();
+            this.streams.addAll(loaded);
+            this.sortStreamsByUsageLocked();
+          }
+          logging.info("Loaded " + loaded.size() + " radio streams");
+          this.notifyStreamsChanged();
           if (callback != null) {
-            callback.run();
+            this.runOnRenderThread(callback);
           }
         });
+  }
+
+  public void addChangeListener(Runnable listener) {
+    if (listener != null) {
+      this.changeListeners.addIfAbsent(listener);
+    }
+  }
+
+  public void removeChangeListener(Runnable listener) {
+    if (listener != null) {
+      this.changeListeners.remove(listener);
+    }
   }
 
   public RadioStream getLastSelectedStream() {
@@ -81,45 +101,73 @@ public class RadioStreamService {
     this.lastSelectedStream = radioStream;
   }
 
+  /**
+   * Snapshot der aktuellen Senderliste (bereits sortiert). Nie die interne Liste zurückgeben.
+   */
   public List<RadioStream> streams() {
-    // Sortiere Streams nach Nutzung, bevor sie zurückgegeben werden
-    sortStreamsByUsage();
-    return streams;
+    synchronized (this.streams) {
+      return Collections.unmodifiableList(new ArrayList<>(this.streams));
+    }
   }
 
   public RadioStream findStreamById(int id) {
-    for (RadioStream stream : streams) {
-      if (stream.getId() == id) {
-        return stream;
+    synchronized (this.streams) {
+      for (RadioStream stream : this.streams) {
+        if (stream.getId() == id) {
+          return stream;
+        }
       }
+      return null;
     }
-    return null;
   }
-  
-  private void sortStreamsByUsage() {
-    if (addon == null || streams == null || streams.isEmpty()) {
+
+  /**
+   * Neu sortieren nach Usage-Änderung (z. B. nach Play).
+   */
+  public void refreshSortOrder() {
+    synchronized (this.streams) {
+      this.sortStreamsByUsageLocked();
+    }
+    this.notifyStreamsChanged();
+  }
+
+  private void notifyStreamsChanged() {
+    this.runOnRenderThread(() -> {
+      for (Runnable listener : this.changeListeners) {
+        try {
+          listener.run();
+        } catch (RuntimeException exception) {
+          this.logging.error("Stream change listener failed", exception);
+        }
+      }
+    });
+  }
+
+  private void runOnRenderThread(Runnable runnable) {
+    if (this.addon.labyAPI().minecraft().isOnRenderThread()) {
+      runnable.run();
       return;
     }
-    
-    // Prüfe, ob Usage-basierte Sortierung aktiviert ist
-    if (!addon.configuration().usageBasedSorting().get()) {
-      // Wenn deaktiviert: Sortiere nach ID (Standard-Sortierung)
-      streams.sort((stream1, stream2) -> Integer.compare(stream1.getId(), stream2.getId()));
+    this.addon.labyAPI().minecraft().executeOnRenderThread(runnable);
+  }
+
+  private void sortStreamsByUsageLocked() {
+    if (this.streams.isEmpty()) {
       return;
     }
-    
-    // Usage-basierte Sortierung
-    streams.sort((stream1, stream2) -> {
-      int usage1 = addon.configuration().usageStatistics().getStreamUsageCount(stream1.getId());
-      int usage2 = addon.configuration().usageStatistics().getStreamUsageCount(stream2.getId());
-      
-      // Sortiere absteigend nach Nutzung (höchste zuerst)
-      // Bei gleicher Nutzung: sortiere nach ID für konsistente Reihenfolge
+
+    if (!this.addon.configuration().usageBasedSorting().get()) {
+      this.streams.sort((stream1, stream2) -> Integer.compare(stream1.getId(), stream2.getId()));
+      return;
+    }
+
+    this.streams.sort((stream1, stream2) -> {
+      int usage1 = this.addon.configuration().usageStatistics().getStreamUsageCount(stream1.getId());
+      int usage2 = this.addon.configuration().usageStatistics().getStreamUsageCount(stream2.getId());
       if (usage1 != usage2) {
         return Integer.compare(usage2, usage1);
       }
       return Integer.compare(stream1.getId(), stream2.getId());
     });
   }
-
 }

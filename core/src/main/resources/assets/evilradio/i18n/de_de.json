@@ -25,6 +25,20 @@
       "playing": "▶ PLAY",
       "stopped": "⏹ STOP"
     },
+    "picker": {
+      "previewHint": "Sender auswählen",
+      "comingSoon": "Demnächst",
+      "releaseToPlay": "Loslassen zum Abspielen",
+      "clickToPlay": "Klicken oder Enter zum Abspielen",
+      "loadingSong": "Lade Song…",
+      "noSongInfo": "Keine Songinfo",
+      "volume": "Lautstärke",
+      "playPause": "Play/Pause",
+      "playSelected": "Abspielen",
+      "close": "Schließen",
+      "nowPlaying": "Jetzt",
+      "listNavHint": "Maus / ↑↓: wählen | Scroll über Liste: scrollen"
+    },
     "notification": {
       "streamSelected": {
         "title": "Stream ausgewählt",
@@ -125,6 +139,14 @@
       "radioMenuKeybind": {
         "name": "Radio-Menü Tastenkürzel",
         "description": "Taste zum Öffnen des Radio-Menüs"
+      },
+      "stationPickerStyle": {
+        "name": "Sender-Menü Stil",
+        "description": "Wähle zwischen dem klassischen Hexagon-Wheel und der Liste mit Preview.",
+        "type": {
+          "wheel": "Klassisches Wheel",
+          "listPreview": "Liste + Preview"
+        }
       },
       "showSongChangeNotification": {
         "name": "Song Änderung Benachrichtigung",
