@@ -236,6 +236,13 @@ public final class CurrentSong {
   }
 
   public CurrentSong withTwitch(boolean twitchLive) {
+    return withLiveStatus(onAir, twitchLive);
+  }
+
+  /**
+   * OnAir/Twitch aus der Evil-Radio-API (nicht aus AzuraCast-WS).
+   */
+  public CurrentSong withLiveStatus(boolean onAirLive, boolean twitchLive) {
     return new CurrentSong(
         stationId,
         stationName,
@@ -245,8 +252,28 @@ public final class CurrentSong {
         imageUrl,
         songId,
         moderatorName,
-        onAir,
+        onAirLive,
         twitchLive,
+        playedAt,
+        duration,
+        elapsedAtUpdate,
+        receivedAt,
+        adBreak
+    );
+  }
+
+  public CurrentSong withModeratorName(String name) {
+    return new CurrentSong(
+        stationId,
+        stationName,
+        stationShortcode,
+        title,
+        artist,
+        imageUrl,
+        songId,
+        name,
+        onAir,
+        twitch,
         playedAt,
         duration,
         elapsedAtUpdate,

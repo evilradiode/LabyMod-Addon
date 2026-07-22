@@ -11,13 +11,17 @@ import de.evilradio.core.song.artwork.ArtworkCache;
 import de.evilradio.core.song.azuracast.AzuraCastNowPlayingService;
 import de.evilradio.core.song.azuracast.NowPlayingMessageParser;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import net.labymod.api.client.component.Component;
@@ -30,6 +34,10 @@ public class CurrentSongService {
   private final String API_BASE_URL = "https://api.evil-radio.de/?radioInfo=";
   private static final String AZURACAST_NOWPLAYING_URL =
       "https://broadcast.evil-radio.de/api/nowplaying";
+  /** Mindestabstand zwischen radioInfo-Calls (Song-Spam / Reconnects). */
+  private static final long SHOW_STATUS_MIN_INTERVAL_MS = 5_000L;
+  /** Soft-Heartbeat für Presence, falls Songs sehr lange laufen. */
+  private static final long SHOW_STATUS_HEARTBEAT_MS = 12L * 60L * 1_000L;
 
   private final Logging logging = Logging.create("EvilRadio-CurrentSongService");
 
@@ -44,6 +52,7 @@ public class CurrentSongService {
   private final HttpClient httpClient = HttpClient.newBuilder()
       .connectTimeout(Duration.ofSeconds(8))
       .build();
+  private final AtomicLong lastShowStatusFetchAt = new AtomicLong(0L);
 
   private EvilRadioAddon addon;
   private boolean twitchNotificationSent = false;
@@ -97,6 +106,7 @@ public class CurrentSongService {
     this.currentSong.set(null);
     this.previousSong.set(null);
     this.connectionState.set(NowPlayingConnectionState.LOADING);
+    this.lastShowStatusFetchAt.set(0L);
     if (stationChanged) {
       this.twitchNotificationSent = false;
     }
@@ -136,10 +146,15 @@ public class CurrentSongService {
     }
 
     CurrentSong previous = this.currentSong.get();
-    boolean songChanged = previous != null
-        && (!previous.getTitle().equals(song.getTitle()) || !previous.getArtist().equals(song.getArtist()));
+    boolean songChanged = isSongIdentityChanged(previous, song);
     boolean streamSelectedToast = Boolean.TRUE.equals(
         this.pendingStreamSelectedNotification.getAndSet(false));
+
+    // Twitch/OnAir kommen nicht aus dem WS – Flags vom vorherigen Snapshot behalten,
+    // bis radioInfo antwortet (oder Soft-Heartbeat).
+    if (previous != null && (previous.isOnAir() || previous.isTwitch())) {
+      song = song.withLiveStatus(previous.isOnAir(), previous.isTwitch());
+    }
 
     String cacheKey = ArtworkCache.key(activeShortcode, song.getSongId(), song.getImageUrl());
     long artworkGeneration = this.artworkCache.currentGeneration();
@@ -153,6 +168,10 @@ public class CurrentSongService {
       // Cover-URL ist bereits im Snapshot; Generation verhindert spätere Alt-Downloads
     });
 
+    if (!song.isAdBreak() && (songChanged || shouldHeartbeatShowStatus())) {
+      this.refreshShowStatusFromApi();
+    }
+
     if (streamSelectedToast) {
       if (song.isAdBreak()) {
         // Werbung nicht im Toast – auf nächsten echten Track warten.
@@ -161,6 +180,7 @@ public class CurrentSongService {
         this.pushStreamSelectedNotification(song);
       }
     } else if (songChanged
+        && previous != null
         && !song.isAdBreak()
         && this.addon.configuration().showSongChangeNotification().get()) {
       RadioStream notificationStream = this.addon.radioManager().getCurrentStream();
@@ -174,6 +194,145 @@ public class CurrentSongService {
           streamIcon
       );
     }
+  }
+
+  private static boolean isSongIdentityChanged(CurrentSong previous, CurrentSong next) {
+    if (previous == null || next == null) {
+      return true;
+    }
+    if (previous.getSongId() != null && !previous.getSongId().isBlank()
+        && next.getSongId() != null && !next.getSongId().isBlank()) {
+      return !previous.getSongId().equals(next.getSongId());
+    }
+    return !Objects.equals(previous.getTitle(), next.getTitle())
+        || !Objects.equals(previous.getArtist(), next.getArtist());
+  }
+
+  private boolean shouldHeartbeatShowStatus() {
+    long last = this.lastShowStatusFetchAt.get();
+    return last <= 0L || System.currentTimeMillis() - last >= SHOW_STATUS_HEARTBEAT_MS;
+  }
+
+  /**
+   * Lädt OnAir/Twitch von der Evil-Radio-API (Presence inkl. uuid + User-Agent/Version).
+   */
+  private void refreshShowStatusFromApi() {
+    String streamName = this.currentStreamName.get();
+    if (streamName == null || streamName.isBlank()) {
+      RadioStream stream = this.addon.radioManager() == null
+          ? null
+          : this.addon.radioManager().getCurrentStream();
+      streamName = stream == null ? null : stream.getName();
+    }
+    if (streamName == null || streamName.isBlank()) {
+      return;
+    }
+
+    long now = System.currentTimeMillis();
+    long last = this.lastShowStatusFetchAt.get();
+    if (last > 0L && now - last < SHOW_STATUS_MIN_INTERVAL_MS) {
+      return;
+    }
+    this.lastShowStatusFetchAt.set(now);
+
+    final String station = streamName;
+    final String expectedShortcode = this.currentShortcode.get();
+    fetchShowStatus(station, show -> {
+      if (show == null) {
+        return;
+      }
+      String activeShortcode = this.currentShortcode.get();
+      if (expectedShortcode != null && activeShortcode != null
+          && !expectedShortcode.equals(activeShortcode)) {
+        return;
+      }
+      applyShowStatus(show);
+    });
+  }
+
+  private void applyShowStatus(ShowStatus show) {
+    CurrentSong current = this.currentSong.get();
+    if (current == null || !current.isValid() || current.isAdBreak()) {
+      return;
+    }
+
+    CurrentSong updated = current.withLiveStatus(show.onAir(), show.twitch());
+    if ((current.getModeratorName() == null || current.getModeratorName().isBlank())
+        && show.moderatorName() != null && !show.moderatorName().isBlank()) {
+      updated = updated.withModeratorName(show.moderatorName());
+    }
+
+    if (current.isOnAir() == updated.isOnAir()
+        && current.isTwitch() == updated.isTwitch()
+        && Objects.equals(current.getModeratorName(), updated.getModeratorName())) {
+      return;
+    }
+
+    if (this.currentSong.compareAndSet(current, updated)) {
+      this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+    } else {
+      // Zwischenzeitlich neuer WS-Song – Flags erneut auf aktuellen Snapshot anwenden.
+      CurrentSong latest = this.currentSong.get();
+      if (latest == null || latest.isAdBreak()) {
+        return;
+      }
+      CurrentSong merged = latest.withLiveStatus(show.onAir(), show.twitch());
+      if ((latest.getModeratorName() == null || latest.getModeratorName().isBlank())
+          && show.moderatorName() != null && !show.moderatorName().isBlank()) {
+        merged = merged.withModeratorName(show.moderatorName());
+      }
+      this.currentSong.set(merged);
+      this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+    }
+  }
+
+  private void fetchShowStatus(String streamName, Consumer<ShowStatus> callback) {
+    if (streamName == null || streamName.isBlank()) {
+      callback.accept(null);
+      return;
+    }
+    String uuid = this.addon.labyAPI().getUniqueId().toString();
+    String url = API_BASE_URL
+        + URLEncoder.encode(streamName, StandardCharsets.UTF_8)
+        + "&uuid="
+        + URLEncoder.encode(uuid, StandardCharsets.UTF_8);
+
+    Request.ofGson(JsonObject.class)
+        .url(url)
+        .async()
+        .connectTimeout(5000)
+        .readTimeout(5000)
+        .userAgent(this.addon.apiUserAgent())
+        .addHeader("X-Addon-Version", this.addon.addonVersion())
+        .execute(response -> {
+          if (response.getStatusCode() != 200 || response.hasException() || response.get() == null) {
+            callback.accept(null);
+            return;
+          }
+          callback.accept(parseShowStatus(response.get()));
+        });
+  }
+
+  private static ShowStatus parseShowStatus(JsonObject object) {
+    boolean twitch = false;
+    boolean onAir = false;
+    String moderatorName = null;
+    if (object.has("show") && object.get("show").isJsonObject()) {
+      JsonObject showObject = object.get("show").getAsJsonObject();
+      if (showObject.has("twitch") && showObject.get("twitch").isJsonPrimitive()) {
+        twitch = showObject.get("twitch").getAsBoolean();
+      }
+      if (showObject.has("live") && showObject.get("live").isJsonPrimitive()) {
+        onAir = showObject.get("live").getAsBoolean();
+      }
+      if (showObject.has("dj") && showObject.get("dj").isJsonPrimitive()) {
+        moderatorName = showObject.get("dj").getAsString();
+      }
+    }
+    return new ShowStatus(onAir, twitch, moderatorName);
+  }
+
+  private record ShowStatus(boolean onAir, boolean twitch, String moderatorName) {
   }
 
   private void pushStreamSelectedNotification(CurrentSong song) {
@@ -286,6 +445,7 @@ public class CurrentSongService {
     this.connectionState.set(NowPlayingConnectionState.IDLE);
     this.twitchNotificationSent = false;
     this.pendingStreamSelectedNotification.set(false);
+    this.lastShowStatusFetchAt.set(0L);
     this.artworkCache.bumpGeneration();
   }
 
@@ -297,12 +457,18 @@ public class CurrentSongService {
       callback.accept(null);
       return;
     }
+    String uuid = this.addon.labyAPI().getUniqueId().toString();
+    String url = API_BASE_URL
+        + URLEncoder.encode(streamName, StandardCharsets.UTF_8)
+        + "&uuid="
+        + URLEncoder.encode(uuid, StandardCharsets.UTF_8);
     Request.ofGson(JsonObject.class)
-        .url(API_BASE_URL + streamName)
+        .url(url)
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
-        .userAgent("EvilRadio LabyMod 4 Addon")
+        .userAgent(this.addon.apiUserAgent())
+        .addHeader("X-Addon-Version", this.addon.addonVersion())
         .execute(response -> {
           if (response.getStatusCode() != 200 || response.hasException()) {
             callback.accept(null);
@@ -322,7 +488,8 @@ public class CurrentSongService {
     }
     HttpRequest request = HttpRequest.newBuilder(URI.create(AZURACAST_NOWPLAYING_URL))
         .timeout(Duration.ofSeconds(8))
-        .header("User-Agent", "EvilRadio LabyMod 4 Addon")
+        .header("User-Agent", this.addon.apiUserAgent())
+        .header("X-Addon-Version", this.addon.addonVersion())
         .GET()
         .build();
 

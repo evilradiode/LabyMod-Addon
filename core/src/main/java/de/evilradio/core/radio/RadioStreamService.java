@@ -34,7 +34,8 @@ public class RadioStreamService {
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
-        .addHeader("User-Agent", "EvilRadio LabyMod 4 Addon")
+        .addHeader("User-Agent", this.addon.apiUserAgent())
+        .addHeader("X-Addon-Version", this.addon.addonVersion())
         .execute(response -> {
           if (response.hasException()) {
             logging.error("Failed to load streams", response.exception());

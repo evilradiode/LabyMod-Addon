@@ -179,6 +179,27 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   }
 
   /**
+   * Addon-Version aus der Laby-AddonInfo (Fallback {@code unknown}).
+   */
+  public String addonVersion() {
+    try {
+      if (this.addonInfo() != null && this.addonInfo().getVersion() != null) {
+        return this.addonInfo().getVersion().toString();
+      }
+    } catch (Throwable ignored) {
+      // AddonInfo ggf. noch nicht bereit
+    }
+    return "unknown";
+  }
+
+  /**
+   * User-Agent für Evil-Radio-API-Calls inkl. Addon-Version.
+   */
+  public String apiUserAgent() {
+    return "EvilRadio LabyMod 4 Addon/" + this.addonVersion();
+  }
+
+  /**
    * Registriert einen periodischen Check für Window-Focus-Verlust
    * Prüft alle 500ms, ob das Fenster den Fokus verloren hat
    */

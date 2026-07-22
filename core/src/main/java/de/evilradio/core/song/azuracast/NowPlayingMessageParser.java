@@ -135,9 +135,7 @@ public final class NowPlayingMessageParser {
     String moderatorName = null;
     if (np.has("live") && np.get("live").isJsonObject()) {
       JsonObject live = np.getAsJsonObject("live");
-      if (live.has("is_live") && live.get("is_live").isJsonPrimitive()) {
-        onAir = live.get("is_live").getAsBoolean();
-      }
+      // OnAir/Twitch kommen bewusst nicht aus AzuraCast – nur streamer_name für den Mod.
       moderatorName = textOrNull(live, "streamer_name");
     }
 

@@ -75,7 +75,8 @@ public class ScheduleService {
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
-        .userAgent("EvilRadio LabyMod 4 Addon")
+        .userAgent(this.addon.apiUserAgent())
+        .addHeader("X-Addon-Version", this.addon.addonVersion())
         .execute(response -> {
           if (response.hasException() || response.getStatusCode() != 200) {
             logging.error("Failed to load schedule", response.hasException() ? response.exception() : new Exception("HTTP " + response.getStatusCode()));
@@ -107,7 +108,8 @@ public class ScheduleService {
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
-        .userAgent("EvilRadio LabyMod 4 Addon")
+        .userAgent(this.addon.apiUserAgent())
+        .addHeader("X-Addon-Version", this.addon.addonVersion())
         .execute(response -> {
           if (response.hasException() || response.getStatusCode() != 200) {
             logging.error("Failed to load schedule", response.hasException() ? response.exception() : new Exception("HTTP " + response.getStatusCode()));
