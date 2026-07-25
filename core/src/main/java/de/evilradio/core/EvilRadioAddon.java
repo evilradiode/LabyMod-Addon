@@ -111,7 +111,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     configuration().enabled().addChangeListener((enabled) -> {
       if (!enabled && this.radioManager != null && this.radioManager.isPlaying()) {
         this.radioManager.stopStream();
-        this.logger().info("Stream gestoppt, da Addon deaktiviert wurde");
+        this.logger().info("Stream has been stopped since the Addon has been disabled.");
       }
       if (!enabled && this.currentSongService != null) {
         this.currentSongService.stopUpdater();
@@ -119,6 +119,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
         this.currentSongService.startUpdater();
       }
     });
+
+    configuration().audioStreamDebug().visibilitySupplier(() -> AudioStreamDebug.isUuidAllowed(this.labyAPI().getUniqueId()));
 
   }
 
@@ -166,11 +168,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   private void syncAudioStreamDebug() {
     boolean allowed = AudioStreamDebug.isUuidAllowed(this.labyAPI().getUniqueId());
-    boolean enabled = allowed && Boolean.TRUE.equals(configuration().audioStreamDebug().get());
-    if (!allowed && Boolean.TRUE.equals(configuration().audioStreamDebug().get())) {
+    boolean enabled = allowed && configuration().audioStreamDebug().get();
+    if (!allowed && configuration().audioStreamDebug().get()) {
       configuration().audioStreamDebug().set(false);
     }
-    Path logFile = AudioStreamDebug.setEnabled(enabled, this.labyAPI().minecraft());
+    Path logFile = AudioStreamDebug.setEnabled(enabled);
     if (enabled && logFile != null) {
       this.logger().info("Audio-Stream-Debug aktiv → " + logFile.toAbsolutePath());
     }
