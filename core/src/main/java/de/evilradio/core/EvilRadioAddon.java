@@ -3,15 +3,15 @@ package de.evilradio.core;
 import de.evilradio.core.configuration.AutoStartSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
+import de.evilradio.core.listener.AudioStreamDebugSettingsListener;
 import de.evilradio.core.listener.GameListener;
-import de.evilradio.core.listener.StationPickerSettingsListener;
+import de.evilradio.core.radio.AudioStreamDebug;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
 import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSongService;
 import de.evilradio.core.activity.picker.RadioStationListOpener;
-import de.evilradio.core.activity.wheel.RadioWheelOverlay;
 import net.labymod.api.Laby;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.component.Component;
@@ -22,6 +22,7 @@ import net.labymod.api.notification.Notification;
 import net.labymod.api.revision.SimpleRevision;
 import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.version.SemanticVersion;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 @AddonMain
@@ -75,9 +76,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     // Event-Bus registrieren für Event-Handler
     this.labyAPI().eventBus().registerListener(new GameListener(this));
-    this.labyAPI().eventBus().registerListener(new StationPickerSettingsListener(this));
+    this.labyAPI().eventBus().registerListener(new AudioStreamDebugSettingsListener(this));
+    this.syncAudioStreamDebug();
+    configuration().audioStreamDebug().addChangeListener(enabled -> this.syncAudioStreamDebug());
 
-    this.labyAPI().ingameOverlay().registerActivity(new RadioWheelOverlay(this));
     this.labyAPI().eventBus().registerListener(new RadioStationListOpener(this));
 
     // Falls ein früherer Listen-Overlay-Crash die Kamera gelockt hat.
@@ -160,6 +162,18 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   public static EvilRadioAddon instance() {
     return instance;
+  }
+
+  private void syncAudioStreamDebug() {
+    boolean allowed = AudioStreamDebug.isUuidAllowed(this.labyAPI().getUniqueId());
+    boolean enabled = allowed && Boolean.TRUE.equals(configuration().audioStreamDebug().get());
+    if (!allowed && Boolean.TRUE.equals(configuration().audioStreamDebug().get())) {
+      configuration().audioStreamDebug().set(false);
+    }
+    Path logFile = AudioStreamDebug.setEnabled(enabled, this.labyAPI().minecraft());
+    if (enabled && logFile != null) {
+      this.logger().info("Audio-Stream-Debug aktiv → " + logFile.toAbsolutePath());
+    }
   }
 
   public RadioManager radioManager() {

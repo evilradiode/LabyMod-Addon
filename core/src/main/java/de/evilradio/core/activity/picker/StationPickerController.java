@@ -4,15 +4,16 @@ import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
+import de.evilradio.core.song.CurrentSongService.ShowStatus;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.icon.Icon;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Shared play / volume / controls logic for wheel and list station pickers.
+ * Shared play / volume / controls logic for the station list picker.
  */
 public final class StationPickerController {
 
@@ -38,17 +39,17 @@ public final class StationPickerController {
   public Component controlsLine() {
     int volumeInt = Math.round(this.addon.configuration().volume().get());
     Component playStopStatus = this.radioManager.isPlaying()
-        ? Component.translatable("evilradio.wheel.playing").color(NamedTextColor.GREEN)
-        : Component.translatable("evilradio.wheel.stopped").color(NamedTextColor.GRAY);
+        ? Component.translatable("evilradio.picker.playing").color(NamedTextColor.GREEN)
+        : Component.translatable("evilradio.picker.stopped").color(NamedTextColor.GRAY);
 
-    return Component.translatable("evilradio.wheel.volume", Component.text(String.valueOf(volumeInt)))
+    return Component.translatable("evilradio.picker.volumeLabel", Component.text(String.valueOf(volumeInt)))
         .color(NamedTextColor.YELLOW)
         .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
         .append(playStopStatus);
   }
 
   public Component scrollInfoLine() {
-    return Component.translatable("evilradio.wheel.scrollInfo").color(NamedTextColor.GRAY);
+    return Component.translatable("evilradio.picker.scrollInfo").color(NamedTextColor.GRAY);
   }
 
   public void adjustVolumeByScroll(double scrollDelta) {
@@ -89,11 +90,17 @@ public final class StationPickerController {
     }
   }
 
-  public void fetchMashupStatus(BiConsumer<Boolean, Boolean> onResult) {
-    this.addon.currentSongService().fetchCurrentSong("mashup", (currentSong) -> {
-      boolean isOnAir = currentSong != null && currentSong.isOnAir();
-      boolean isTwitch = currentSong != null && currentSong.isTwitch();
-      this.addon.labyAPI().minecraft().executeOnRenderThread(() -> onResult.accept(isOnAir, isTwitch));
+  public void fetchMashupStatus(Consumer<ShowStatus> onResult) {
+    // API erwartet exakt "Mashup" (siehe php-api/index.php) – nicht "mashup".
+    RadioStream mashup = this.findMashupStream();
+    String radioInfoName = mashup != null && mashup.getName() != null && !mashup.getName().isBlank()
+        ? mashup.getName()
+        : "Mashup";
+    this.addon.currentSongService().fetchLiveFlags(radioInfoName, show -> {
+      if (show == null) {
+        return;
+      }
+      this.addon.labyAPI().minecraft().executeOnRenderThread(() -> onResult.accept(show));
     });
   }
 

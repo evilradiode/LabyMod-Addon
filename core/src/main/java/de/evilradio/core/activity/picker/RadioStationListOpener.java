@@ -1,7 +1,6 @@
 package de.evilradio.core.activity.picker;
 
 import de.evilradio.core.EvilRadioAddon;
-import de.evilradio.core.configuration.StationPickerStyle;
 import net.labymod.api.Laby;
 import net.labymod.api.client.gui.screen.LabyScreen;
 import net.labymod.api.client.gui.screen.key.Key;
@@ -25,7 +24,7 @@ public final class RadioStationListOpener {
     if (event.state() != State.PRESS) {
       return;
     }
-    if (!this.shouldHandle()) {
+    if (!Boolean.TRUE.equals(this.addon.configuration().enabled().get())) {
       return;
     }
 
@@ -50,13 +49,5 @@ public final class RadioStationListOpener {
         Laby.labyAPI().minecraft().minecraftWindow()
             .displayScreen(new RadioStationListActivity(this.addon)));
     event.setCancelled(true);
-  }
-
-  private boolean shouldHandle() {
-    if (!this.addon.configuration().enabled().get()) {
-      return false;
-    }
-    StationPickerStyle style = this.addon.configuration().stationPickerStyle().get();
-    return style != null && style.isListPreview();
   }
 }

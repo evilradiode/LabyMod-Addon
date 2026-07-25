@@ -58,6 +58,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private float progressTrackMaxWidth = 200f;
   private String lastTrackName = "";
   private Component lastLivePrefix = Component.empty();
+  private boolean lastLiveBadgeTwitchPhase;
 
   public CurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget, boolean isEditorContext) {
     this.addon = addon;
@@ -76,6 +77,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.lastRenderedHadDuration = false;
     this.lastTrackName = "";
     this.lastLivePrefix = Component.empty();
+    this.lastLiveBadgeTwitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
 
     this.setVariable(MAX_WIDTH_VARIABLE_KEY, MAX_PLAYER_WIDTH);
     this.setVariable(MIN_WIDTH_VARIABLE_KEY, 160);
@@ -189,6 +191,19 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     CurrentSong song = this.addon.currentSongService().getCurrentSong();
     if (song != null) {
       this.updateProgress(song);
+      boolean twitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
+      if (twitchPhase != this.lastLiveBadgeTwitchPhase
+          && LiveStatusLine.hasLiveBadges(song)
+          && song.isOnAir()
+          && song.isTwitch()) {
+        this.lastLiveBadgeTwitchPhase = twitchPhase;
+        this.lastLivePrefix = LiveStatusLine.buildPrefix(
+            this.addon.radioManager().getCurrentStream(), song, twitchPhase);
+        if (this.lastLivePrefix == null) {
+          this.lastLivePrefix = Component.empty();
+        }
+        this.renderStatusLine(song);
+      }
     }
   }
 
@@ -274,10 +289,13 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     }
     this.streamWidget.setComponent(Component.text(streamDisplayName).color(this.stationTextColor()));
 
-    this.lastLivePrefix = buildLivePrefix(currentStream, currentSong);
+    this.lastLiveBadgeTwitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
+    Component live = LiveStatusLine.buildPrefix(
+        currentStream, currentSong, this.lastLiveBadgeTwitchPhase);
+    this.lastLivePrefix = live == null ? Component.empty() : live;
     this.renderStatusLine(currentSong);
 
-    this.lastTrackName = limitedTitle(currentSong.getTitle());
+    this.lastTrackName = limitedTitle(currentSong.getDisplayTitle());
     this.trackWidget.setComponent(Component.text(this.lastTrackName).color(this.songTextColor()));
 
     String artistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
@@ -302,44 +320,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.controlsWidget.setVisible(true);
     this.applyCover(currentSong);
     this.updateProgress(currentSong);
-  }
-
-  private Component buildLivePrefix(RadioStream currentStream, CurrentSong currentSong) {
-    String streamName = currentStream != null ? currentStream.getName() : null;
-    boolean isMashup = streamName != null && streamName.equalsIgnoreCase("Mashup");
-    if (!isMashup) {
-      return Component.empty();
-    }
-
-    boolean onAir = currentSong.isOnAir();
-    boolean twitch = currentSong.isTwitch();
-    Component onAirComponent = Component.empty();
-    boolean hasContent = false;
-
-    if (onAir) {
-      onAirComponent = Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED);
-      hasContent = true;
-    }
-    if (twitch) {
-      TextColor twitchColor = TextColor.color(145, 70, 255);
-      if (hasContent) {
-        onAirComponent = onAirComponent.append(
-            Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY)
-        );
-      }
-      onAirComponent = onAirComponent.append(
-          Component.translatable("evilradio.widget.twitch").color(twitchColor)
-      );
-      hasContent = true;
-    }
-    if (onAir && currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) {
-      onAirComponent = onAirComponent.append(
-          Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY)
-              .append(Component.text(currentSong.getModeratorName()).color(NamedTextColor.WHITE))
-      );
-      hasContent = true;
-    }
-    return hasContent ? onAirComponent : Component.empty();
   }
 
   private void renderStatusLine(CurrentSong song) {
@@ -368,16 +348,10 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
   private String statusLinePlain(CurrentSong song) {
     String timeLabel = formatTimeLabel(song);
-    String streamName = this.addon.radioManager().getCurrentStream() != null
-        ? this.addon.radioManager().getCurrentStream().getName()
-        : null;
-    boolean isMashup = streamName != null && streamName.equalsIgnoreCase("Mashup");
-    if (isMashup && (song.isOnAir() || song.isTwitch())) {
-      String live = "ON AIR";
-      if (song.getModeratorName() != null && !song.getModeratorName().isEmpty()) {
-        live = live + " | " + song.getModeratorName();
-      }
-      return timeLabel.isEmpty() ? live : live + " | " + timeLabel;
+    RadioStream stream = this.addon.radioManager().getCurrentStream();
+    String livePlain = LiveStatusLine.plainPrefix(stream, song, this.lastLiveBadgeTwitchPhase);
+    if (!livePlain.isEmpty()) {
+      return timeLabel.isEmpty() ? livePlain : livePlain + " | " + timeLabel;
     }
     return timeLabel;
   }
@@ -397,11 +371,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     if (song == null) {
       return "";
     }
-    long elapsed = song.getCurrentElapsedSeconds();
-    if (song.hasKnownDuration()) {
-      return CurrentSong.formatTime(elapsed) + " / " + CurrentSong.formatTime(song.getDuration());
+    String label = song.getPlaytimeLabel();
+    if (label != null && !label.isBlank()) {
+      return label;
     }
-    return CurrentSong.formatTime(elapsed);
+    return CurrentSong.formatTime(song.getCurrentElapsedSeconds());
   }
 
   private void applyCover(CurrentSong currentSong) {

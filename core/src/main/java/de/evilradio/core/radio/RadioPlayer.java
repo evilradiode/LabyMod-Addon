@@ -37,6 +37,7 @@ public class RadioPlayer {
   private volatile String outputDeviceName;
   private volatile LongSupplier sharedContextSupplier;
   private final AudioSpectrumAnalyzer spectrum = new AudioSpectrumAnalyzer();
+  private long lastWriteDoneMs;
 
   public RadioPlayer() {
     this.executorService = Executors.newSingleThreadExecutor(r -> {
@@ -67,6 +68,7 @@ public class RadioPlayer {
 
     currentStreamUrl = streamUrl;
     shouldStop = false;
+    this.lastWriteDoneMs = 0L;
 
     playbackTask = executorService.submit(() -> {
       try {
@@ -101,50 +103,55 @@ public class RadioPlayer {
             false
         );
 
+        // SourceDataLine zuerst: komplett getrennt von Minecraft-OpenAL.
+        // Eigenes OpenAL-Gerät + alcMakeContextCurrent (prozessweit) kollidiert mit dem
+        // Game-Audio-Thread → wiederkehrendes Kratzen trotz „gesunder“ Queue.
         boolean openAlPlayback = false;
-        if (OpenAlAudioSession.isAvailable()) {
-          // Eigenes Gerät bevorzugt: Shared-Minecraft-Kontext ist thread-lokal und kollidiert
-          // mit dem Game-Audio-Thread → zufällige Stille trotz weiterlaufendem Decode/Equalizer.
-          try {
-            openAlSession = OpenAlAudioSession.openDevice(outputDeviceName, volume);
-            openAlSession.configureFormat(sampleRate, channels);
-            openAlPlayback = true;
-          } catch (Exception ignored) {
-          }
+        if (!openSourceDataLine(audioFormat)) {
+          if (OpenAlAudioSession.isAvailable()) {
+            try {
+              openAlSession = OpenAlAudioSession.openDevice(outputDeviceName, volume);
+              openAlSession.configureFormat(sampleRate, channels);
+              openAlPlayback = true;
+              AudioStreamDebug.info(
+                  "Playback via OpenAL Gerät (sampleRate=" + sampleRate
+                      + ", channels=" + channels + ", device=" + outputDeviceName + ")");
+            } catch (Exception openDeviceException) {
+              AudioStreamDebug.warn(
+                  "OpenAL Gerät fehlgeschlagen, versuche Shared: "
+                      + openDeviceException.getMessage());
+            }
 
-          if (!openAlPlayback) {
-            long sharedOpenAlContext = sharedContextSupplier != null ? sharedContextSupplier.getAsLong() : 0L;
-            if (sharedOpenAlContext != 0L) {
-              try {
-                openAlSession = OpenAlAudioSession.openShared(sharedOpenAlContext, volume);
-                openAlSession.configureFormat(sampleRate, channels);
-                openAlPlayback = true;
-              } catch (Exception ignored) {
+            if (!openAlPlayback) {
+              long sharedOpenAlContext =
+                  sharedContextSupplier != null ? sharedContextSupplier.getAsLong() : 0L;
+              if (sharedOpenAlContext != 0L) {
+                try {
+                  openAlSession = OpenAlAudioSession.openShared(sharedOpenAlContext, volume);
+                  openAlSession.configureFormat(sampleRate, channels);
+                  openAlPlayback = true;
+                  AudioStreamDebug.info(
+                      "Playback via OpenAL Shared-Context (sampleRate=" + sampleRate
+                          + ", channels=" + channels + ", context=" + sharedOpenAlContext + ")");
+                } catch (Exception openSharedException) {
+                  AudioStreamDebug.warn(
+                      "OpenAL Shared fehlgeschlagen: " + openSharedException.getMessage());
+                }
+              } else {
+                AudioStreamDebug.warn("Kein Shared-OpenAL-Kontext verfügbar");
               }
             }
+          } else {
+            AudioStreamDebug.warn("LWJGL OpenAL nicht verfügbar");
           }
         }
 
-        if (!openAlPlayback) {
-          DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-          if (!AudioSystem.isLineSupported(info)) {
-            throw new Exception("Audio-Format wird nicht unterstützt");
-          }
-
-          audioLine = (SourceDataLine) AudioSystem.getLine(info);
-          audioLine.open(audioFormat);
-
-          if (audioLine.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
-            FloatControl gainControl = (FloatControl) audioLine.getControl(FloatControl.Type.MASTER_GAIN);
-            float range = gainControl.getMaximum() - gainControl.getMinimum();
-            float gain = (range * volume) + gainControl.getMinimum();
-            gainControl.setValue(gain);
-          }
-
-          audioLine.start();
+        if (!openAlPlayback && audioLine == null) {
+          throw new Exception("Kein Audio-Ausgabepfad verfügbar");
         }
 
         isPlaying = true;
+        AudioStreamDebug.info("Stream gestartet: " + streamUrl);
 
         // ~46 ms Stereo@44.1 kHz pro Chunk; mit 12 OpenAL-Buffern ≈ 0,5 s Vorhalt
         byte[] buffer = new byte[8192];
@@ -156,9 +163,18 @@ public class RadioPlayer {
 
             SampleBuffer sampleBuffer = (SampleBuffer) decoder.decodeFrame(header, bitstream);
             short[] samples = sampleBuffer.getBuffer();
+            // Wichtig: getBuffer() ist ein fester Pool (OBUFFERSIZE) – nur getBufferLength()
+            // enthält gültige Samples. Rest = Stale/Müll → Kratzen ohne OpenAL-Underrun.
+            int validSamples = sampleBuffer.getBufferLength();
+            if (validSamples < 0) {
+              validSamples = 0;
+            }
+            if (validSamples > samples.length) {
+              validSamples = samples.length;
+            }
 
             int sampleIndex = 0;
-            for (int i = 0; i < samples.length && !shouldStop && isOutputActive(); i++) {
+            for (int i = 0; i < validSamples && !shouldStop && isOutputActive(); i++) {
               short sample = samples[i];
               buffer[sampleIndex++] = (byte) (sample & 0xFF);
               buffer[sampleIndex++] = (byte) ((sample >> 8) & 0xFF);
@@ -180,6 +196,7 @@ public class RadioPlayer {
             header = bitstream.readFrame();
 
             if (header == null) {
+              AudioStreamDebug.warn("MP3-Header null – Stream-Reconnect");
               try {
                 Thread.sleep(100);
               } catch (InterruptedException e) {
@@ -204,11 +221,14 @@ public class RadioPlayer {
               }
               header = bitstream.readFrame();
               if (header == null) {
+                AudioStreamDebug.warn("Reconnect fehlgeschlagen: erneut kein Header");
                 break;
               }
+              AudioStreamDebug.info("Stream-Reconnect nach Header-Loss erfolgreich");
             }
           } catch (JavaLayerException e) {
             if (!shouldStop) {
+              AudioStreamDebug.warn("JavaLayerException – Reconnect: " + e.getMessage());
               try {
                 Thread.sleep(1000);
               } catch (InterruptedException e2) {
@@ -233,11 +253,14 @@ public class RadioPlayer {
               }
               header = bitstream.readFrame();
               if (header == null) {
+                AudioStreamDebug.warn("Reconnect nach JavaLayerException fehlgeschlagen");
                 break;
               }
+              AudioStreamDebug.info("Reconnect nach JavaLayerException erfolgreich");
             }
           } catch (RuntimeException e) {
             if (!shouldStop) {
+              AudioStreamDebug.warn("RuntimeException im Decode-Loop – Reconnect: " + e.getMessage());
               try {
                 Thread.sleep(1000);
               } catch (InterruptedException interrupted) {
@@ -260,9 +283,12 @@ public class RadioPlayer {
                 bitstream = new Bitstream(audioStream);
                 header = bitstream.readFrame();
                 if (header == null) {
+                  AudioStreamDebug.warn("Reconnect nach RuntimeException fehlgeschlagen");
                   break;
                 }
+                AudioStreamDebug.info("Reconnect nach RuntimeException erfolgreich");
               } catch (Exception reconnectException) {
+                AudioStreamDebug.error("Reconnect nach RuntimeException abgebrochen", reconnectException);
                 break;
               }
             }
@@ -272,9 +298,11 @@ public class RadioPlayer {
       } catch (Exception e) {
         if (!shouldStop) {
           LOGGING.error("Fehler beim Abspielen des Radio-Streams: " + e.getMessage(), e);
+          AudioStreamDebug.error("Stream-Abbruch", e);
         }
         isPlaying = false;
       } finally {
+        AudioStreamDebug.info("Playback-Loop beendet (shouldStop=" + shouldStop + ")");
         cleanup();
         isPlaying = false;
       }
@@ -325,17 +353,61 @@ public class RadioPlayer {
       }
     }
 
-    if (audioLine != null && audioLine.isOpen()) {
-      try {
-        if (audioLine.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
-          FloatControl gainControl = (FloatControl) audioLine.getControl(FloatControl.Type.MASTER_GAIN);
-          float range = gainControl.getMaximum() - gainControl.getMinimum();
-          float gain = (range * this.volume) + gainControl.getMinimum();
-          gainControl.setValue(gain);
-        }
-      } catch (Exception e) {
-        LOGGING.warn("Fehler beim Setzen der Lautstärke: " + e.getMessage());
+    applySourceDataLineVolume();
+  }
+
+  private boolean openSourceDataLine(AudioFormat audioFormat) {
+    try {
+      DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+      if (!AudioSystem.isLineSupported(info)) {
+        AudioStreamDebug.warn("SourceDataLine unterstützt Format nicht");
+        return false;
       }
+
+      audioLine = (SourceDataLine) AudioSystem.getLine(info);
+      // ~0,5 s Vorhalt – weniger underrun-/Klick-Risiko als Default-Buffer
+      int bufferBytes = Math.max(audioFormat.getFrameSize() * 1024 * 8, 32768);
+      audioLine.open(audioFormat, bufferBytes);
+      applySourceDataLineVolume();
+      audioLine.start();
+      AudioStreamDebug.info(
+          "Playback via SourceDataLine (sampleRate=" + (int) audioFormat.getSampleRate()
+              + ", channels=" + audioFormat.getChannels()
+              + ", bufferBytes=" + bufferBytes + ")");
+      return true;
+    } catch (Exception e) {
+      AudioStreamDebug.warn("SourceDataLine fehlgeschlagen: " + e.getMessage());
+      if (audioLine != null) {
+        try {
+          audioLine.close();
+        } catch (Exception ignored) {
+        }
+        audioLine = null;
+      }
+      return false;
+    }
+  }
+
+  private void applySourceDataLineVolume() {
+    if (audioLine == null || !audioLine.isOpen()) {
+      return;
+    }
+    try {
+      if (audioLine.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+        FloatControl gainControl = (FloatControl) audioLine.getControl(FloatControl.Type.MASTER_GAIN);
+        // MASTER_GAIN ist in dB, nicht linear – lineares Mapping auf die Range = Stille.
+        float linear = Math.max(0.0f, Math.min(1.0f, this.volume));
+        float gainDb;
+        if (linear <= 0.0001f) {
+          gainDb = gainControl.getMinimum();
+        } else {
+          gainDb = (float) (20.0 * Math.log10(linear));
+          gainDb = Math.max(gainControl.getMinimum(), Math.min(gainControl.getMaximum(), gainDb));
+        }
+        gainControl.setValue(gainDb);
+      }
+    } catch (Exception e) {
+      LOGGING.warn("Fehler beim Setzen der Lautstärke: " + e.getMessage());
     }
   }
 
@@ -362,25 +434,28 @@ public class RadioPlayer {
     // Spektrum immer aus Roh-PCM (unabhängig von der Lautstärke)
     this.spectrum.feedPcm(buffer, length);
 
+    long now = System.currentTimeMillis();
+    if (this.lastWriteDoneMs != 0L) {
+      long decodeGapMs = now - this.lastWriteDoneMs;
+      // Zeit zwischen Ende des letzten Writes und Start dieses Writes = Decode/Netz
+      if (decodeGapMs >= 80L) {
+        AudioStreamDebug.warn(
+            "Decode-Gap " + decodeGapMs + " ms (erwartet <20 ms) – möglicher Aussetzer");
+      }
+    }
+
     try {
       if (openAlSession != null) {
         openAlSession.queuePcm(buffer, length);
         openAlSession.startIfNeeded();
+        this.lastWriteDoneMs = System.currentTimeMillis();
         return;
       }
 
       if (audioLine != null && audioLine.isOpen()) {
-        if (this.volume > 0.001f) {
-          audioLine.write(buffer, 0, length);
-        } else {
-          // Ohne Write kein Blocking → Decoder rennt durch; grob anhand der Bytes drosseln
-          int bytesPerFrame = Math.max(1, audioLine.getFormat().getFrameSize());
-          float frameRate = audioLine.getFormat().getFrameRate();
-          if (frameRate > 0) {
-            long sleepMs = Math.max(1L, Math.round((length / (double) bytesPerFrame) / frameRate * 1000.0));
-            Thread.sleep(sleepMs);
-          }
-        }
+        // Immer schreiben – Lautstärke über MASTER_GAIN (auch bei 0 = Stille, Pacing bleibt)
+        audioLine.write(buffer, 0, length);
+        this.lastWriteDoneMs = System.currentTimeMillis();
       }
     } catch (InterruptedException interrupted) {
       Thread.currentThread().interrupt();

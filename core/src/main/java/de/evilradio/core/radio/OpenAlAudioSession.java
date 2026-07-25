@@ -58,6 +58,7 @@ public final class OpenAlAudioSession {
   private float volume = 0.25f;
   private boolean started;
   private final Queue<Integer> freeBuffers = new ArrayDeque<>();
+  private long lastHeartbeatMs;
 
   private OpenAlAudioSession(
       long sharedContext,
@@ -130,20 +131,29 @@ public final class OpenAlAudioSession {
     }
 
     OpenAlBindings bindings = OpenAlBindings.load();
+    long previous = safeCurrentContext();
     if (!(boolean) bindings.alcMakeContextCurrent.invoke(null, minecraftContext)) {
       throw new Exception("Minecraft-OpenAL-Kontext konnte nicht aktiviert werden");
     }
 
-    int source = (int) bindings.alGenSources.invoke(null);
-    int[] buffers = new int[BUFFER_COUNT];
-    for (int i = 0; i < buffers.length; i++) {
-      buffers[i] = (int) bindings.alGenBuffers.invoke(null);
-    }
+    try {
+      int source = (int) bindings.alGenSources.invoke(null);
+      int[] buffers = new int[BUFFER_COUNT];
+      for (int i = 0; i < buffers.length; i++) {
+        buffers[i] = (int) bindings.alGenBuffers.invoke(null);
+      }
 
-    OpenAlAudioSession session = newSession(minecraftContext, false, 0L, source, buffers, bindings);
-    enqueueFreeBuffers(session, buffers);
-    session.setVolume(volume);
-    return session;
+      OpenAlAudioSession session = newSession(minecraftContext, false, 0L, source, buffers, bindings);
+      enqueueFreeBuffers(session, buffers);
+      session.setVolumeUnlocked(volume);
+      AudioStreamDebug.info(
+          "OpenAL shared context geöffnet (context=" + minecraftContext
+              + ", source=" + source + ", buffers=" + BUFFER_COUNT
+              + ", volume=" + volume + ")");
+      return session;
+    } finally {
+      restoreContext(bindings.alcMakeContextCurrent, previous, minecraftContext);
+    }
   }
 
   public static OpenAlAudioSession openDevice(String deviceName, float volume) throws Exception {
@@ -168,22 +178,32 @@ public final class OpenAlAudioSession {
       throw new Exception("OpenAL-Kontext konnte nicht erstellt werden");
     }
 
+    long previous = safeCurrentContext();
     if (!(boolean) bindings.alcMakeContextCurrent.invoke(null, context)) {
       bindings.alcDestroyContext.invoke(null, context);
       bindings.alcCloseDevice.invoke(null, device);
       throw new Exception("OpenAL-Kontext konnte nicht aktiviert werden");
     }
 
-    int source = (int) bindings.alGenSources.invoke(null);
-    int[] buffers = new int[BUFFER_COUNT];
-    for (int i = 0; i < buffers.length; i++) {
-      buffers[i] = (int) bindings.alGenBuffers.invoke(null);
-    }
+    try {
+      int source = (int) bindings.alGenSources.invoke(null);
+      int[] buffers = new int[BUFFER_COUNT];
+      for (int i = 0; i < buffers.length; i++) {
+        buffers[i] = (int) bindings.alGenBuffers.invoke(null);
+      }
 
-    OpenAlAudioSession session = newSession(context, true, device, source, buffers, bindings);
-    enqueueFreeBuffers(session, buffers);
-    session.setVolume(volume);
-    return session;
+      OpenAlAudioSession session = newSession(context, true, device, source, buffers, bindings);
+      enqueueFreeBuffers(session, buffers);
+      session.setVolumeUnlocked(volume);
+      AudioStreamDebug.info(
+          "OpenAL Gerät geöffnet (deviceName=" + (openDeviceName == null ? "default" : openDeviceName)
+              + ", device=" + device + ", context=" + context
+              + ", source=" + source + ", buffers=" + BUFFER_COUNT
+              + ", volume=" + volume + ")");
+      return session;
+    } finally {
+      restoreContext(bindings.alcMakeContextCurrent, previous, context);
+    }
   }
 
   private static OpenAlAudioSession newSession(
@@ -232,38 +252,91 @@ public final class OpenAlAudioSession {
       return;
     }
 
-    makeContextCurrent();
-    reclaimProcessedBuffers();
-
-    int buffer = acquireBuffer();
-    int sampleCount = length / 2;
-    short[] samples;
-    if (this.volume <= 0.0f) {
-      // Stille queuen, damit der Decode-Thread weiter am OpenAL-Pacing hängt
-      samples = new short[sampleCount];
-    } else {
-      samples = applyVolume(bytesToShorts(pcmData, length));
-    }
+    // Lautstärke nur über AL_GAIN – PCM unverändert lassen (kein Quantisierungs-Kratzen).
+    short[] samples = bytesToShorts(pcmData, length);
     int format = channels == 1 ? alFormatMono16 : alFormatStereo16;
-    alBufferData.invoke(null, buffer, format, samples, sampleRate);
-    alSourceQueueBuffers.invoke(null, source, buffer);
+
+    int buffer = waitForFreeBuffer();
+    withContext(() -> {
+      alBufferData.invoke(null, buffer, format, samples, sampleRate);
+      alSourceQueueBuffers.invoke(null, source, buffer);
+      maybeHeartbeatUnlocked();
+    });
   }
 
-  private short[] applyVolume(short[] samples) {
-    if (volume >= 0.999f) {
-      return samples;
+  private void maybeHeartbeatUnlocked() throws Exception {
+    if (!AudioStreamDebug.isEnabled()) {
+      return;
     }
-
-    short[] scaled = new short[samples.length];
-    for (int i = 0; i < samples.length; i++) {
-      scaled[i] = (short) Math.round(samples[i] * volume);
+    long now = System.currentTimeMillis();
+    if (lastHeartbeatMs != 0L && now - lastHeartbeatMs < 5000L) {
+      return;
     }
-    return scaled;
+    lastHeartbeatMs = now;
+    int queued = (int) alGetSourcei.invoke(null, source, alBuffersQueued);
+    int state = (int) alGetSourcei.invoke(null, source, alSourceState);
+    AudioStreamDebug.info(
+        "Heartbeat queued=" + queued + "/" + BUFFER_COUNT
+            + ", free=" + freeBuffers.size()
+            + ", state=" + stateName(state)
+            + ", started=" + started
+            + ", volume=" + volume
+            + ", gain=" + volume);
   }
 
   private void makeContextCurrent() throws Exception {
     if (sharedContext != 0L) {
       alcMakeContextCurrent.invoke(null, sharedContext);
+    }
+  }
+
+  /**
+   * Führt OpenAL-Aufrufe im Radio-Kontext aus und stellt danach den vorherigen Kontext wieder her.
+   * Ohne Restore stehlen wir Minecraft den Current-Context → MC-Sounds/Musik landen auf unserem
+   * Gerät (auch bei Radio-Lautstärke 0).
+   */
+  private void withContext(AlRunnable action) throws Exception {
+    long previous = safeCurrentContext();
+    makeContextCurrent();
+    try {
+      action.run();
+    } finally {
+      restoreContext(alcMakeContextCurrent, previous, this.sharedContext);
+    }
+  }
+
+  private <T> T withContext(AlCallable<T> action) throws Exception {
+    long previous = safeCurrentContext();
+    makeContextCurrent();
+    try {
+      return action.call();
+    } finally {
+      restoreContext(alcMakeContextCurrent, previous, this.sharedContext);
+    }
+  }
+
+  @FunctionalInterface
+  private interface AlRunnable {
+    void run() throws Exception;
+  }
+
+  @FunctionalInterface
+  private interface AlCallable<T> {
+    T call() throws Exception;
+  }
+
+  private static long safeCurrentContext() {
+    try {
+      return getCurrentContext();
+    } catch (Exception ignored) {
+      return 0L;
+    }
+  }
+
+  private static void restoreContext(Method alcMakeContextCurrent, long previous, long radioContext)
+      throws Exception {
+    if (previous != 0L && previous != radioContext) {
+      alcMakeContextCurrent.invoke(null, previous);
     }
   }
 
@@ -274,29 +347,61 @@ public final class OpenAlAudioSession {
     }
   }
 
-  private int acquireBuffer() throws Exception {
-    while (freeBuffers.isEmpty()) {
-      reclaimProcessedBuffers();
-      if (!freeBuffers.isEmpty()) {
-        break;
+  private int waitForFreeBuffer() throws Exception {
+    long waitStartedAt = 0L;
+    int[] lastSnap = new int[] {-1, -1}; // queued, state
+    while (true) {
+      Integer buffer = withContext(() -> {
+        reclaimProcessedBuffers();
+        if (!freeBuffers.isEmpty()) {
+          return freeBuffers.poll();
+        }
+        int queued = (int) alGetSourcei.invoke(null, source, alBuffersQueued);
+        int state = (int) alGetSourcei.invoke(null, source, alSourceState);
+        lastSnap[0] = queued;
+        lastSnap[1] = state;
+        ensurePlayingUnlocked();
+        // Nur anomal: Source tot oder Queue fast leer (echter Underrun-Druck)
+        if (state != alPlaying || queued <= 2) {
+          AudioStreamDebug.infoThrottled(
+              "OpenAL Buffer-Mangel queued=" + queued
+                  + ", free=0, state=" + stateName(state)
+                  + ", started=" + started);
+        }
+        return null;
+      });
+      if (buffer != null) {
+        if (waitStartedAt != 0L) {
+          long waitedMs = System.currentTimeMillis() - waitStartedAt;
+          // Normales Pacing bei voller Queue ≈ 20–50 ms – kein Problem.
+          if (waitedMs >= 100L || (lastSnap[1] != -1 && lastSnap[1] != alPlaying)) {
+            AudioStreamDebug.warn(
+                "OpenAL Buffer-Wait " + waitedMs + " ms (queued=" + lastSnap[0]
+                    + ", state=" + stateName(lastSnap[1]) + ")");
+          }
+        }
+        return buffer;
       }
-      // Nach Underrun bleibt die Source auf STOPPED – ohne Restart blockiert der Thread endlos,
-      // weil queued Buffer nie „processed“ werden.
-      ensurePlaying();
-      Thread.sleep(5L);
+      if (waitStartedAt == 0L) {
+        waitStartedAt = System.currentTimeMillis();
+      }
+      // Schlaf außerhalb des Radio-Kontexts, damit Minecraft weiter audion kann.
+      // 15 ms statt 5 ms → deutlich weniger Context-Switches (weniger Kratzen).
+      Thread.sleep(15L);
     }
-    return freeBuffers.poll();
   }
 
   public void setVolume(float volume) throws Exception {
-    boolean wasMuted = this.volume <= 0.0f;
     this.volume = Math.max(0.0f, Math.min(1.0f, volume));
-    makeContextCurrent();
+    withContext(() -> setVolumeUnlocked(this.volume));
+  }
+
+  private void setVolumeUnlocked(float volume) throws Exception {
+    this.volume = Math.max(0.0f, Math.min(1.0f, volume));
+    // AL_GAIN ist linear. volume² bei 5% ≈ 0.0025 → praktisch stumm.
     alSourcef.invoke(null, source, alGain, this.volume);
-    // Nach Unmute Playback neu anstoßen (ensurePlaying prüft den echten Source-State).
-    if (wasMuted && this.volume > 0.0f) {
-      started = false;
-      ensurePlaying();
+    if (this.volume > 0.0f) {
+      ensurePlayingUnlocked();
     }
   }
 
@@ -306,11 +411,10 @@ public final class OpenAlAudioSession {
    * obwohl weiter PCM gequeued und das Spektrum gefüttert wird.
    */
   public void ensurePlaying() throws Exception {
-    if (volume <= 0.0f) {
-      return;
-    }
+    withContext(this::ensurePlayingUnlocked);
+  }
 
-    makeContextCurrent();
+  private void ensurePlayingUnlocked() throws Exception {
     int queued = (int) alGetSourcei.invoke(null, source, alBuffersQueued);
     if (queued <= 0) {
       return;
@@ -323,6 +427,15 @@ public final class OpenAlAudioSession {
 
     int state = (int) alGetSourcei.invoke(null, source, alSourceState);
     if (state != alPlaying) {
+      if (started) {
+        AudioStreamDebug.warn(
+            "OpenAL UNDERRUN Restart: state=" + stateName(state)
+                + " → PLAY, queued=" + queued + ", free=" + freeBuffers.size());
+      } else {
+        AudioStreamDebug.info(
+            "OpenAL Start: state=" + stateName(state)
+                + " → PLAY, queued=" + queued + ", free=" + freeBuffers.size());
+      }
       alSourcePlay.invoke(null, source);
       started = true;
     }
@@ -333,6 +446,11 @@ public final class OpenAlAudioSession {
   }
 
   public void close() {
+    AudioStreamDebug.info(
+        "OpenAL Session schließen (ownsContext=" + ownsContext
+            + ", device=" + device + ", source=" + source + ")");
+    long previous = safeCurrentContext();
+
     try {
       makeContextCurrent();
     } catch (Exception ignored) {
@@ -356,9 +474,17 @@ public final class OpenAlAudioSession {
     }
 
     if (ownsContext) {
-      try {
-        alcMakeContextCurrent.invoke(null, 0L);
-      } catch (Exception ignored) {
+      // Minecraft-Kontext wiederherstellen, falls wir ihn vorher verdrängt haben
+      if (previous != 0L && previous != this.sharedContext) {
+        try {
+          alcMakeContextCurrent.invoke(null, previous);
+        } catch (Exception ignored) {
+        }
+      } else {
+        try {
+          alcMakeContextCurrent.invoke(null, 0L);
+        } catch (Exception ignored) {
+        }
       }
 
       try {
@@ -371,6 +497,11 @@ public final class OpenAlAudioSession {
           alcCloseDevice.invoke(null, device);
         } catch (Exception ignored) {
         }
+      }
+    } else if (previous != 0L && previous != this.sharedContext) {
+      try {
+        alcMakeContextCurrent.invoke(null, previous);
+      } catch (Exception ignored) {
       }
     }
   }
@@ -391,6 +522,19 @@ public final class OpenAlAudioSession {
     }
 
     return trimmed;
+  }
+
+  private String stateName(int state) {
+    if (state == alPlaying) {
+      return "PLAYING";
+    }
+    // AL_INITIAL=4113, AL_STOPPED=4116, AL_PAUSED=4115 – Zahlen mitloggen falls unbekannt
+    return switch (state) {
+      case 4113 -> "INITIAL";
+      case 4115 -> "PAUSED";
+      case 4116 -> "STOPPED";
+      default -> String.valueOf(state);
+    };
   }
 
   private static void enqueueFreeBuffers(OpenAlAudioSession session, int[] buffers) {

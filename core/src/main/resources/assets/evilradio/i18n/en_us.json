@@ -17,14 +17,6 @@
       "streamStarted": "Stream started: %s",
       "streamStartedWithSong": "Stream started: %s\nCurrent song: %s"
     },
-    "wheel": {
-      "noStationsAvailable": "No stations available",
-      "selectStation": "Select an Evil-Radio station",
-      "volume": "Volume: %s%%",
-      "scrollInfo": "Mouse wheel ↑↓: Change volume | Middle click: Play/Pause",
-      "playing": "▶ PLAY",
-      "stopped": "⏹ STOP"
-    },
     "picker": {
       "previewHint": "Select a station",
       "comingSoon": "Coming soon",
@@ -32,12 +24,22 @@
       "clickToPlay": "Click or press Enter to play",
       "loadingSong": "Loading song…",
       "noSongInfo": "No song info",
+      "noStationsAvailable": "No stations available",
+      "selectStation": "Select an Evil-Radio station",
       "volume": "Volume",
+      "volumeLabel": "Volume: %s%%",
+      "scrollInfo": "Mouse wheel ↑↓: Change volume | Middle click: Play/Pause",
+      "playing": "▶ PLAY",
+      "stopped": "⏹ STOP",
       "playPause": "Play/Pause",
       "playSelected": "Play",
       "close": "Close",
       "nowPlaying": "Now",
-      "listNavHint": "Mouse / ↑↓: select | Scroll over list: scroll"
+      "listNavHint": "Mouse / ↑↓: select | Scroll over list: scroll",
+      "tab": {
+        "stations": "Stations",
+        "schedule": "Schedule"
+      }
     },
     "notification": {
       "streamSelected": {
@@ -141,16 +143,8 @@
         "description": "Key to open the radio menu"
       },
       "stationPicker": {
-        "name": "Station menu style",
-        "description": "Wheel or list + preview. Submenu: list look and equalizer.",
-        "style": {
-          "name": "Menu style",
-          "description": "Classic hexagon wheel or list with preview.",
-          "type": {
-            "wheel": "Classic Wheel",
-            "listPreview": "List + Preview"
-          }
-        },
+        "name": "Station menu",
+        "description": "Look of the station list and equalizer.",
         "backgroundColor": {
           "name": "List background",
           "description": "Color and transparency of the list menu (including alpha)."
@@ -229,6 +223,10 @@
           "description": "Resets the usage statistics of the streams"
         }
       },
+      "audioStreamDebug": {
+        "name": "Audio Stream Debug",
+        "description": "Writes detailed audio debug messages to logs/evilradio/audio-debug.log (dropouts, underruns, reconnects)."
+      },
       "reloadStreams": {
         "name": "Reload Streams (only if you have problems)",
         "text": "Reload",
@@ -237,7 +235,10 @@
     },
     "schedule": {
       "liveMessage": "EvilRadio is now live! ",
-      "twitchUrl": "https://www.twitch.tv/evilradiode"
+      "twitchUrl": "https://www.twitch.tv/evilradiode",
+      "loading": "Loading schedule…",
+      "empty": "No shows on this day",
+      "grussbox": "Greeting box"
     }
   }
 }

@@ -10,11 +10,16 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import net.labymod.api.util.logging.Logging;
@@ -26,14 +31,23 @@ import net.labymod.api.util.logging.Logging;
 public final class PickerNowPlayingSession {
 
   private static final Logging LOGGING = Logging.create("EvilRadio-PickerNowPlaying");
+  private static final long[] BACKOFF_MS = {1000L, 2000L, 5000L, 10000L, 20000L, 30000L};
 
   private final HttpClient httpClient = HttpClient.newBuilder()
       .connectTimeout(Duration.ofSeconds(10))
       .build();
+  private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+    Thread thread = new Thread(r, "EvilRadio-PickerNowPlaying-WS");
+    thread.setDaemon(true);
+    return thread;
+  });
   private final AtomicBoolean closed = new AtomicBoolean(false);
   private final AtomicReference<WebSocket> webSocket = new AtomicReference<>();
+  private final AtomicReference<ScheduledFuture<?>> reconnectFuture = new AtomicReference<>();
+  private final AtomicInteger backoffIndex = new AtomicInteger(0);
   private final StringBuilder textBuffer = new StringBuilder();
   private final Set<String> shortcodes;
+  private final Set<String> normalizedShortcodes;
   private final BiConsumer<String, CurrentSong> songListener;
 
   public PickerNowPlayingSession(
@@ -41,9 +55,12 @@ public final class PickerNowPlayingSession {
       BiConsumer<String, CurrentSong> songListener
   ) {
     this.shortcodes = new LinkedHashSet<>();
+    this.normalizedShortcodes = new LinkedHashSet<>();
     for (String shortcode : shortcodes) {
       if (shortcode != null && !shortcode.isBlank()) {
-        this.shortcodes.add(shortcode.trim());
+        String trimmed = shortcode.trim();
+        this.shortcodes.add(trimmed);
+        this.normalizedShortcodes.add(normalize(trimmed));
       }
     }
     this.songListener = songListener == null ? (code, song) -> {
@@ -51,6 +68,22 @@ public final class PickerNowPlayingSession {
   }
 
   public void open() {
+    if (this.closed.get() || this.shortcodes.isEmpty()) {
+      return;
+    }
+    this.connect(false);
+  }
+
+  public void close() {
+    if (!this.closed.compareAndSet(false, true)) {
+      return;
+    }
+    this.cancelReconnect();
+    this.closeSocket();
+    this.scheduler.shutdownNow();
+  }
+
+  private void connect(boolean reconnect) {
     if (this.closed.get() || this.shortcodes.isEmpty()) {
       return;
     }
@@ -64,9 +97,11 @@ public final class PickerNowPlayingSession {
           return;
         }
         PickerNowPlayingSession.this.webSocket.set(webSocket);
+        PickerNowPlayingSession.this.backoffIndex.set(0);
         webSocket.sendText(buildSubscribePayload(), true);
         webSocket.request(1);
-        LOGGING.info("Picker WS connected, subscribed to " + shortcodes.size() + " stations");
+        LOGGING.info((reconnect ? "Picker WS reconnected" : "Picker WS connected")
+            + ", subscribed to " + shortcodes.size() + " stations");
       }
 
       @Override
@@ -89,6 +124,10 @@ public final class PickerNowPlayingSession {
       @Override
       public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
         PickerNowPlayingSession.this.webSocket.compareAndSet(webSocket, null);
+        if (!closed.get()) {
+          LOGGING.warn("Picker WS closed (" + statusCode + ") – scheduling reconnect");
+          scheduleReconnect();
+        }
         return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
       }
 
@@ -96,6 +135,9 @@ public final class PickerNowPlayingSession {
       public void onError(WebSocket webSocket, Throwable error) {
         LOGGING.warn("Picker WS error – " + (error == null ? "unknown" : error.getMessage()));
         PickerNowPlayingSession.this.webSocket.compareAndSet(webSocket, null);
+        if (!closed.get()) {
+          scheduleReconnect();
+        }
       }
     };
 
@@ -105,14 +147,38 @@ public final class PickerNowPlayingSession {
         .whenComplete((socket, error) -> {
           if (error != null && !closed.get()) {
             LOGGING.warn("Picker WS connect failed – " + error.getMessage());
+            scheduleReconnect();
           }
         });
   }
 
-  public void close() {
-    if (!this.closed.compareAndSet(false, true)) {
+  private void scheduleReconnect() {
+    if (this.closed.get()) {
       return;
     }
+    this.cancelReconnect();
+    int index = Math.min(this.backoffIndex.getAndIncrement(), BACKOFF_MS.length - 1);
+    long delay = BACKOFF_MS[index];
+    ScheduledFuture<?> future = this.scheduler.schedule(
+        () -> {
+          if (!closed.get()) {
+            connect(true);
+          }
+        },
+        delay,
+        TimeUnit.MILLISECONDS
+    );
+    this.reconnectFuture.set(future);
+  }
+
+  private void cancelReconnect() {
+    ScheduledFuture<?> future = this.reconnectFuture.getAndSet(null);
+    if (future != null) {
+      future.cancel(false);
+    }
+  }
+
+  private void closeSocket() {
     WebSocket socket = this.webSocket.getAndSet(null);
     if (socket == null) {
       return;
@@ -166,7 +232,7 @@ public final class PickerNowPlayingSession {
         continue;
       }
       String shortcode = resolveShortcode(publication.channel(), song);
-      if (shortcode == null || !this.shortcodes.contains(shortcode)) {
+      if (shortcode == null || !this.normalizedShortcodes.contains(shortcode)) {
         continue;
       }
       this.songListener.accept(shortcode, song);
@@ -175,11 +241,15 @@ public final class PickerNowPlayingSession {
 
   private static String resolveShortcode(String channel, CurrentSong song) {
     if (song.getStationShortcode() != null && !song.getStationShortcode().isBlank()) {
-      return song.getStationShortcode().trim();
+      return normalize(song.getStationShortcode());
     }
-    if (channel != null && channel.startsWith("station:")) {
-      return channel.substring("station:".length()).trim();
+    if (channel != null && channel.regionMatches(true, 0, "station:", 0, "station:".length())) {
+      return normalize(channel.substring("station:".length()));
     }
     return null;
+  }
+
+  private static String normalize(String shortcode) {
+    return shortcode.trim().toLowerCase(Locale.ROOT);
   }
 }

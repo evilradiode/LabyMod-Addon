@@ -18,9 +18,8 @@ import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.render.font.TextOverflowStrategy;
 
 /**
- * Textzeile mit optionalem Lauftext. Mehrere Zeilen werden über {@link MarqueeCoordinator}
- * nacheinander gescrollt. Der Text bleibt während des Scrollens stabil; nur {@code translateX}
- * wird pro Frame aktualisiert.
+ * Textzeile mit optionalem Lauftext. Mehrere Zeilen eines Coordinators scrollen nacheinander.
+ * Während des Scrollens bleibt der Text stabil; nur {@code translateX} ändert sich.
  */
 @AutoWidget
 public class MarqueeComponentWidget extends DivWidget {
@@ -46,8 +45,10 @@ public class MarqueeComponentWidget extends DivWidget {
   public MarqueeComponentWidget() {
     this.label = ComponentWidget.empty();
     this.label.addId("marquee-label");
-    this.label.overflowStrategy().set(TextOverflowStrategy.CLIP);
     this.label.useFloatingPointPosition().set(true);
+    this.label.maxLines().set(1);
+    this.label.maxLinesClipText().set(false);
+    this.label.overflowStrategy().set(TextOverflowStrategy.WRAP);
     this.stencilTranslation().set(true);
   }
 
@@ -57,13 +58,10 @@ public class MarqueeComponentWidget extends DivWidget {
     this.children.clear();
     this.addChild(this.label);
     this.stencilTranslation().set(true);
+    this.label.maxLinesClipText().set(false);
     this.paint();
   }
 
-  /**
-   * Verhindert, dass der breite Lauftext die Eltern-Breite (und damit {@code needsScroll} der
-   * anderen Zeilen) beeinflusst.
-   */
   @Override
   public float getContentWidth(BoundsType type) {
     float width = this.bounds().getWidth(type);
@@ -73,7 +71,6 @@ public class MarqueeComponentWidget extends DivWidget {
     return this.getDefaultContentWidth(type);
   }
 
-  /** Label darf vollständige Textbreite rendern, ohne auf die Viewport-Breite begrenzt zu werden. */
   @Override
   public boolean hasAutoBounds(Widget child, AutoAlignType type) {
     if (child == this.label && type == AutoAlignType.WIDTH) {
@@ -95,7 +92,6 @@ public class MarqueeComponentWidget extends DivWidget {
     this.paint();
   }
 
-  /** Statischer Text ohne Laufschrift (z. B. Ladehinweise). */
   public void setComponent(Component component) {
     this.hasContent = false;
     this.plainText = "";
@@ -105,7 +101,6 @@ public class MarqueeComponentWidget extends DivWidget {
     this.label.updateComponent();
   }
 
-  /** Song-/Interpret-Text; Verhalten hängt von {@link #setScrollMode(boolean)} ab. */
   public void setMarqueeText(String text, TextColor color) {
     this.plainText = text == null ? "" : text;
     this.textColor = color;
@@ -132,8 +127,7 @@ public class MarqueeComponentWidget extends DivWidget {
     if (viewport <= 1f) {
       return false;
     }
-    FontRenderer font = Laby.references().minecraftFontRenderer();
-    return font.getWidth(this.plainText) > viewport + 1f;
+    return this.textWidth(this.plainText) > viewport + 1f;
   }
 
   @Override
@@ -167,7 +161,6 @@ public class MarqueeComponentWidget extends DivWidget {
         this.lastFrameTimeMs = 0L;
         this.pauseUntilMs = 0L;
         this.lastAnimatedFrame = -1;
-        this.loopTextApplied = false;
         this.label.setTranslateX(0f);
         this.paintFullText();
       }
@@ -175,6 +168,8 @@ public class MarqueeComponentWidget extends DivWidget {
     }
 
     this.ensureLoopText();
+    // LSS kann Clip/Width überschreiben – jede Frame neu setzen
+    this.applyScrollingLabel();
 
     int frame = Laby.references().frameTimer().getFrame();
     if (frame == this.lastAnimatedFrame) {
@@ -206,8 +201,7 @@ public class MarqueeComponentWidget extends DivWidget {
       return;
     }
 
-    FontRenderer font = Laby.references().minecraftFontRenderer();
-    this.ensureLoopWidth(font);
+    this.ensureLoopWidth();
     this.scrollOffset += deltaSeconds * PIXELS_PER_SECOND;
 
     if (this.scrollOffset >= this.loopWidth) {
@@ -233,12 +227,11 @@ public class MarqueeComponentWidget extends DivWidget {
     }
 
     float viewport = this.bounds().getWidth(BoundsType.MIDDLE);
-    FontRenderer font = Laby.references().minecraftFontRenderer();
-    if (viewport <= 1f || font.getWidth(this.plainText) <= viewport + 1f) {
+    if (viewport <= 1f || this.textWidth(this.plainText) <= viewport + 1f) {
       this.paintFullText();
       return;
     }
-    // Noch nicht aktiv: ruhiger Starttext. Loop-Text erst wenn diese Zeile dran ist.
+    // Inaktiv: nur Klartext (kein Loop = kein doppelter Text). Loop erst wenn aktiv.
     this.paintFullText();
   }
 
@@ -251,6 +244,7 @@ public class MarqueeComponentWidget extends DivWidget {
 
   private void ensureLoopText() {
     if (this.loopTextApplied) {
+      this.applyScrollingLabel();
       return;
     }
     this.applyScrollingLabel();
@@ -261,7 +255,9 @@ public class MarqueeComponentWidget extends DivWidget {
   }
 
   private void applyIdleLabel() {
-    this.label.overflowStrategy().set(TextOverflowStrategy.CLIP);
+    this.label.overflowStrategy().set(TextOverflowStrategy.WRAP);
+    this.label.maxLines().set(1);
+    this.label.maxLinesClipText().set(false);
     this.label.setSize(SizeType.ACTUAL, WidgetSide.WIDTH, WidgetSize.percentage(100f));
     this.label.setTranslateX(0f);
   }
@@ -269,14 +265,24 @@ public class MarqueeComponentWidget extends DivWidget {
   private void applyScrollingLabel() {
     this.label.overflowStrategy().set(TextOverflowStrategy.WRAP);
     this.label.maxLines().set(1);
+    this.label.maxLinesClipText().set(false);
     this.label.setSize(SizeType.ACTUAL, WidgetSide.WIDTH, WidgetSize.fitContent());
   }
 
-  private void ensureLoopWidth(FontRenderer font) {
+  private void ensureLoopWidth() {
     if (this.loopWidth >= 0f) {
       return;
     }
-    this.loopWidth = font.getWidth(this.plainText + GAP);
+    this.loopWidth = this.textWidth(this.plainText + GAP);
+  }
+
+  private float textWidth(String text) {
+    FontRenderer font = Laby.references().minecraftFontRenderer();
+    float size = 1f;
+    if (this.label.fontSize().get() != null) {
+      size = this.label.fontSize().get().getSize();
+    }
+    return font.getWidth(text) * size;
   }
 
 }

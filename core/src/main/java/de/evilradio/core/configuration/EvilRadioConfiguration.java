@@ -45,6 +45,9 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
 
+  @SwitchSetting
+  private final ConfigProperty<Boolean> audioStreamDebug = new ConfigProperty<>(false);
+
   @Exclude
   private final ConfigProperty<EqualizerStyle> equalizerStyle =
       new ConfigProperty<>(EqualizerStyle.BARS);
@@ -73,10 +76,6 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.stationPicker;
   }
 
-  public ConfigProperty<StationPickerStyle> stationPickerStyle() {
-    return this.stationPicker.style();
-  }
-
   public ConfigProperty<EqualizerStyle> equalizerStyle() {
     return this.equalizerStyle;
   }
@@ -99,6 +98,10 @@ public class EvilRadioConfiguration extends AddonConfig {
   
   public UsageStatisticsSubSettings usageStatistics() {
     return this.usageStatistics;
+  }
+
+  public ConfigProperty<Boolean> audioStreamDebug() {
+    return this.audioStreamDebug;
   }
   
   public ConfigProperty<Boolean> usageBasedSorting() {

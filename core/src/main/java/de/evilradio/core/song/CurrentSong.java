@@ -24,13 +24,18 @@ public final class CurrentSong {
   private final long elapsedAtUpdate;
   private final long receivedAt;
   private final boolean adBreak;
+  /** Bei Live-Sendung z. B. {@code 14:00–16:00}, sonst {@code null}. */
+  private final String liveClockLabel;
 
   public CurrentSong(String title, String artist, String imageUrl) {
-    this(0, null, null, title, artist, imageUrl, null, null, false, false, 0L, 0L, 0L, System.currentTimeMillis());
+    this(0, null, null, title, artist, imageUrl, null, null, false, false, 0L, 0L, 0L,
+        System.currentTimeMillis(), false, null);
   }
 
-  public CurrentSong(String title, String artist, String imageUrl, String moderatorName, boolean onAir, boolean twitch) {
-    this(0, null, null, title, artist, imageUrl, null, moderatorName, onAir, twitch, 0L, 0L, 0L, System.currentTimeMillis());
+  public CurrentSong(String title, String artist, String imageUrl, String moderatorName, boolean onAir,
+      boolean twitch) {
+    this(0, null, null, title, artist, imageUrl, null, moderatorName, onAir, twitch, 0L, 0L, 0L,
+        System.currentTimeMillis(), false, null);
   }
 
   public CurrentSong(
@@ -49,13 +54,14 @@ public final class CurrentSong {
       long elapsedAtUpdate,
       long receivedAt
   ) {
+    String rawTitle = title == null ? "" : title;
+    String rawArtist = artist == null ? "" : artist;
+    boolean ad = isAdBreakMarker(rawTitle) || isAdBreakMarker(rawArtist);
     this.stationId = stationId;
     this.stationName = stationName;
     this.stationShortcode = stationShortcode;
-    String rawTitle = title == null ? "" : title;
-    String rawArtist = artist == null ? "" : artist;
-    this.adBreak = isAdBreakMarker(rawTitle) || isAdBreakMarker(rawArtist);
-    if (this.adBreak) {
+    this.adBreak = ad;
+    if (ad) {
       this.title = translateOrDefault("evilradio.widget.adBreakTitle", "Jetzt läuft");
       this.artist = translateOrDefault("evilradio.widget.adBreakArtist", "Werbung");
     } else {
@@ -71,6 +77,7 @@ public final class CurrentSong {
     this.duration = Math.max(0L, duration);
     this.elapsedAtUpdate = Math.max(0L, elapsedAtUpdate);
     this.receivedAt = receivedAt <= 0L ? System.currentTimeMillis() : receivedAt;
+    this.liveClockLabel = null;
   }
 
   private CurrentSong(
@@ -88,7 +95,8 @@ public final class CurrentSong {
       long duration,
       long elapsedAtUpdate,
       long receivedAt,
-      boolean adBreak
+      boolean adBreak,
+      String liveClockLabel
   ) {
     this.stationId = stationId;
     this.stationName = stationName;
@@ -105,6 +113,7 @@ public final class CurrentSong {
     this.elapsedAtUpdate = Math.max(0L, elapsedAtUpdate);
     this.receivedAt = receivedAt <= 0L ? System.currentTimeMillis() : receivedAt;
     this.adBreak = adBreak;
+    this.liveClockLabel = liveClockLabel == null || liveClockLabel.isBlank() ? null : liveClockLabel.trim();
   }
 
   private static boolean isAdBreakMarker(String value) {
@@ -137,6 +146,14 @@ public final class CurrentSong {
 
   public String getTitle() {
     return title;
+  }
+
+  /**
+   * Titel ohne angehängtes Live-Tag ({@code *ON Air Euer | Moderator}), das oft
+   * schon in Zeile 1 (On Air / Mod) steht.
+   */
+  public String getDisplayTitle() {
+    return stripLiveShowSuffix(this.title);
   }
 
   public String getArtist() {
@@ -179,6 +196,10 @@ public final class CurrentSong {
     return receivedAt;
   }
 
+  public String getLiveClockLabel() {
+    return liveClockLabel;
+  }
+
   public boolean isValid() {
     return title != null && !title.isBlank();
   }
@@ -189,6 +210,19 @@ public final class CurrentSong {
 
   public boolean hasKnownDuration() {
     return duration > 0L;
+  }
+
+  /**
+   * Playtime-Text: bei Live-Sendung Uhrzeit ({@code 14:00–16:00}), sonst {@code m:ss / m:ss}.
+   */
+  public String getPlaytimeLabel() {
+    if (this.liveClockLabel != null) {
+      return this.liveClockLabel;
+    }
+    if (!hasKnownDuration()) {
+      return null;
+    }
+    return formatTime(getCurrentElapsedSeconds()) + " / " + formatTime(this.duration);
   }
 
   /**
@@ -243,76 +277,127 @@ public final class CurrentSong {
    * OnAir/Twitch aus der Evil-Radio-API (nicht aus AzuraCast-WS).
    */
   public CurrentSong withLiveStatus(boolean onAirLive, boolean twitchLive) {
-    return new CurrentSong(
-        stationId,
-        stationName,
-        stationShortcode,
-        title,
-        artist,
-        imageUrl,
-        songId,
-        moderatorName,
-        onAirLive,
-        twitchLive,
-        playedAt,
-        duration,
-        elapsedAtUpdate,
-        receivedAt,
-        adBreak
-    );
+    return copy(
+        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, moderatorName,
+        onAirLive, twitchLive, playedAt, duration, elapsedAtUpdate, receivedAt, adBreak, liveClockLabel);
   }
 
   public CurrentSong withModeratorName(String name) {
-    return new CurrentSong(
-        stationId,
-        stationName,
-        stationShortcode,
-        title,
-        artist,
-        imageUrl,
-        songId,
-        name,
-        onAir,
-        twitch,
-        playedAt,
-        duration,
-        elapsedAtUpdate,
-        receivedAt,
-        adBreak
-    );
+    return copy(
+        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, name,
+        onAir, twitch, playedAt, duration, elapsedAtUpdate, receivedAt, adBreak, liveClockLabel);
+  }
+
+  /**
+   * Fortschritt/Playtime (z. B. Sendezeit aus radioInfo {@code show.start}/{@code show.end}).
+   * {@code playedAt} in Unix-Sekunden oder -Millis (wie AzuraCast).
+   */
+  public CurrentSong withTiming(long playedAtEpoch, long durationSeconds) {
+    return copy(
+        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, moderatorName,
+        onAir, twitch, playedAtEpoch, durationSeconds, 0L, System.currentTimeMillis(), adBreak,
+        liveClockLabel);
+  }
+
+  /**
+   * Live-Sendungsfenster inkl. Uhrzeit-Label ({@code 14:00–16:00}).
+   */
+  public CurrentSong withShowWindow(long playedAtEpoch, long durationSeconds, String clockLabel) {
+    return copy(
+        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, moderatorName,
+        onAir, twitch, playedAtEpoch, durationSeconds, 0L, System.currentTimeMillis(), adBreak,
+        clockLabel);
+  }
+
+  public CurrentSong withShowWindow(
+      long playedAtEpoch, long durationSeconds, String startHHmm, String endHHmm) {
+    return withShowWindow(playedAtEpoch, durationSeconds, formatShowClock(startHHmm, endHHmm));
   }
 
   public CurrentSong withStationShortcode(String shortcode) {
+    return copy(
+        stationId, stationName, shortcode, title, artist, imageUrl, songId, moderatorName,
+        onAir, twitch, playedAt, duration, elapsedAtUpdate, receivedAt, adBreak, liveClockLabel);
+  }
+
+  private static CurrentSong copy(
+      int stationId,
+      String stationName,
+      String stationShortcode,
+      String title,
+      String artist,
+      String imageUrl,
+      String songId,
+      String moderatorName,
+      boolean onAir,
+      boolean twitch,
+      long playedAt,
+      long duration,
+      long elapsedAtUpdate,
+      long receivedAt,
+      boolean adBreak,
+      String liveClockLabel
+  ) {
     return new CurrentSong(
-        stationId,
-        stationName,
-        shortcode,
-        title,
-        artist,
-        imageUrl,
-        songId,
-        moderatorName,
-        onAir,
-        twitch,
-        playedAt,
-        duration,
-        elapsedAtUpdate,
-        receivedAt,
-        adBreak
-    );
+        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, moderatorName,
+        onAir, twitch, playedAt, duration, elapsedAtUpdate, receivedAt, adBreak, liveClockLabel);
   }
 
   public String getFormatted() {
+    String displayTitle = getDisplayTitle();
     if (artist == null || artist.isBlank()) {
-      return title;
+      return displayTitle;
     }
-    return String.format("%s - %s", title, artist);
+    return String.format("%s - %s", displayTitle, artist);
+  }
+
+  /**
+   * Entfernt Suffixe wie {@code *ON Air Euer | Derbestetv} aus AzuraCast-Titeln.
+   * Nur-Live-Tags werden zu einem leeren String (kein Fallback auf den Roh-Titel).
+   */
+  static String stripLiveShowSuffix(String title) {
+    if (title == null || title.isBlank()) {
+      return title == null ? "" : title;
+    }
+    String cleaned = title.replaceAll("(?i)\\s*\\*?\\s*ON\\s*Air\\b.*$", "").trim();
+    cleaned = cleaned.replaceAll("\\s*[|–-]\\s*$", "").trim();
+    cleaned = cleaned.replaceAll("^\\*+$", "").trim();
+    return cleaned;
+  }
+
+  /**
+   * Echter vorheriger Track (kein Live-Tag-Müll, keine Werbung, kein Autopilot-Platzhalter).
+   */
+  public boolean isUsableAsPreviousSong() {
+    if (!isValid() || isAdBreak()) {
+      return false;
+    }
+    String display = stripLiveShowSuffix(this.title);
+    if (display.isBlank() || display.equals("*")) {
+      return false;
+    }
+    String artistName = this.artist == null ? "" : this.artist.trim();
+    if (artistName.toLowerCase(java.util.Locale.ROOT).contains("autopilot") && display.length() < 4) {
+      return false;
+    }
+    return true;
+  }
+
+  public static String formatShowClock(String startHHmm, String endHHmm) {
+    if (startHHmm == null || startHHmm.isBlank() || endHHmm == null || endHHmm.isBlank()) {
+      return null;
+    }
+    return startHHmm.trim() + "–" + endHHmm.trim() + " Uhr";
   }
 
   public static String formatTime(long totalSeconds) {
     long seconds = Math.max(0L, totalSeconds);
-    long minutes = seconds / 60L;
+    long hours = seconds / 3600L;
+    long minutes = (seconds % 3600L) / 60L;
     long rem = seconds % 60L;
+    if (hours > 0L) {
+      return String.format("%d:%02d:%02d", hours, minutes, rem);
+    }
     return String.format("%d:%02d", minutes, rem);
   }
 }

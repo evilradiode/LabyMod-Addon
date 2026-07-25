@@ -3,14 +3,10 @@ package de.evilradio.core.configuration;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.color.ColorPickerWidget.ColorPickerSetting;
-import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
-import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
 import net.labymod.api.configuration.settings.annotation.ColorRowBreak;
-import net.labymod.api.configuration.settings.annotation.SettingRequires;
 import net.labymod.api.configuration.loader.Config;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
-import net.labymod.api.configuration.loader.annotation.ShowSettingInParent;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.Color;
 
@@ -25,60 +21,41 @@ public class StationPickerSubSettings extends Config {
   public static final Color DEFAULT_ARTIST_COLOR = Color.ofRGB(190, 195, 205);
   public static final Color DEFAULT_TIME_COLOR = Color.ofRGB(160, 200, 220);
 
-  @ShowSettingInParent
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @DropdownSetting
-  @DropdownEntryTranslationPrefix("evilradio.settings.stationPicker.style.type")
-  private final ConfigProperty<StationPickerStyle> style =
-      new ConfigProperty<>(StationPickerStyle.WHEEL);
-
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @SettingRequires(value = "style", required = "LIST_PREVIEW")
   @ColorPickerSetting(alpha = true)
   private final ConfigProperty<Color> backgroundColor =
       ConfigProperty.create(DEFAULT_BACKGROUND_COLOR);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @SettingRequires(value = "style", required = "LIST_PREVIEW")
   @ColorPickerSetting(alpha = true)
   private final ConfigProperty<Color> borderColor =
       ConfigProperty.create(DEFAULT_BORDER_COLOR);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @SettingRequires(value = "style", required = "LIST_PREVIEW")
   @ColorPickerSetting(alpha = true)
   private final ConfigProperty<Color> rowBackgroundColor =
       ConfigProperty.create(DEFAULT_ROW_BACKGROUND_COLOR);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @SettingRequires(value = "style", required = "LIST_PREVIEW")
   @SliderSetting(min = 0, max = 40)
   private final ConfigProperty<Integer> backgroundBlur = ConfigProperty.create(18);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @SettingRequires(value = "style", required = "LIST_PREVIEW")
   @SwitchSetting
   private final ConfigProperty<Boolean> showEqualizer = new ConfigProperty<>(true);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @SettingRequires(value = "style", required = "LIST_PREVIEW")
   @ColorRowBreak
   @ColorPickerSetting
   private final ConfigProperty<Color> songColor = ConfigProperty.create(DEFAULT_SONG_COLOR);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @SettingRequires(value = "style", required = "LIST_PREVIEW")
   @ColorPickerSetting
   private final ConfigProperty<Color> artistColor = ConfigProperty.create(DEFAULT_ARTIST_COLOR);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  @SettingRequires(value = "style", required = "LIST_PREVIEW")
   @ColorPickerSetting
   private final ConfigProperty<Color> timeColor = ConfigProperty.create(DEFAULT_TIME_COLOR);
-
-  public ConfigProperty<StationPickerStyle> style() {
-    return this.style;
-  }
 
   public ConfigProperty<Color> backgroundColor() {
     return this.backgroundColor;

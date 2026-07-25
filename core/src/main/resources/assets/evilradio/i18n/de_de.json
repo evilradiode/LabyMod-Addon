@@ -17,14 +17,6 @@
       "streamStarted": "Stream gestartet: %s",
       "streamStartedWithSong": "Stream gestartet: %s\nAktueller Song: %s"
     },
-    "wheel": {
-      "noStationsAvailable": "Keine Sender verfügbar",
-      "selectStation": "Wähle einen Evil-Radio Sender",
-      "volume": "Lautstärke: %s%%",
-      "scrollInfo": "Mausrad ↑↓: Lautstärke ändern | Mittelklick: Play/Pause",
-      "playing": "▶ PLAY",
-      "stopped": "⏹ STOP"
-    },
     "picker": {
       "previewHint": "Sender auswählen",
       "comingSoon": "Demnächst",
@@ -32,12 +24,22 @@
       "clickToPlay": "Klicken oder Enter zum Abspielen",
       "loadingSong": "Lade Song…",
       "noSongInfo": "Keine Songinfo",
+      "noStationsAvailable": "Keine Sender verfügbar",
+      "selectStation": "Wähle einen Evil-Radio Sender",
       "volume": "Lautstärke",
+      "volumeLabel": "Lautstärke: %s%%",
+      "scrollInfo": "Mausrad ↑↓: Lautstärke ändern | Mittelklick: Play/Pause",
+      "playing": "▶ PLAY",
+      "stopped": "⏹ STOP",
       "playPause": "Play/Pause",
       "playSelected": "Abspielen",
       "close": "Schließen",
       "nowPlaying": "Jetzt",
-      "listNavHint": "Maus / ↑↓: wählen | Scroll über Liste: scrollen"
+      "listNavHint": "Maus / ↑↓: wählen | Scroll über Liste: scrollen",
+      "tab": {
+        "stations": "Sender",
+        "schedule": "Sendeplan"
+      }
     },
     "notification": {
       "streamSelected": {
@@ -141,16 +143,8 @@
         "description": "Taste zum Öffnen des Radio-Menüs"
       },
       "stationPicker": {
-        "name": "Sender-Menü Stil",
-        "description": "Wheel oder Liste + Preview. Untermenü: Look der Liste und Equalizer.",
-        "style": {
-          "name": "Menü-Stil",
-          "description": "Klassisches Hexagon-Wheel oder Liste mit Preview.",
-          "type": {
-            "wheel": "Klassisches Wheel",
-            "listPreview": "Liste + Preview"
-          }
-        },
+        "name": "Sender-Menü",
+        "description": "Look der Listen-Senderwahl und Equalizer.",
         "backgroundColor": {
           "name": "Listen-Hintergrund",
           "description": "Farbe und Transparenz des Listen-Menüs (inkl. Alpha)."
@@ -229,6 +223,10 @@
           "description": "Setzt die Nutzungsstatistiken der Streams zurück"
         }
       },
+      "audioStreamDebug": {
+        "name": "Audio-Stream-Debug",
+        "description": "Schreibt detaillierte Audio-Debug-Meldungen in logs/evilradio/audio-debug.log (Aussetzer, Underruns, Reconnects)."
+      },
       "reloadStreams": {
         "name": "Streams neu laden (nur bei Problemen)",
         "text": "neu laden",
@@ -237,7 +235,10 @@
     },
     "schedule": {
       "liveMessage": "EvilRadio ist jetzt live! ",
-      "twitchUrl": "https://www.twitch.tv/evilradiode"
+      "twitchUrl": "https://www.twitch.tv/evilradiode",
+      "loading": "Sendeplan wird geladen…",
+      "empty": "Keine Sendungen an diesem Tag",
+      "grussbox": "Grußbox"
     }
   }
 }

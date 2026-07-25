@@ -9,7 +9,7 @@ ModernCurrentSong {
     top: 0;
     min-width: 220;
     width: fit-content;
-    max-width: 300;
+    max-width: 400;
     height: fit-content;
     filter: blur(var(--modern-song-widget-blur));
     border-radius: 10;
@@ -32,7 +32,7 @@ ModernCurrentSong {
       height: fit-content;
       orientation: vertical;
       width: var(--modern-song-widget-max-width);
-      max-width: 220;
+      max-width: 320;
       padding-left: 5;
       padding-right: 2;
 
@@ -52,8 +52,9 @@ ModernCurrentSong {
           left: 0;
           top: 0;
           max-lines: 1;
-          overflow-strategy: clip;
-          width: 100%;
+          max-lines-clip-text: false;
+          overflow-strategy: wrap;
+          width: fit-content;
         }
       }
 
@@ -67,8 +68,9 @@ ModernCurrentSong {
           left: 0;
           top: 0;
           max-lines: 1;
-          overflow-strategy: clip;
-          width: 100%;
+          max-lines-clip-text: false;
+          overflow-strategy: wrap;
+          width: fit-content;
         }
       }
 
@@ -118,7 +120,7 @@ ModernCurrentSong {
     margin-top: 2;
     min-width: 220;
     width: fit-content;
-    max-width: 300;
+    max-width: 400;
     height: fit-content;
     filter: blur(var(--modern-song-widget-blur));
     border-radius: 10;
@@ -151,7 +153,7 @@ ModernCurrentSong {
         height: fit-content;
         orientation: vertical;
         width: var(--modern-song-widget-max-width);
-        max-width: 220;
+        max-width: 320;
         padding-left: 5;
         padding-right: 2;
 
@@ -171,8 +173,9 @@ ModernCurrentSong {
             left: 0;
             top: 0;
             max-lines: 1;
-            overflow-strategy: clip;
-            width: 100%;
+            max-lines-clip-text: false;
+            overflow-strategy: wrap;
+            width: fit-content;
             font-size: 0.7;
           }
         }
@@ -186,8 +189,9 @@ ModernCurrentSong {
             left: 0;
             top: 0;
             max-lines: 1;
-            overflow-strategy: clip;
-            width: 100%;
+            max-lines-clip-text: false;
+            overflow-strategy: wrap;
+            width: fit-content;
             font-size: 0.7;
           }
         }

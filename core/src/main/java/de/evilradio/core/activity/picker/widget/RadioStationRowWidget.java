@@ -32,6 +32,8 @@ public class RadioStationRowWidget extends DivWidget {
   private ComponentWidget songWidget;
   private ComponentWidget artistWidget;
   private ComponentWidget timeWidget;
+  private DivWidget progressTrack;
+  private DivWidget progressFill;
   private boolean focused;
   private boolean onAir;
   private boolean twitch;
@@ -39,6 +41,8 @@ public class RadioStationRowWidget extends DivWidget {
   private @Nullable String appliedCoverKey;
   private long lastRenderedElapsed = -1L;
   private boolean lastRenderedHadDuration;
+  private static final String PROGRESS_WIDTH_KEY = "--row-progress-width";
+  private static final float PROGRESS_TRACK_WIDTH = 120f;
 
   public RadioStationRowWidget(RadioStream stream, boolean playing) {
     this.stream = stream;
@@ -58,26 +62,35 @@ public class RadioStationRowWidget extends DivWidget {
     this.stationIconWidget = new IconWidget(stationIcon).addId("row-station-icon");
     this.addChild(this.stationIconWidget);
 
-    this.nameWidget = ComponentWidget.component(this.buildName());
-    this.nameWidget.addId("row-name");
-    this.addChild(this.nameWidget);
-
     if (StationPickerController.isPlayable(this.stream)) {
       this.coverWidget = new IconWidget(EvilTextures.LOGO).addId("row-cover");
       this.addChild(this.coverWidget);
+      this.nameWidget = ComponentWidget.component(this.buildStationLine()).addId("row-name");
+      this.addChild(this.nameWidget);
       this.songWidget = ComponentWidget.empty().addId("row-song");
       this.addChild(this.songWidget);
       this.artistWidget = ComponentWidget.empty().addId("row-artist");
       this.addChild(this.artistWidget);
+      this.progressTrack = new DivWidget().addId("row-progress-track");
+      this.progressFill = new DivWidget().addId("row-progress-fill");
+      this.progressFill.setVariable(PROGRESS_WIDTH_KEY, 0f);
+      this.progressTrack.addChild(this.progressFill);
+      this.progressTrack.setVisible(false);
+      this.addChild(this.progressTrack);
       this.timeWidget = ComponentWidget.empty().addId("row-time");
       this.timeWidget.setVisible(false);
       this.addChild(this.timeWidget);
       this.applySong();
     } else {
       this.coverWidget = null;
+      this.nameWidget = ComponentWidget.component(this.buildStationLine());
+      this.nameWidget.addId("row-name");
+      this.addChild(this.nameWidget);
       this.songWidget = null;
       this.artistWidget = null;
       this.timeWidget = null;
+      this.progressTrack = null;
+      this.progressFill = null;
       this.addId("coming-soon");
     }
     if (this.playing) {
@@ -102,7 +115,7 @@ public class RadioStationRowWidget extends DivWidget {
     this.onAir = onAir;
     this.twitch = twitch;
     if (this.nameWidget != null) {
-      this.nameWidget.setComponent(this.buildName());
+      this.nameWidget.setComponent(this.buildStationLine());
     }
   }
 
@@ -138,7 +151,7 @@ public class RadioStationRowWidget extends DivWidget {
       return;
     }
 
-    String title = this.song.getTitle();
+    String title = this.song.getDisplayTitle();
     String artist = this.song.getArtist();
     this.songWidget.setComponent(
         Component.text(title == null || title.isBlank() ? "—" : title).color(songColor));
@@ -159,6 +172,7 @@ public class RadioStationRowWidget extends DivWidget {
       if (force || this.lastRenderedHadDuration || this.lastRenderedElapsed >= 0L) {
         this.timeWidget.setComponent(Component.empty());
         this.timeWidget.setVisible(false);
+        this.setProgressVisible(false);
         this.lastRenderedElapsed = -1L;
         this.lastRenderedHadDuration = false;
       }
@@ -171,11 +185,40 @@ public class RadioStationRowWidget extends DivWidget {
     }
     this.lastRenderedElapsed = elapsed;
     this.lastRenderedHadDuration = true;
-    String label = CurrentSong.formatTime(elapsed) + " / " + CurrentSong.formatTime(this.song.getDuration());
+    String label = this.song.getPlaytimeLabel();
+    if (label == null || label.isBlank()) {
+      this.timeWidget.setVisible(false);
+      this.setProgressVisible(false);
+      return;
+    }
     TextColor timeColor = CurrentSongHudWidget.toTextColor(
         EvilRadioAddon.instance().configuration().stationPicker().timeColor().get());
     this.timeWidget.setComponent(Component.text(label).color(timeColor));
     this.timeWidget.setVisible(true);
+    this.updateProgressBar();
+  }
+
+  private void updateProgressBar() {
+    if (this.progressTrack == null || this.progressFill == null || this.song == null) {
+      return;
+    }
+    double progress = this.song.getProgress();
+    if (progress < 0.0d) {
+      this.setProgressVisible(false);
+      return;
+    }
+    this.progressFill.setVariable(PROGRESS_WIDTH_KEY, (float) (PROGRESS_TRACK_WIDTH * progress));
+    this.setProgressVisible(true);
+  }
+
+  private void setProgressVisible(boolean visible) {
+    if (this.progressTrack == null) {
+      return;
+    }
+    this.progressTrack.setVisible(visible);
+    if (!visible && this.progressFill != null) {
+      this.progressFill.setVariable(PROGRESS_WIDTH_KEY, 0f);
+    }
   }
 
   private void applyCover(@Nullable String imageUrl) {
@@ -206,21 +249,21 @@ public class RadioStationRowWidget extends DivWidget {
     }
   }
 
-  private Component buildName() {
+  private Component buildStationLine() {
     TextColor color = this.playing ? NamedTextColor.GREEN : NamedTextColor.WHITE;
     Component name = Component.text(this.stream.getDisplayName()).color(color);
-
-    if (StationPickerController.isMashup(this.stream)) {
-      if (this.onAir) {
-        name = name
-            .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
-            .append(Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED));
-      }
-      if (this.twitch) {
-        name = name
-            .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
-            .append(Component.translatable("evilradio.widget.twitch").color(TextColor.color(145, 70, 255)));
-      }
+    if (!StationPickerController.isMashup(this.stream)) {
+      return name;
+    }
+    if (this.onAir) {
+      name = name
+          .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+          .append(Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED));
+    }
+    if (this.twitch) {
+      name = name
+          .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+          .append(Component.translatable("evilradio.widget.twitch").color(TextColor.color(145, 70, 255)));
     }
     return name;
   }

@@ -59,24 +59,22 @@ public final class NowPlayingMessageParser {
             continue;
           }
           var publications = sub.getAsJsonArray("publications");
-          if (publications.isEmpty()) {
-            continue;
+          for (int i = 0; i < publications.size(); i++) {
+            parsePublicationElement(channel, publications.get(i))
+                .ifPresent(snapshot -> result.add(ParsedPublication.of(channel, snapshot)));
           }
-          JsonElement last = publications.get(publications.size() - 1);
-          parsePublicationElement(channel, last)
-              .ifPresent(snapshot -> result.add(ParsedPublication.of(channel, snapshot)));
         }
       }
       if (result.isEmpty() && connect.has("data") && connect.get("data").isJsonArray()) {
         var data = connect.getAsJsonArray("data");
-        if (!data.isEmpty()) {
-          JsonElement last = data.get(data.size() - 1);
-          Optional<NowPlayingSnapshot> snapshot = parsePublicationElement(null, last);
-          if (snapshot.isPresent()) {
-            String shortcode = snapshot.get().current().getStationShortcode();
-            String channel = shortcode == null ? null : "station:" + shortcode;
-            result.add(ParsedPublication.of(channel, snapshot.get()));
+        for (int i = 0; i < data.size(); i++) {
+          Optional<NowPlayingSnapshot> snapshot = parsePublicationElement(null, data.get(i));
+          if (snapshot.isEmpty()) {
+            continue;
           }
+          String shortcode = snapshot.get().current().getStationShortcode();
+          String channel = shortcode == null ? null : "station:" + shortcode;
+          result.add(ParsedPublication.of(channel, snapshot.get()));
         }
       }
       return result;
@@ -135,7 +133,8 @@ public final class NowPlayingMessageParser {
     String moderatorName = null;
     if (np.has("live") && np.get("live").isJsonObject()) {
       JsonObject live = np.getAsJsonObject("live");
-      // OnAir/Twitch kommen bewusst nicht aus AzuraCast – nur streamer_name für den Mod.
+      // OnAir/Twitch nicht aus AzuraCast. streamer_name nur Fallback –
+      // Anzeige-Name kommt bevorzugt aus radioInfo show.dj.
       moderatorName = textOrNull(live, "streamer_name");
     }
 
@@ -166,7 +165,7 @@ public final class NowPlayingMessageParser {
         }
         CurrentSong candidate = parseSongEntry(history.get(i).getAsJsonObject(),
             stationId, stationName, stationShortcode, false, null, receivedAt).orElse(null);
-        if (candidate != null && !candidate.isAdBreak()) {
+        if (candidate != null && candidate.isUsableAsPreviousSong()) {
           previous = candidate;
           break;
         }

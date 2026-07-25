@@ -3,22 +3,30 @@ package de.evilradio.core.activity.picker;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.activity.picker.widget.RadioStationRowWidget;
+import de.evilradio.core.activity.picker.widget.ScheduleShowRowWidget;
 import de.evilradio.core.configuration.EqualizerStyle;
 import de.evilradio.core.configuration.StationPickerSubSettings;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.AudioSpectrumAnalyzer;
 import de.evilradio.core.radio.RadioStream;
+import de.evilradio.core.schedule.ScheduleDay;
+import de.evilradio.core.schedule.ScheduleShow;
 import de.evilradio.core.song.CurrentSong;
+import de.evilradio.core.song.CurrentSongService;
 import de.evilradio.core.song.azuracast.PickerNowPlayingSession;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
+import net.labymod.api.client.component.format.TextColor;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.mouse.MutableMouse;
 import net.labymod.api.client.gui.screen.Parent;
@@ -46,6 +54,11 @@ import org.jetbrains.annotations.Nullable;
 @AutoActivity
 public class RadioStationListActivity extends SimpleActivity {
 
+  private enum PickerTab {
+    STATIONS,
+    SCHEDULE
+  }
+
   private static final String OPEN_ANIMATION_ID = "picker-open";
   private static final String PICKER_PANEL_BG_VAR = "--picker-panel-bg";
   private static final String PICKER_PANEL_BORDER_VAR = "--picker-panel-border";
@@ -55,12 +68,18 @@ public class RadioStationListActivity extends SimpleActivity {
   private static final String EQ_BAR_BOTTOM_VAR = "--eq-bar-bottom";
   private static final String EQ_BAR_LEFT_VAR = "--eq-bar-left";
   private static final String EQ_PEAK_BOTTOM_VAR = "--eq-peak-bottom";
+  private static final String SCHEDULE_CHIP_LEFT_VAR = "--schedule-chip-left";
+  private static final String PICKER_TAB_LEFT_VAR = "--picker-tab-left";
   private static final int EQ_BAR_COUNT = AudioSpectrumAnalyzer.BAND_COUNT;
   private static final float EQ_BAR_MIN_HEIGHT = 2.0F;
-  private static final float EQ_BAR_MAX_HEIGHT = 38.0F;
+  private static final float EQ_BAR_MAX_HEIGHT = 24.0F;
   private static final float EQ_BAR_WIDTH = 3.0F;
   private static final float EQ_PEAK_DECAY = 0.012F;
   private static final float EQ_PEAK_MARKER = 2.0F;
+  private static final float SCHEDULE_CHIP_WIDTH = 34.0F;
+  private static final float SCHEDULE_CHIP_GAP = 5.0F;
+  private static final String SCHEDULE_CHIP_WIDTH_VAR = "--schedule-chip-width";
+  private static final DateTimeFormatter CHIP_DAY_FORMAT = DateTimeFormatter.ofPattern("dd.MM");
 
   private final EvilRadioAddon addon;
   private final StationPickerController controller;
@@ -68,17 +87,29 @@ public class RadioStationListActivity extends SimpleActivity {
   private final List<RadioStationRowWidget> rows = new ArrayList<>();
   private final List<RadioStream> displayStreams = new ArrayList<>();
   private final Map<String, CurrentSong> songByShortcode = new ConcurrentHashMap<>();
+  private final List<ButtonWidget> scheduleDayChipButtons = new ArrayList<>();
 
-  private Widget panelWidget;
+  private PickerTab activeTab = PickerTab.STATIONS;
+  private int selectedScheduleDayIndex;
+
+  private VerticalListWidget<Widget> panelWidget;
   private DivWidget nowPlayingStrip;
   private ScrollWidget stationScroll;
+  private Widget stationsFooter;
+  private DivWidget scheduleDayChips;
+  private ScrollWidget scheduleScroll;
+  private ButtonWidget stationsTabButton;
+  private ButtonWidget scheduleTabButton;
   private SliderWidget volumeSlider;
   private ButtonWidget playPauseButton;
   private ButtonWidget equalizerStyleButton;
   private IconWidget coverWidget;
   private ComponentWidget coverSongWidget;
+  private ComponentWidget coverArtistWidget;
   private ComponentWidget coverStationWidget;
   private ComponentWidget coverTimeWidget;
+  private DivWidget coverProgressTrack;
+  private DivWidget coverProgressFill;
   private DivWidget equalizerWidget;
   private final List<DivWidget> equalizerBars = new ArrayList<>();
   private final List<DivWidget> equalizerPeaks = new ArrayList<>();
@@ -90,12 +121,18 @@ public class RadioStationListActivity extends SimpleActivity {
   private long lastNowPlayingElapsed = -1L;
   private boolean lastNowPlayingHadDuration;
   private float equalizerLayoutWidth = -1.0F;
+  private static final String COVER_PROGRESS_WIDTH_KEY = "--picker-progress-width";
+  private static final float COVER_PROGRESS_TRACK_WIDTH = 140f;
+  private static final float COVER_PROGRESS_TRACK_WIDTH_NO_EQ = 170f;
 
   private int selectedIndex;
   private boolean keyboardFocus;
   private boolean mashupOnAir;
   private boolean mashupTwitch;
+  private @Nullable CurrentSongService.ShowStatus mashupShowStatus;
   private Task mashupTask;
+  private Task nowPlayingSnapshotTask;
+  private long lastEndedSongRefreshAt;
   private @Nullable PickerNowPlayingSession nowPlayingSession;
   private final Runnable streamsChangedListener = this::onStreamsChanged;
 
@@ -109,6 +146,7 @@ public class RadioStationListActivity extends SimpleActivity {
     super.initialize(parent);
     this.document.getChildren().clear();
     this.rows.clear();
+    this.scheduleDayChipButtons.clear();
     this.equalizerBars.clear();
     this.equalizerPeaks.clear();
     this.appliedEqualizerStyle = null;
@@ -142,13 +180,86 @@ public class RadioStationListActivity extends SimpleActivity {
 
     DivWidget header = new DivWidget().addId("picker-header");
     header.addChild(new IconWidget(EvilTextures.LOGO).addId("picker-logo"));
-    Component title = this.displayStreams.isEmpty()
-        ? Component.translatable("evilradio.wheel.noStationsAvailable").color(NamedTextColor.DARK_RED)
-        : Component.translatable("evilradio.wheel.selectStation").color(NamedTextColor.RED);
+    Component title;
+    if (this.activeTab == PickerTab.SCHEDULE) {
+      title = Component.translatable("evilradio.picker.tab.schedule").color(NamedTextColor.RED);
+    } else if (this.displayStreams.isEmpty()) {
+      title = Component.translatable("evilradio.picker.noStationsAvailable").color(NamedTextColor.DARK_RED);
+    } else {
+      title = Component.translatable("evilradio.picker.selectStation").color(NamedTextColor.RED);
+    }
     header.addChild(ComponentWidget.component(title).addId("picker-title"));
     header.addChild(ButtonWidget.text("✕", this::displayPreviousScreen).addId("picker-close-x"));
     panel.addChild(header);
 
+    DivWidget tabs = new DivWidget().addId("picker-tabs");
+    this.stationsTabButton = ButtonWidget.text("Sender", () -> this.switchTab(PickerTab.STATIONS))
+        .addId("picker-tab")
+        .addId("picker-tab-stations");
+    this.scheduleTabButton = ButtonWidget.text("Sendeplan", () -> this.switchTab(PickerTab.SCHEDULE))
+        .addId("picker-tab")
+        .addId("picker-tab-schedule");
+    this.stationsTabButton.updateComponent(
+        Component.translatable("evilradio.picker.tab.stations"));
+    this.scheduleTabButton.updateComponent(
+        Component.translatable("evilradio.picker.tab.schedule"));
+    if (this.activeTab == PickerTab.STATIONS) {
+      this.stationsTabButton.addId("active");
+    } else {
+      this.scheduleTabButton.addId("active");
+    }
+    // Zentriert in der Panel-Zeile (kein left:50%-Hack – der springt ans Fenster)
+    float contentWidth = 292.0F;
+    float tabWidth = 140.0F;
+    float tabGap = 12.0F;
+    float tabsStart = (contentWidth - (tabWidth * 2.0F + tabGap)) / 2.0F;
+    this.stationsTabButton.setVariable(PICKER_TAB_LEFT_VAR, tabsStart);
+    this.scheduleTabButton.setVariable(PICKER_TAB_LEFT_VAR, tabsStart + tabWidth + tabGap);
+    tabs.addChild(this.stationsTabButton);
+    tabs.addChild(this.scheduleTabButton);
+    panel.addChild(tabs);
+
+    // Reset tab-spezifische Referenzen
+    this.nowPlayingStrip = null;
+    this.stationScroll = null;
+    this.stationsFooter = null;
+    this.volumeSlider = null;
+    this.playPauseButton = null;
+    this.equalizerStyleButton = null;
+    this.coverWidget = null;
+    this.coverSongWidget = null;
+    this.coverArtistWidget = null;
+    this.coverStationWidget = null;
+    this.coverTimeWidget = null;
+    this.coverProgressTrack = null;
+    this.coverProgressFill = null;
+    this.equalizerWidget = null;
+    this.scheduleDayChips = null;
+    this.scheduleScroll = null;
+
+    if (this.activeTab == PickerTab.STATIONS) {
+      this.buildStationsContent(panel);
+    } else {
+      this.buildScheduleContent(panel);
+      panel.addId("schedule-tab");
+    }
+
+    this.document.addChild(panel);
+    this.appliedCoverKey = null;
+    if (this.activeTab == PickerTab.STATIONS) {
+      this.refreshNowPlaying();
+    } else if (this.addon.scheduleService().days().isEmpty()) {
+      // Nur nachladen wenn Cache leer – sonst Reload-Schleife (refresh→reload→refresh…)
+      this.addon.scheduleService().refreshAsync(() -> {
+        if (this.activeTab == PickerTab.SCHEDULE
+            && !this.addon.scheduleService().days().isEmpty()) {
+          this.reload();
+        }
+      });
+    }
+  }
+
+  private void buildStationsContent(VerticalListWidget<Widget> panel) {
     DivWidget coverStrip = new DivWidget().addId("picker-now-playing");
     this.nowPlayingStrip = coverStrip;
 
@@ -177,12 +288,20 @@ public class RadioStationListActivity extends SimpleActivity {
     VerticalListWidget<Widget> coverTexts = new VerticalListWidget<>().addId("picker-cover-texts");
     this.coverStationWidget = ComponentWidget.empty().addId("picker-cover-station");
     this.coverSongWidget = ComponentWidget.empty().addId("picker-cover-song");
-    this.coverTimeWidget = ComponentWidget.empty().addId("picker-cover-time");
-    this.coverTimeWidget.setVisible(false);
+    this.coverArtistWidget = ComponentWidget.empty().addId("picker-cover-artist");
     coverTexts.addChild(this.coverStationWidget);
     coverTexts.addChild(this.coverSongWidget);
-    coverTexts.addChild(this.coverTimeWidget);
+    coverTexts.addChild(this.coverArtistWidget);
     coverStrip.addChild(coverTexts);
+    this.coverProgressTrack = new DivWidget().addId("picker-cover-progress-track");
+    this.coverProgressFill = new DivWidget().addId("picker-cover-progress-fill");
+    this.coverProgressFill.setVariable(COVER_PROGRESS_WIDTH_KEY, 0f);
+    this.coverProgressTrack.addChild(this.coverProgressFill);
+    this.coverProgressTrack.setVisible(false);
+    coverStrip.addChild(this.coverProgressTrack);
+    this.coverTimeWidget = ComponentWidget.empty().addId("picker-cover-time");
+    this.coverTimeWidget.setVisible(false);
+    coverStrip.addChild(this.coverTimeWidget);
     boolean equalizerEnabled = this.isEqualizerFeatureEnabled();
     if (equalizerEnabled) {
       this.equalizerStyleButton = ButtonWidget.text("EQ", this::cycleEqualizerStyle)
@@ -198,6 +317,16 @@ public class RadioStationListActivity extends SimpleActivity {
     ).addId("picker-play-pause");
     coverStrip.addChild(this.playPauseButton);
     this.syncEqualizerStyleButton();
+
+    // Test: Lautstärke unter EQ/Play statt im Footer (spart Fensterhöhe)
+    float volume = this.addon.configuration().volume().get();
+    this.volumeSlider = new SliderWidget(1.0F, this::onVolumeSliderChanged)
+        .range(0.0F, 100.0F)
+        .withFormatter(value -> Component.text(Math.round(value) + "%"))
+        .addId("picker-volume-slider");
+    this.volumeSlider.setValue(volume, false);
+    coverStrip.addChild(this.volumeSlider);
+    this.stationsFooter = null;
     panel.addChild(coverStrip);
 
     VerticalListWidget<RadioStationRowWidget> list =
@@ -207,7 +336,6 @@ public class RadioStationListActivity extends SimpleActivity {
       boolean playing = this.isPlaying(stream);
       RadioStationRowWidget row = new RadioStationRowWidget(stream, playing);
       this.applyRowAppearance(row);
-      // Kein sticky Focus beim Öffnen – nur Hover/Tastatur
       row.setFocusedRow(false);
       if (StationPickerController.isMashup(stream)) {
         row.updateOnAirAndTwitchStatus(this.mashupOnAir, this.mashupTwitch);
@@ -233,22 +361,79 @@ public class RadioStationListActivity extends SimpleActivity {
 
     this.stationScroll = new ScrollWidget(list).addId("station-scroll");
     panel.addChild(this.stationScroll);
+  }
 
-    VerticalListWidget<Widget> footer = new VerticalListWidget<>().addId("picker-footer");
-    float volume = this.addon.configuration().volume().get();
-    this.volumeSlider = new SliderWidget(1.0F, this::onVolumeSliderChanged)
-        .range(0.0F, 100.0F)
-        .withFormatter(value -> Component.translatable(
-            "evilradio.wheel.volume",
-            Component.text(String.valueOf(Math.round(value)))))
-        .addId("picker-volume-slider");
-    this.volumeSlider.setValue(volume, false);
-    footer.addChild(this.volumeSlider);
+  private void buildScheduleContent(VerticalListWidget<Widget> panel) {
+    // Live-Status für Grußbox (Mashup on air)
+    boolean mashupLive = this.mashupOnAir;
+    CurrentSong liveSong = this.addon.currentSongService().getCurrentSong();
+    if (liveSong != null && liveSong.isOnAir()) {
+      mashupLive = true;
+    }
 
-    panel.addChild(footer);
-    this.document.addChild(panel);
-    this.appliedCoverKey = null;
-    this.refreshNowPlaying();
+    List<ScheduleDay> days = this.addon.scheduleService().days();
+    if (this.selectedScheduleDayIndex >= days.size()) {
+      this.selectedScheduleDayIndex = 0;
+    }
+
+    this.scheduleDayChipButtons.clear();
+    this.scheduleDayChips = new DivWidget().addId("schedule-day-chips");
+    // Panel bleibt 320px breit (Content ~292)
+    float contentWidth = 292.0F;
+    int dayCount = days.size();
+    float chipWidth = dayCount <= 0
+        ? 34.0F
+        : (contentWidth - Math.max(0, dayCount - 1) * SCHEDULE_CHIP_GAP) / dayCount;
+    float chipsWidth = dayCount <= 0
+        ? 0.0F
+        : dayCount * chipWidth + Math.max(0, dayCount - 1) * SCHEDULE_CHIP_GAP;
+    float chipsStart = Math.max(0.0F, (contentWidth - chipsWidth) / 2.0F);
+    for (int i = 0; i < dayCount; i++) {
+      ScheduleDay day = days.get(i);
+      final int dayIndex = i;
+      float left = chipsStart + i * (chipWidth + SCHEDULE_CHIP_GAP);
+      ButtonWidget chip = ButtonWidget.text(
+              this.dayChipLabel(day),
+              () -> this.selectScheduleDay(dayIndex))
+          .addId("schedule-day-chip");
+      chip.setVariable(SCHEDULE_CHIP_LEFT_VAR, left);
+      chip.setVariable(SCHEDULE_CHIP_WIDTH_VAR, chipWidth);
+      if (i == this.selectedScheduleDayIndex) {
+        chip.addId("active");
+      }
+      this.scheduleDayChips.addChild(chip);
+      this.scheduleDayChipButtons.add(chip);
+    }
+    panel.addChild(this.scheduleDayChips);
+
+    VerticalListWidget<Widget> scheduleList = new VerticalListWidget<>().addId("schedule-list");
+    if (days.isEmpty()) {
+      DivWidget loadingBox = new DivWidget().addId("schedule-empty-box");
+      loadingBox.addChild(ComponentWidget.component(
+              Component.translatable("evilradio.schedule.loading").color(NamedTextColor.GRAY))
+          .addId("schedule-empty"));
+      scheduleList.addChild(loadingBox);
+    } else {
+      ScheduleDay selected = days.get(this.selectedScheduleDayIndex);
+      List<ScheduleShow> shows = selected.getShows();
+      scheduleList.addChild(ComponentWidget.component(
+              Component.text(this.dayHeaderLabel(selected)).color(NamedTextColor.WHITE))
+          .addId("schedule-day-header"));
+      if (shows.isEmpty()) {
+        DivWidget emptyBox = new DivWidget().addId("schedule-empty-box");
+        emptyBox.addChild(ComponentWidget.component(
+                Component.translatable("evilradio.schedule.empty").color(NamedTextColor.GRAY))
+            .addId("schedule-empty"));
+        scheduleList.addChild(emptyBox);
+      } else {
+        for (ScheduleShow show : shows) {
+          scheduleList.addChild(new ScheduleShowRowWidget(show, mashupLive));
+        }
+      }
+    }
+
+    this.scheduleScroll = new ScrollWidget(scheduleList).addId("schedule-scroll");
+    panel.addChild(this.scheduleScroll);
   }
 
   @Override
@@ -277,6 +462,94 @@ public class RadioStationListActivity extends SimpleActivity {
     this.startNowPlayingSession();
   }
 
+  private void switchTab(PickerTab tab) {
+    if (tab == null || tab == this.activeTab) {
+      return;
+    }
+    this.activeTab = tab;
+    // Reload erst im nächsten Tick – sonst verschluckt der Klick-Handler den Rebuild.
+    this.addon.labyAPI().minecraft().executeNextTick(this::reload);
+  }
+
+  private void setActiveTab(PickerTab tab) {
+    this.switchTab(tab);
+  }
+
+  private void selectScheduleDay(int dayIndex) {
+    List<ScheduleDay> days = this.addon.scheduleService().days();
+    if (dayIndex < 0 || dayIndex >= days.size() || dayIndex == this.selectedScheduleDayIndex) {
+      return;
+    }
+    this.selectedScheduleDayIndex = dayIndex;
+    this.reload();
+  }
+
+  private String dayChipLabel(ScheduleDay day) {
+    LocalDate date = this.parseScheduleDate(day.getDate());
+    String weekdayApi = day.getWeekday() == null ? "" : day.getWeekday().trim();
+    if (date == null) {
+      String weekday = weekdayApi.isEmpty() ? "?" : weekdayApi;
+      return weekday.length() <= 5 ? weekday : weekday.substring(0, 5);
+    }
+    // Zeile 1: Wochentag, Zeile 2: dd.mm
+    String line1;
+    if (weekdayApi.equalsIgnoreCase("Heute") || weekdayApi.equalsIgnoreCase("Today")) {
+      line1 = "Heute";
+    } else {
+      line1 = this.germanChipDay(date);
+    }
+    return line1 + "\n" + date.format(CHIP_DAY_FORMAT);
+  }
+
+  private String germanChipDay(LocalDate date) {
+    return switch (date.getDayOfWeek()) {
+      case MONDAY -> "Mo";
+      case TUESDAY -> "Di";
+      case WEDNESDAY -> "Mi";
+      case THURSDAY -> "Do";
+      case FRIDAY -> "Fr";
+      case SATURDAY -> "Sa";
+      case SUNDAY -> "So";
+    };
+  }
+
+  private String dayHeaderLabel(ScheduleDay day) {
+    LocalDate date = this.parseScheduleDate(day.getDate());
+    if (date == null) {
+      String weekday = day.getWeekday() == null ? "" : day.getWeekday().trim();
+      return weekday.isEmpty() ? day.getDate() : weekday;
+    }
+    String formatted = this.germanShortDay(date) + " " + date.format(CHIP_DAY_FORMAT);
+    String weekday = day.getWeekday() == null ? "" : day.getWeekday().trim();
+    if (weekday.equalsIgnoreCase("Heute") || weekday.equalsIgnoreCase("Today")) {
+      return "Heute · " + formatted;
+    }
+    return formatted;
+  }
+
+  private String germanShortDay(LocalDate date) {
+    return switch (date.getDayOfWeek()) {
+      case MONDAY -> "Mo.";
+      case TUESDAY -> "Di.";
+      case WEDNESDAY -> "Mi.";
+      case THURSDAY -> "Do.";
+      case FRIDAY -> "Fr.";
+      case SATURDAY -> "Sa.";
+      case SUNDAY -> "So.";
+    };
+  }
+
+  private @Nullable LocalDate parseScheduleDate(String dateStr) {
+    if (dateStr == null || dateStr.isBlank()) {
+      return null;
+    }
+    try {
+      return LocalDate.parse(dateStr);
+    } catch (Exception ignored) {
+      return null;
+    }
+  }
+
   private void startNowPlayingSession() {
     this.stopNowPlayingSession();
     Set<String> shortcodes = new LinkedHashSet<>();
@@ -293,12 +566,29 @@ public class RadioStationListActivity extends SimpleActivity {
     this.seedLivePlayingSong();
     this.fetchAllSongsSnapshot();
     this.refreshNowPlaying();
+    this.startNowPlayingSnapshotTask();
 
     if (shortcodes.isEmpty()) {
       return;
     }
     this.nowPlayingSession = new PickerNowPlayingSession(shortcodes, this::onPickerSongUpdate);
     this.nowPlayingSession.open();
+  }
+
+  private void startNowPlayingSnapshotTask() {
+    this.stopNowPlayingSnapshotTask();
+    // REST-Fallback: WS liefert Songwechsel manchmal nicht zuverlässig für alle Sender.
+    this.nowPlayingSnapshotTask = Task.builder(this::fetchAllSongsSnapshot)
+        .repeat(15, TimeUnit.SECONDS)
+        .build();
+    this.nowPlayingSnapshotTask.execute();
+  }
+
+  private void stopNowPlayingSnapshotTask() {
+    if (this.nowPlayingSnapshotTask != null) {
+      this.nowPlayingSnapshotTask.cancel();
+      this.nowPlayingSnapshotTask = null;
+    }
   }
 
   private void fetchAllSongsSnapshot() {
@@ -312,8 +602,12 @@ public class RadioStationListActivity extends SimpleActivity {
           if (song == null || !song.isValid()) {
             continue;
           }
-          this.songByShortcode.put(entry.getKey(), song);
-          this.applySongToRows(entry.getKey(), song);
+          String key = normalizeShortcode(entry.getKey());
+          if (key == null) {
+            continue;
+          }
+          this.songByShortcode.put(key, song);
+          this.applySongToRows(key, song);
         }
         this.refreshNowPlaying();
       });
@@ -321,6 +615,7 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void stopNowPlayingSession() {
+    this.stopNowPlayingSnapshotTask();
     if (this.nowPlayingSession != null) {
       this.nowPlayingSession.close();
       this.nowPlayingSession = null;
@@ -340,31 +635,58 @@ public class RadioStationListActivity extends SimpleActivity {
     if (shortcode == null) {
       return;
     }
-    this.songByShortcode.put(shortcode.trim(), live);
-    this.applySongToRows(shortcode.trim(), live);
+    this.songByShortcode.put(shortcode, live);
+    this.applySongToRows(shortcode, live);
   }
 
   private void onPickerSongUpdate(String shortcode, CurrentSong song) {
     if (shortcode == null || song == null || !song.isValid()) {
       return;
     }
-    this.songByShortcode.put(shortcode, song);
+    String key = normalizeShortcode(shortcode);
+    this.songByShortcode.put(key, song);
     this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-      this.applySongToRows(shortcode, song);
+      this.applySongToRows(key, song);
       this.refreshNowPlaying();
     });
   }
 
   private void applySongToRows(String shortcode, CurrentSong song) {
+    String key = normalizeShortcode(shortcode);
+    CurrentSong toApply = this.withMashupShowTiming(key, song);
+    if (key != null && toApply != null) {
+      this.songByShortcode.put(key, toApply);
+    }
     for (RadioStationRowWidget row : this.rows) {
-      if (shortcode.equals(this.shortcodeOf(row.getStream()))) {
-        row.setSong(song);
+      if (key != null && key.equals(this.shortcodeOf(row.getStream()))) {
+        row.setSong(toApply);
+        if (StationPickerController.isMashup(row.getStream()) && toApply != null) {
+          // AzuraCast liefert kein Twitch – Flags nur ergänzen, nie löschen.
+          if (toApply.isOnAir()) {
+            this.mashupOnAir = true;
+          }
+          if (toApply.isTwitch()) {
+            this.mashupTwitch = true;
+          }
+          row.updateOnAirAndTwitchStatus(this.mashupOnAir, this.mashupTwitch);
+        }
       }
     }
   }
 
+  private CurrentSong withMashupShowTiming(@Nullable String shortcode, @Nullable CurrentSong song) {
+    if (song == null || shortcode == null || !"mashup".equals(shortcode)) {
+      return song;
+    }
+    if (this.mashupShowStatus == null || !this.mashupShowStatus.onAir()) {
+      return song;
+    }
+    return this.addon.currentSongService().applyShowToSong(song, this.mashupShowStatus);
+  }
+
   private void refreshNowPlaying() {
-    if (this.coverWidget == null || this.coverSongWidget == null || this.coverStationWidget == null) {
+    if (this.coverWidget == null || this.coverSongWidget == null || this.coverArtistWidget == null
+        || this.coverStationWidget == null) {
       return;
     }
 
@@ -399,24 +721,58 @@ public class RadioStationListActivity extends SimpleActivity {
     }
 
     if (current != null) {
-      this.coverStationWidget.setComponent(
-          Component.text(current.getDisplayName())
-              .color(playing ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+      Component stationLine = Component.text(current.getDisplayName())
+          .color(playing ? NamedTextColor.GREEN : NamedTextColor.GRAY);
+      if (StationPickerController.isMashup(current)) {
+        if (song != null && song.isOnAir()) {
+          this.mashupOnAir = true;
+        }
+        if (song != null && song.isTwitch()) {
+          this.mashupTwitch = true;
+        }
+        this.syncMashupStatusToRows(this.mashupOnAir, this.mashupTwitch);
+        if (this.mashupOnAir) {
+          stationLine = stationLine
+              .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+              .append(Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED));
+        }
+        if (this.mashupTwitch) {
+          stationLine = stationLine
+              .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+              .append(Component.translatable("evilradio.widget.twitch")
+                  .color(TextColor.color(145, 70, 255)));
+        }
+      }
+      this.coverStationWidget.setComponent(stationLine);
       StationPickerSubSettings picker = this.addon.configuration().stationPicker();
       if (song != null && song.isValid()) {
         this.coverSongWidget.setComponent(
-            Component.text(song.getFormatted())
+            Component.text(song.getDisplayTitle())
                 .color(CurrentSongHudWidget.toTextColor(picker.songColor().get())));
+        String artist = song.getArtist();
+        if (artist != null && !artist.isBlank()) {
+          this.coverArtistWidget.setComponent(
+              Component.text(artist)
+                  .color(CurrentSongHudWidget.toTextColor(picker.artistColor().get())));
+          this.coverArtistWidget.setVisible(true);
+        } else {
+          this.coverArtistWidget.setComponent(Component.empty());
+          this.coverArtistWidget.setVisible(false);
+        }
       } else {
         this.coverSongWidget.setComponent(
             Component.translatable("evilradio.picker.loadingSong")
                 .color(CurrentSongHudWidget.toTextColor(picker.artistColor().get())));
+        this.coverArtistWidget.setComponent(Component.empty());
+        this.coverArtistWidget.setVisible(false);
       }
     } else {
       this.coverStationWidget.setComponent(
           Component.translatable("evilradio.picker.previewHint").color(NamedTextColor.GRAY));
       this.coverSongWidget.setComponent(
           Component.translatable("evilradio.picker.noSongInfo").color(NamedTextColor.DARK_GRAY));
+      this.coverArtistWidget.setComponent(Component.empty());
+      this.coverArtistWidget.setVisible(false);
     }
 
     this.updateNowPlayingPlaytime(song, true);
@@ -431,6 +787,7 @@ public class RadioStationListActivity extends SimpleActivity {
       if (force || this.lastNowPlayingHadDuration || this.lastNowPlayingElapsed >= 0L) {
         this.coverTimeWidget.setComponent(Component.empty());
         this.coverTimeWidget.setVisible(false);
+        this.setCoverProgressVisible(false);
         this.lastNowPlayingElapsed = -1L;
         this.lastNowPlayingHadDuration = false;
       }
@@ -443,11 +800,43 @@ public class RadioStationListActivity extends SimpleActivity {
     }
     this.lastNowPlayingElapsed = elapsed;
     this.lastNowPlayingHadDuration = true;
-    String label = CurrentSong.formatTime(elapsed) + " / " + CurrentSong.formatTime(song.getDuration());
+    String label = song.getPlaytimeLabel();
+    if (label == null || label.isBlank()) {
+      this.coverTimeWidget.setVisible(false);
+      this.setCoverProgressVisible(false);
+      return;
+    }
     this.coverTimeWidget.setComponent(Component.text(label).color(
         CurrentSongHudWidget.toTextColor(
             this.addon.configuration().stationPicker().timeColor().get())));
     this.coverTimeWidget.setVisible(true);
+    this.updateCoverProgressBar(song);
+  }
+
+  private void updateCoverProgressBar(CurrentSong song) {
+    if (this.coverProgressTrack == null || this.coverProgressFill == null || song == null) {
+      return;
+    }
+    double progress = song.getProgress();
+    if (progress < 0.0d) {
+      this.setCoverProgressVisible(false);
+      return;
+    }
+    float trackWidth = this.equalizerStyleButton == null
+        ? COVER_PROGRESS_TRACK_WIDTH_NO_EQ
+        : COVER_PROGRESS_TRACK_WIDTH;
+    this.coverProgressFill.setVariable(COVER_PROGRESS_WIDTH_KEY, (float) (trackWidth * progress));
+    this.setCoverProgressVisible(true);
+  }
+
+  private void setCoverProgressVisible(boolean visible) {
+    if (this.coverProgressTrack == null) {
+      return;
+    }
+    this.coverProgressTrack.setVisible(visible);
+    if (!visible && this.coverProgressFill != null) {
+      this.coverProgressFill.setVariable(COVER_PROGRESS_WIDTH_KEY, 0f);
+    }
   }
 
   private void tickPlaytimes() {
@@ -457,6 +846,30 @@ public class RadioStationListActivity extends SimpleActivity {
     for (RadioStationRowWidget row : this.rows) {
       row.tickPlaytime();
     }
+    this.refreshSnapshotIfAnySongEnded();
+  }
+
+  /**
+   * Wenn ein Song lokal schon am Ende klebt (elapsed == duration), REST-Snapshot früher nachladen.
+   */
+  private void refreshSnapshotIfAnySongEnded() {
+    long now = System.currentTimeMillis();
+    if (now - this.lastEndedSongRefreshAt < 5_000L) {
+      return;
+    }
+    boolean anyEnded = false;
+    for (CurrentSong cached : this.songByShortcode.values()) {
+      if (cached != null && cached.isValid() && cached.hasKnownDuration()
+          && cached.getCurrentElapsedSeconds() >= cached.getDuration()) {
+        anyEnded = true;
+        break;
+      }
+    }
+    if (!anyEnded) {
+      return;
+    }
+    this.lastEndedSongRefreshAt = now;
+    this.fetchAllSongsSnapshot();
   }
 
   private void applyPanelAppearance() {
@@ -686,8 +1099,10 @@ public class RadioStationListActivity extends SimpleActivity {
       String liveShortcode = live.getStationShortcode();
       if (liveShortcode == null || liveShortcode.isBlank()) {
         liveShortcode = this.shortcodeOf(this.controller.radioManager().getCurrentStream());
+      } else {
+        liveShortcode = normalizeShortcode(liveShortcode);
       }
-      if (shortcode != null && shortcode.equals(liveShortcode == null ? null : liveShortcode.trim())) {
+      if (shortcode != null && shortcode.equals(liveShortcode)) {
         return live;
       }
     }
@@ -701,11 +1116,14 @@ public class RadioStationListActivity extends SimpleActivity {
     if (stream == null) {
       return null;
     }
-    String shortcode = stream.getAzuraCastShortcode();
+    return normalizeShortcode(stream.getAzuraCastShortcode());
+  }
+
+  private static @Nullable String normalizeShortcode(@Nullable String shortcode) {
     if (shortcode == null || shortcode.isBlank()) {
       return null;
     }
-    return shortcode.trim();
+    return shortcode.trim().toLowerCase(Locale.ROOT);
   }
 
   /**
@@ -778,6 +1196,17 @@ public class RadioStationListActivity extends SimpleActivity {
       this.displayPreviousScreen();
       return true;
     }
+    if (this.activeTab == PickerTab.SCHEDULE) {
+      if (key == Key.ARROW_LEFT || key == Key.A) {
+        this.selectScheduleDay(this.selectedScheduleDayIndex - 1);
+        return true;
+      }
+      if (key == Key.ARROW_RIGHT || key == Key.D) {
+        this.selectScheduleDay(this.selectedScheduleDayIndex + 1);
+        return true;
+      }
+      return super.keyPressed(key, type);
+    }
     if (key == Key.ENTER || key == Key.NUMPAD_ENTER) {
       this.playAndClose(this.selectedIndex);
       return true;
@@ -821,7 +1250,15 @@ public class RadioStationListActivity extends SimpleActivity {
 
   @Override
   public boolean mouseScrolled(MutableMouse mouse, double scrollDelta) {
-    if (this.stationScroll != null && this.stationScroll.isHovered()
+    if (this.activeTab == PickerTab.SCHEDULE) {
+      // Hover-Check oft false → Scroll immer an Schedule-Liste weiterreichen
+      if (this.scheduleScroll != null
+          && this.scheduleScroll.mouseScrolled(mouse, scrollDelta)) {
+        return true;
+      }
+      return super.mouseScrolled(mouse, scrollDelta);
+    }
+    if (this.stationScroll != null
         && this.stationScroll.mouseScrolled(mouse, scrollDelta)) {
       return true;
     }
@@ -863,6 +1300,9 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void updateHoverSelection() {
+    if (this.activeTab != PickerTab.STATIONS) {
+      return;
+    }
     int hovered = -1;
     for (int i = 0; i < this.rows.size(); i++) {
       if (this.rows.get(i).isHovered()) {
@@ -950,14 +1390,44 @@ public class RadioStationListActivity extends SimpleActivity {
     if (this.controller.findMashupStream() == null) {
       return;
     }
-    this.controller.fetchMashupStatus((onAir, twitch) -> {
-      this.mashupOnAir = onAir;
-      this.mashupTwitch = twitch;
-      for (RadioStationRowWidget row : this.rows) {
-        if (StationPickerController.isMashup(row.getStream())) {
-          row.updateOnAirAndTwitchStatus(onAir, twitch);
-        }
-      }
+    this.controller.fetchMashupStatus(show -> {
+      this.mashupShowStatus = show;
+      this.mashupOnAir = show.onAir();
+      this.mashupTwitch = show.twitch();
+      // Auch wenn gerade ein anderer Sender läuft: Status + Sendezeit an Mashup-Zeile.
+      this.syncMashupStatusToRows(this.mashupOnAir, this.mashupTwitch);
+      this.applyMashupShowTimingToRows();
+      this.refreshNowPlaying();
     });
+  }
+
+  private void applyMashupShowTimingToRows() {
+    if (this.mashupShowStatus == null) {
+      return;
+    }
+    for (RadioStationRowWidget row : this.rows) {
+      if (!StationPickerController.isMashup(row.getStream())) {
+        continue;
+      }
+      String key = this.shortcodeOf(row.getStream());
+      CurrentSong song = key != null ? this.songByShortcode.get(key) : null;
+      if (song == null || !song.isValid()) {
+        continue;
+      }
+      CurrentSong updated = this.addon.currentSongService().applyShowToSong(song, this.mashupShowStatus);
+      if (key != null) {
+        this.songByShortcode.put(key, updated);
+      }
+      row.setSong(updated);
+      row.updateOnAirAndTwitchStatus(this.mashupOnAir, this.mashupTwitch);
+    }
+  }
+
+  private void syncMashupStatusToRows(boolean onAir, boolean twitch) {
+    for (RadioStationRowWidget row : this.rows) {
+      if (StationPickerController.isMashup(row.getStream())) {
+        row.updateOnAirAndTwitchStatus(onAir, twitch);
+      }
+    }
   }
 }
