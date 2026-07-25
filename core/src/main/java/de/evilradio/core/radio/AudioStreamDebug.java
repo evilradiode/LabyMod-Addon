@@ -1,7 +1,6 @@
 package de.evilradio.core.radio;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -15,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import net.labymod.api.Laby;
 import net.labymod.api.client.Minecraft;
 
 /**
@@ -61,7 +61,7 @@ public final class AudioStreamDebug {
    *
    * @return absoluter Pfad der Logdatei, oder {@code null} wenn deaktiviert / nicht ermittelbar
    */
-  public static Path setEnabled(boolean enabled, Minecraft minecraft) {
+  public static Path setEnabled(boolean enabled) {
     synchronized (LOCK) {
       if (!enabled) {
         ENABLED.set(false);
@@ -69,7 +69,7 @@ public final class AudioStreamDebug {
         return logFile;
       }
 
-      Path target = resolveLogFile(minecraft);
+      Path target = resolveLogFile();
       logFile = target;
       if (target == null) {
         ENABLED.set(false);
@@ -173,35 +173,19 @@ public final class AudioStreamDebug {
     }
     try {
       writer.flush();
-    } catch (IOException ignored) {
-    }
+    } catch (IOException ignored) {}
     try {
       writer.close();
-    } catch (IOException ignored) {
-    }
+    } catch (IOException ignored) {}
     writer = null;
   }
 
-  private static Path resolveLogFile(Minecraft minecraft) {
-    File gameDir = resolveGameDirectory(minecraft);
+  private static Path resolveLogFile() {
+    Path gameDir = Laby.labyAPI().labyModLoader().getGameDirectory();
     if (gameDir != null) {
-      return new File(gameDir, "logs" + File.separator + LOG_SUBDIR + File.separator + FILE_NAME)
-          .toPath();
+      return gameDir.resolve("logs").resolve(LOG_SUBDIR).resolve(FILE_NAME);
     }
     return Path.of("logs", LOG_SUBDIR, FILE_NAME);
   }
 
-  private static File resolveGameDirectory(Minecraft minecraft) {
-    if (minecraft == null) {
-      return null;
-    }
-    try {
-      Object gameDirectory = minecraft.getClass().getField("gameDirectory").get(minecraft);
-      if (gameDirectory instanceof File directory) {
-        return directory;
-      }
-    } catch (ReflectiveOperationException ignored) {
-    }
-    return null;
-  }
 }
