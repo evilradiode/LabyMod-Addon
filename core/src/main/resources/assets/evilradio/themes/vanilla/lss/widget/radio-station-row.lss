@@ -60,7 +60,7 @@ RadioStationRow .row-name {
   left: 44;
   top: 1;
   right: 44;
-  width: auto;
+  width: fit-content;
   height: fit-content;
   font-size: 0.55;
   max-lines: 1;
@@ -72,7 +72,7 @@ RadioStationRow .row-song {
   left: 44;
   top: 11;
   right: 44;
-  width: auto;
+  width: fit-content;
   height: fit-content;
   font-size: 0.55;
   max-lines: 1;
@@ -124,12 +124,11 @@ RadioStationRow .row-time {
   text-shadow: 0 0 3 rgba(0, 0, 0, 0.85);
   background-color: rgba(0, 0, 0, 0.28);
   border-radius: 3;
-  padding: 0 2 0 2;
+  padding: 1 2 2 2;
 }
 
 RadioStationRow.coming-soon .row-station-icon {
   left: 2;
-  right: auto;
   width: 24;
   height: 24;
 }

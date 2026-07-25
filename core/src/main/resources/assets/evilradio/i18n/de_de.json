@@ -39,6 +39,37 @@
       "tab": {
         "stations": "Sender",
         "schedule": "Sendeplan"
+      },
+      "schedule": {
+        "today": "Heute",
+        "monday": {
+          "full": "Montag",
+          "short": "Mo"
+        },
+        "tuesday": {
+          "full": "Dienstag",
+          "short": "Di"
+        },
+        "wednesday": {
+          "full": "Mittwoch",
+          "short": "Mi"
+        },
+        "thursday": {
+          "full": "Donnerstag",
+          "short": "Do"
+        },
+        "friday": {
+          "full": "Freitag",
+          "short": "Fr"
+        },
+        "saturday": {
+          "full": "Samstag",
+          "short": "Sa"
+        },
+        "sunday": {
+          "full": "Sonntag",
+          "short": "So"
+        }
       }
     },
     "notification": {

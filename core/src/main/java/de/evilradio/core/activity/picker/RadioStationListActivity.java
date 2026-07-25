@@ -42,8 +42,10 @@ import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.ScrollWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.layout.list.HorizontalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
+import net.labymod.api.util.I18n;
 import net.labymod.api.util.concurrent.task.Task;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,17 +70,12 @@ public class RadioStationListActivity extends SimpleActivity {
   private static final String EQ_BAR_BOTTOM_VAR = "--eq-bar-bottom";
   private static final String EQ_BAR_LEFT_VAR = "--eq-bar-left";
   private static final String EQ_PEAK_BOTTOM_VAR = "--eq-peak-bottom";
-  private static final String SCHEDULE_CHIP_LEFT_VAR = "--schedule-chip-left";
-  private static final String PICKER_TAB_LEFT_VAR = "--picker-tab-left";
   private static final int EQ_BAR_COUNT = AudioSpectrumAnalyzer.BAND_COUNT;
   private static final float EQ_BAR_MIN_HEIGHT = 2.0F;
   private static final float EQ_BAR_MAX_HEIGHT = 24.0F;
   private static final float EQ_BAR_WIDTH = 3.0F;
   private static final float EQ_PEAK_DECAY = 0.012F;
   private static final float EQ_PEAK_MARKER = 2.0F;
-  private static final float SCHEDULE_CHIP_WIDTH = 34.0F;
-  private static final float SCHEDULE_CHIP_GAP = 5.0F;
-  private static final String SCHEDULE_CHIP_WIDTH_VAR = "--schedule-chip-width";
   private static final DateTimeFormatter CHIP_DAY_FORMAT = DateTimeFormatter.ofPattern("dd.MM");
 
   private final EvilRadioAddon addon;
@@ -96,7 +93,7 @@ public class RadioStationListActivity extends SimpleActivity {
   private DivWidget nowPlayingStrip;
   private ScrollWidget stationScroll;
   private Widget stationsFooter;
-  private DivWidget scheduleDayChips;
+  private HorizontalListWidget scheduleDayChips;
   private ScrollWidget scheduleScroll;
   private ButtonWidget stationsTabButton;
   private ButtonWidget scheduleTabButton;
@@ -192,7 +189,7 @@ public class RadioStationListActivity extends SimpleActivity {
     header.addChild(ButtonWidget.text("✕", this::displayPreviousScreen).addId("picker-close-x"));
     panel.addChild(header);
 
-    DivWidget tabs = new DivWidget().addId("picker-tabs");
+    HorizontalListWidget tabs = new HorizontalListWidget().addId("picker-tabs");
     this.stationsTabButton = ButtonWidget.text("Sender", () -> this.switchTab(PickerTab.STATIONS))
         .addId("picker-tab")
         .addId("picker-tab-stations");
@@ -208,15 +205,9 @@ public class RadioStationListActivity extends SimpleActivity {
     } else {
       this.scheduleTabButton.addId("active");
     }
-    // Zentriert in der Panel-Zeile (kein left:50%-Hack – der springt ans Fenster)
-    float contentWidth = 292.0F;
-    float tabWidth = 140.0F;
-    float tabGap = 12.0F;
-    float tabsStart = (contentWidth - (tabWidth * 2.0F + tabGap)) / 2.0F;
-    this.stationsTabButton.setVariable(PICKER_TAB_LEFT_VAR, tabsStart);
-    this.scheduleTabButton.setVariable(PICKER_TAB_LEFT_VAR, tabsStart + tabWidth + tabGap);
-    tabs.addChild(this.stationsTabButton);
-    tabs.addChild(this.scheduleTabButton);
+
+    tabs.addEntry(this.stationsTabButton);
+    tabs.addEntry(this.scheduleTabButton);
     panel.addChild(tabs);
 
     // Reset tab-spezifische Referenzen
@@ -377,31 +368,20 @@ public class RadioStationListActivity extends SimpleActivity {
     }
 
     this.scheduleDayChipButtons.clear();
-    this.scheduleDayChips = new DivWidget().addId("schedule-day-chips");
-    // Panel bleibt 320px breit (Content ~292)
-    float contentWidth = 292.0F;
+    this.scheduleDayChips = new HorizontalListWidget().addId("schedule-day-chips");
+
     int dayCount = days.size();
-    float chipWidth = dayCount <= 0
-        ? 34.0F
-        : (contentWidth - Math.max(0, dayCount - 1) * SCHEDULE_CHIP_GAP) / dayCount;
-    float chipsWidth = dayCount <= 0
-        ? 0.0F
-        : dayCount * chipWidth + Math.max(0, dayCount - 1) * SCHEDULE_CHIP_GAP;
-    float chipsStart = Math.max(0.0F, (contentWidth - chipsWidth) / 2.0F);
     for (int i = 0; i < dayCount; i++) {
       ScheduleDay day = days.get(i);
       final int dayIndex = i;
-      float left = chipsStart + i * (chipWidth + SCHEDULE_CHIP_GAP);
       ButtonWidget chip = ButtonWidget.text(
               this.dayChipLabel(day),
               () -> this.selectScheduleDay(dayIndex))
           .addId("schedule-day-chip");
-      chip.setVariable(SCHEDULE_CHIP_LEFT_VAR, left);
-      chip.setVariable(SCHEDULE_CHIP_WIDTH_VAR, chipWidth);
       if (i == this.selectedScheduleDayIndex) {
         chip.addId("active");
       }
-      this.scheduleDayChips.addChild(chip);
+      this.scheduleDayChips.addEntry(chip);
       this.scheduleDayChipButtons.add(chip);
     }
     panel.addChild(this.scheduleDayChips);
@@ -496,46 +476,45 @@ public class RadioStationListActivity extends SimpleActivity {
     if (weekdayApi.equalsIgnoreCase("Heute") || weekdayApi.equalsIgnoreCase("Today")) {
       line1 = "Heute";
     } else {
-      line1 = this.germanChipDay(date);
+      line1 = this.chipDayLabel(date);
     }
     return line1 + "\n" + date.format(CHIP_DAY_FORMAT);
   }
 
-  private String germanChipDay(LocalDate date) {
+  private String chipDayLabel(LocalDate date) {
     return switch (date.getDayOfWeek()) {
-      case MONDAY -> "Mo";
-      case TUESDAY -> "Di";
-      case WEDNESDAY -> "Mi";
-      case THURSDAY -> "Do";
-      case FRIDAY -> "Fr";
-      case SATURDAY -> "Sa";
-      case SUNDAY -> "So";
+      case MONDAY -> I18n.translate("evilradio.picker.schedule.monday.short");
+      case TUESDAY -> I18n.translate("evilradio.picker.schedule.tuesday.short");
+      case WEDNESDAY -> I18n.translate("evilradio.picker.schedule.wednesday.short");
+      case THURSDAY -> I18n.translate("evilradio.picker.schedule.thursday.short");
+      case FRIDAY -> I18n.translate("evilradio.picker.schedule.friday.short");
+      case SATURDAY -> I18n.translate("evilradio.picker.schedule.saturday.short");
+      case SUNDAY -> I18n.translate("evilradio.picker.schedule.sunday.short");
     };
   }
 
   private String dayHeaderLabel(ScheduleDay day) {
     LocalDate date = this.parseScheduleDate(day.getDate());
+    String weekday = day.getWeekday() == null ? "" : day.getWeekday().trim();
     if (date == null) {
-      String weekday = day.getWeekday() == null ? "" : day.getWeekday().trim();
       return weekday.isEmpty() ? day.getDate() : weekday;
     }
-    String formatted = this.germanShortDay(date) + " " + date.format(CHIP_DAY_FORMAT);
-    String weekday = day.getWeekday() == null ? "" : day.getWeekday().trim();
+    String formatted = this.headerDayLabel(date) + " - " + date.format(CHIP_DAY_FORMAT);
     if (weekday.equalsIgnoreCase("Heute") || weekday.equalsIgnoreCase("Today")) {
-      return "Heute · " + formatted;
+      return I18n.translate("evilradio.picker.schedule.today") + " - " + formatted;
     }
     return formatted;
   }
 
-  private String germanShortDay(LocalDate date) {
+  private String headerDayLabel(LocalDate date) {
     return switch (date.getDayOfWeek()) {
-      case MONDAY -> "Mo.";
-      case TUESDAY -> "Di.";
-      case WEDNESDAY -> "Mi.";
-      case THURSDAY -> "Do.";
-      case FRIDAY -> "Fr.";
-      case SATURDAY -> "Sa.";
-      case SUNDAY -> "So.";
+      case MONDAY -> I18n.translate("evilradio.picker.schedule.monday.full");
+      case TUESDAY -> I18n.translate("evilradio.picker.schedule.tuesday.full");
+      case WEDNESDAY -> I18n.translate("evilradio.picker.schedule.wednesday.full");
+      case THURSDAY -> I18n.translate("evilradio.picker.schedule.thursday.full");
+      case FRIDAY -> I18n.translate("evilradio.picker.schedule.friday.full");
+      case SATURDAY -> I18n.translate("evilradio.picker.schedule.saturday.full");
+      case SUNDAY -> I18n.translate("evilradio.picker.schedule.sunday.full");
     };
   }
 
@@ -1025,7 +1004,7 @@ public class RadioStationListActivity extends SimpleActivity {
     spectrum.copyBands(this.spectrumBands);
     int count = Math.min(this.equalizerBars.size(), this.spectrumBands.length);
     for (int i = 0; i < count; i++) {
-      float level = Math.max(0.0F, Math.min(1.0F, this.spectrumBands[i]));
+      float level = Math.clamp(this.spectrumBands[i], 0.0F, 1.0F);
       this.updatePeakHold(i, level);
       switch (style) {
         case PEAKS -> this.renderPeaksBar(i, level);
@@ -1083,7 +1062,7 @@ public class RadioStationListActivity extends SimpleActivity {
     int count = Math.min(this.equalizerBars.size(), this.waveformSamples.length);
     float mid = EQ_BAR_MAX_HEIGHT * 0.5F;
     for (int i = 0; i < count; i++) {
-      float sample = Math.max(-1.0F, Math.min(1.0F, this.waveformSamples[i]));
+      float sample = Math.clamp(this.waveformSamples[i], -1.0F, 1.0F);
       float bottom = mid + sample * (mid - 2.0F) - 1.0F;
       DivWidget bar = this.equalizerBars.get(i);
       bar.setVariable(EQ_BAR_HEIGHT_VAR, 2.0F);
@@ -1145,11 +1124,6 @@ public class RadioStationListActivity extends SimpleActivity {
   @Override
   public boolean isPauseScreen() {
     return false;
-  }
-
-  @Override
-  public boolean shouldRenderBackground() {
-    return true;
   }
 
   @Override
