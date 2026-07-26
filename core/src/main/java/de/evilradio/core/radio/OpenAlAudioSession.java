@@ -397,8 +397,8 @@ public final class OpenAlAudioSession {
   }
 
   private void setVolumeUnlocked(float volume) throws Exception {
+    // Erwartet bereits den gemappten Ausgangs-Gain aus RadioPlayer.toOutputGain().
     this.volume = Math.max(0.0f, Math.min(1.0f, volume));
-    // AL_GAIN ist linear. volume² bei 5% ≈ 0.0025 → praktisch stumm.
     alSourcef.invoke(null, source, alGain, this.volume);
     if (this.volume > 0.0f) {
       ensurePlayingUnlocked();
