@@ -10,6 +10,7 @@ import java.net.URLConnection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -45,6 +46,8 @@ public class RadioPlayer {
   private Future<?> playbackTask;
   private volatile boolean isPlaying;
   private volatile boolean shouldStop;
+  /** Wird bei jedem stop()/play() erhöht – alte Threads dürfen nicht weiterlaufen/cleanupen. */
+  private final AtomicLong playbackEpoch = new AtomicLong(0L);
   private volatile float volume = 0.5f;
   private volatile String currentStreamUrl;
   private volatile String outputDeviceName;
@@ -67,10 +70,13 @@ public class RadioPlayer {
       return;
     }
 
-    stop();
-
-    // Hängenden Playback-Task freimachen, sonst blockiert der Single-Thread-Executor neue Starts
+    // Epoch zuerst invalidieren, dann stoppen – Zombie-Reconnects sterben ab
+    long epoch = this.playbackEpoch.incrementAndGet();
+    this.shouldStop = true;
+    this.isPlaying = false;
+    closeNetworkStream();
     if (playbackTask != null && !playbackTask.isDone()) {
+      playbackTask.cancel(true);
       executorService.shutdownNow();
       executorService = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "RadioPlayer-Thread");
@@ -78,196 +84,229 @@ public class RadioPlayer {
         return t;
       });
     }
+    cleanupAudioOutput();
 
     currentStreamUrl = streamUrl;
     shouldStop = false;
     this.lastWriteDoneMs = 0L;
 
-    playbackTask = executorService.submit(() -> {
-      Decoder decoder = null;
-      Header header = null;
-      try {
-        URL url = URI.create(streamUrl).toURL();
-        openNetworkStream(url);
-        decoder = new Decoder();
+    playbackTask = executorService.submit(() -> runPlayback(streamUrl, epoch));
+  }
 
-        if (shouldStop || bitstream == null) {
-          return;
-        }
+  private void runPlayback(String streamUrl, long epoch) {
+    Decoder decoder = null;
+    Header header = null;
+    try {
+      if (!isPlaybackActive(epoch)) {
+        return;
+      }
 
-        header = bitstream.readFrame();
-        if (header == null) {
-          throw new Exception("Kein gültiger MP3-Stream gefunden");
-        }
+      URL url = URI.create(streamUrl).toURL();
+      openNetworkStream(url);
+      decoder = new Decoder();
 
-        int sampleRate = header.frequency();
-        int channels = header.mode() == Header.SINGLE_CHANNEL ? 1 : 2;
-        this.spectrum.configure(sampleRate, channels);
-        this.spectrum.reset();
+      if (!isPlaybackActive(epoch) || bitstream == null) {
+        return;
+      }
 
-        AudioFormat audioFormat = new AudioFormat(
-            AudioFormat.Encoding.PCM_SIGNED,
-            sampleRate,
-            16,
-            channels,
-            channels * 2,
-            sampleRate,
-            false
-        );
+      header = bitstream.readFrame();
+      if (header == null) {
+        throw new Exception("Kein gültiger MP3-Stream gefunden");
+      }
 
-        // SourceDataLine zuerst: komplett getrennt von Minecraft-OpenAL.
-        boolean openAlPlayback = false;
-        if (!openSourceDataLine(audioFormat)) {
-          if (OpenAlAudioSession.isAvailable()) {
-            try {
-              openAlSession = OpenAlAudioSession.openDevice(outputDeviceName, toOutputGain(volume));
-              openAlSession.configureFormat(sampleRate, channels);
-              openAlPlayback = true;
-              AudioStreamDebug.info(
-                  "Playback via OpenAL Gerät (sampleRate=" + sampleRate
-                      + ", channels=" + channels + ", device=" + outputDeviceName + ")");
-            } catch (Exception openDeviceException) {
-              AudioStreamDebug.warn(
-                  "OpenAL Gerät fehlgeschlagen, versuche Shared: "
-                      + openDeviceException.getMessage());
-            }
+      int sampleRate = header.frequency();
+      int channels = header.mode() == Header.SINGLE_CHANNEL ? 1 : 2;
+      this.spectrum.configure(sampleRate, channels);
+      this.spectrum.reset();
 
-            if (!openAlPlayback) {
-              long sharedOpenAlContext =
-                  sharedContextSupplier != null ? sharedContextSupplier.getAsLong() : 0L;
-              if (sharedOpenAlContext != 0L) {
-                try {
-                  openAlSession = OpenAlAudioSession.openShared(
-                      sharedOpenAlContext, toOutputGain(volume));
-                  openAlSession.configureFormat(sampleRate, channels);
-                  openAlPlayback = true;
-                  AudioStreamDebug.info(
-                      "Playback via OpenAL Shared-Context (sampleRate=" + sampleRate
-                          + ", channels=" + channels + ", context=" + sharedOpenAlContext + ")");
-                } catch (Exception openSharedException) {
-                  AudioStreamDebug.warn(
-                      "OpenAL Shared fehlgeschlagen: " + openSharedException.getMessage());
-                }
-              } else {
-                AudioStreamDebug.warn("Kein Shared-OpenAL-Kontext verfügbar");
-              }
-            }
-          } else {
-            AudioStreamDebug.warn("LWJGL OpenAL nicht verfügbar");
-          }
-        }
+      AudioFormat audioFormat = new AudioFormat(
+          AudioFormat.Encoding.PCM_SIGNED,
+          sampleRate,
+          16,
+          channels,
+          channels * 2,
+          sampleRate,
+          false
+      );
 
-        if (!openAlPlayback && audioLine == null) {
-          throw new Exception("Kein Audio-Ausgabepfad verfügbar");
-        }
-
-        isPlaying = true;
-        AudioStreamDebug.info("Stream gestartet: " + streamUrl);
-
-        byte[] buffer = new byte[8192];
-        int consecutiveFailures = 0;
-
-        while (!shouldStop && isOutputActive()) {
+      // SourceDataLine zuerst: komplett getrennt von Minecraft-OpenAL.
+      boolean openAlPlayback = false;
+      if (!openSourceDataLine(audioFormat)) {
+        if (OpenAlAudioSession.isAvailable()) {
           try {
-            if (bitstream == null || header == null || decoder == null) {
-              throw new IOException("Stream nicht bereit");
-            }
+            openAlSession = OpenAlAudioSession.openDevice(outputDeviceName, toOutputGain(volume));
+            openAlSession.configureFormat(sampleRate, channels);
+            openAlPlayback = true;
+            AudioStreamDebug.info(
+                "Playback via OpenAL Gerät (sampleRate=" + sampleRate
+                    + ", channels=" + channels + ", device=" + outputDeviceName + ")");
+          } catch (Exception openDeviceException) {
+            AudioStreamDebug.warn(
+                "OpenAL Gerät fehlgeschlagen, versuche Shared: "
+                    + openDeviceException.getMessage());
+          }
 
-            SampleBuffer sampleBuffer = (SampleBuffer) decoder.decodeFrame(header, bitstream);
-            short[] samples = sampleBuffer.getBuffer();
-            // getBuffer() ist Pool – nur getBufferLength() ist gültig
-            int validSamples = sampleBuffer.getBufferLength();
-            if (validSamples < 0) {
-              validSamples = 0;
-            }
-            if (validSamples > samples.length) {
-              validSamples = samples.length;
-            }
-
-            int sampleIndex = 0;
-            for (int i = 0; i < validSamples && !shouldStop && isOutputActive(); i++) {
-              short sample = samples[i];
-              buffer[sampleIndex++] = (byte) (sample & 0xFF);
-              buffer[sampleIndex++] = (byte) ((sample >> 8) & 0xFF);
-
-              if (sampleIndex >= buffer.length) {
-                writeAudioSafe(buffer, sampleIndex);
-                sampleIndex = 0;
+          if (!openAlPlayback) {
+            long sharedOpenAlContext =
+                sharedContextSupplier != null ? sharedContextSupplier.getAsLong() : 0L;
+            if (sharedOpenAlContext != 0L) {
+              try {
+                openAlSession = OpenAlAudioSession.openShared(
+                    sharedOpenAlContext, toOutputGain(volume));
+                openAlSession.configureFormat(sampleRate, channels);
+                openAlPlayback = true;
+                AudioStreamDebug.info(
+                    "Playback via OpenAL Shared-Context (sampleRate=" + sampleRate
+                        + ", channels=" + channels + ", context=" + sharedOpenAlContext + ")");
+              } catch (Exception openSharedException) {
+                AudioStreamDebug.warn(
+                    "OpenAL Shared fehlgeschlagen: " + openSharedException.getMessage());
               }
+            } else {
+              AudioStreamDebug.warn("Kein Shared-OpenAL-Kontext verfügbar");
             }
+          }
+        } else {
+          AudioStreamDebug.warn("LWJGL OpenAL nicht verfügbar");
+        }
+      }
 
-            if (sampleIndex > 0 && isOutputActive()) {
+      if (!openAlPlayback && audioLine == null) {
+        throw new Exception("Kein Audio-Ausgabepfad verfügbar");
+      }
+
+      if (!isPlaybackActive(epoch)) {
+        return;
+      }
+
+      isPlaying = true;
+      AudioStreamDebug.info("Stream gestartet: " + streamUrl + " (epoch=" + epoch + ")");
+
+      byte[] buffer = new byte[8192];
+      int consecutiveFailures = 0;
+
+      while (isPlaybackActive(epoch) && isOutputActive()) {
+        try {
+          if (bitstream == null || header == null || decoder == null) {
+            throw new IOException("Stream nicht bereit");
+          }
+
+          Object decoded = decoder.decodeFrame(header, bitstream);
+          if (!(decoded instanceof SampleBuffer sampleBuffer)) {
+            throw new IOException("Decoder lieferte keinen SampleBuffer");
+          }
+          short[] samples = sampleBuffer.getBuffer();
+          if (samples == null) {
+            throw new IOException("SampleBuffer ohne Daten");
+          }
+          // getBuffer() ist Pool – nur getBufferLength() ist gültig
+          int validSamples = sampleBuffer.getBufferLength();
+          if (validSamples < 0) {
+            validSamples = 0;
+          }
+          if (validSamples > samples.length) {
+            validSamples = samples.length;
+          }
+
+          int sampleIndex = 0;
+          for (int i = 0; i < validSamples && isPlaybackActive(epoch) && isOutputActive(); i++) {
+            short sample = samples[i];
+            buffer[sampleIndex++] = (byte) (sample & 0xFF);
+            buffer[sampleIndex++] = (byte) ((sample >> 8) & 0xFF);
+
+            if (sampleIndex >= buffer.length) {
               writeAudioSafe(buffer, sampleIndex);
+              sampleIndex = 0;
             }
+          }
 
-            bitstream.closeFrame();
+          if (sampleIndex > 0 && isOutputActive()) {
+            writeAudioSafe(buffer, sampleIndex);
+          }
+
+          bitstream.closeFrame();
+          header = bitstream.readFrame();
+          if (header == null) {
+            throw new IOException("Stream-Ende / kein MP3-Header");
+          }
+
+          consecutiveFailures = 0;
+        } catch (Exception streamError) {
+          if (!isPlaybackActive(epoch) || Thread.currentThread().isInterrupted()) {
+            Thread.currentThread().interrupt();
+            break;
+          }
+
+          consecutiveFailures++;
+          String detail = streamError.getMessage();
+          if (detail == null || detail.isBlank()) {
+            detail = String.valueOf(streamError);
+          }
+          AudioStreamDebug.warn(
+              "Stream-Fehler (#" + consecutiveFailures + "): "
+                  + streamError.getClass().getSimpleName()
+                  + ": " + detail);
+
+          if (consecutiveFailures > MAX_RECONNECT_ATTEMPTS) {
+            AudioStreamDebug.error(
+                "Zu viele Reconnect-Fehlschläge – Playback beendet", streamError);
+            break;
+          }
+
+          long backoffMs = Math.min(5_000L, 200L * consecutiveFailures);
+          try {
+            Thread.sleep(backoffMs);
+          } catch (InterruptedException sleepInterrupted) {
+            Thread.currentThread().interrupt();
+            break;
+          }
+          if (!isPlaybackActive(epoch)) {
+            break;
+          }
+
+          try {
+            // Ausgabe (SDL/OpenAL) bleibt offen – nur Netz/Decoder neu
+            openNetworkStream(url);
+            decoder = new Decoder();
             header = bitstream.readFrame();
             if (header == null) {
-              throw new IOException("Stream-Ende / kein MP3-Header");
+              throw new IOException("Reconnect ohne gültigen Header");
             }
-
+            AudioStreamDebug.info(
+                "Stream-Reconnect erfolgreich (Versuch " + consecutiveFailures + ")");
             consecutiveFailures = 0;
-          } catch (Exception streamError) {
-            if (shouldStop || Thread.currentThread().isInterrupted()) {
-              Thread.currentThread().interrupt();
-              break;
-            }
-
-            consecutiveFailures++;
+            this.lastWriteDoneMs = 0L;
+          } catch (Exception reconnectError) {
             AudioStreamDebug.warn(
-                "Stream-Fehler (#" + consecutiveFailures + "): "
-                    + streamError.getClass().getSimpleName()
-                    + ": " + streamError.getMessage());
-
-            if (consecutiveFailures > MAX_RECONNECT_ATTEMPTS) {
-              AudioStreamDebug.error(
-                  "Zu viele Reconnect-Fehlschläge – Playback beendet", streamError);
-              break;
-            }
-
-            long backoffMs = Math.min(5_000L, 200L * consecutiveFailures);
-            try {
-              Thread.sleep(backoffMs);
-            } catch (InterruptedException sleepInterrupted) {
-              Thread.currentThread().interrupt();
-              break;
-            }
-            if (shouldStop) {
-              break;
-            }
-
-            try {
-              // Ausgabe (SDL/OpenAL) bleibt offen – nur Netz/Decoder neu
-              openNetworkStream(url);
-              decoder = new Decoder();
-              header = bitstream.readFrame();
-              if (header == null) {
-                throw new IOException("Reconnect ohne gültigen Header");
-              }
-              AudioStreamDebug.info(
-                  "Stream-Reconnect erfolgreich (Versuch " + consecutiveFailures + ")");
-              consecutiveFailures = 0;
-              this.lastWriteDoneMs = 0L;
-            } catch (Exception reconnectError) {
-              AudioStreamDebug.warn(
-                  "Reconnect fehlgeschlagen: " + reconnectError.getMessage());
-              // while-Loop versucht es erneut
-            }
+                "Reconnect fehlgeschlagen: " + reconnectError.getMessage());
           }
         }
+      }
 
-      } catch (Exception e) {
-        if (!shouldStop) {
-          LOGGING.error("Fehler beim Abspielen des Radio-Streams: " + e.getMessage(), e);
-          AudioStreamDebug.error("Stream-Abbruch", e);
-        }
-        isPlaying = false;
-      } finally {
-        AudioStreamDebug.info("Playback-Loop beendet (shouldStop=" + shouldStop + ")");
+    } catch (Exception e) {
+      if (isPlaybackActive(epoch)) {
+        LOGGING.error("Fehler beim Abspielen des Radio-Streams: " + e.getMessage(), e);
+        AudioStreamDebug.error("Stream-Abbruch", e);
+      }
+    } finally {
+      AudioStreamDebug.info(
+          "Playback-Loop beendet (epoch=" + epoch
+              + ", active=" + isPlaybackActive(epoch)
+              + ", shouldStop=" + shouldStop + ")");
+      // Nur die aktuelle Session darf Output schließen – sonst killt ein Zombie den neuen Stream
+      if (this.playbackEpoch.get() == epoch) {
         cleanup();
         isPlaying = false;
+      } else {
+        closeNetworkStream();
       }
-    });
+    }
+  }
+
+  private boolean isPlaybackActive(long epoch) {
+    return !shouldStop
+        && this.playbackEpoch.get() == epoch
+        && !Thread.currentThread().isInterrupted();
   }
 
   /**
@@ -317,6 +356,7 @@ public class RadioPlayer {
   }
 
   public void stop() {
+    this.playbackEpoch.incrementAndGet();
     shouldStop = true;
     isPlaying = false;
     currentStreamUrl = null;
@@ -328,6 +368,7 @@ public class RadioPlayer {
     if (playbackTask != null && !playbackTask.isDone()) {
       playbackTask.cancel(true);
     }
+    cleanupAudioOutput();
   }
 
   public void setOutputDeviceName(String outputDeviceName) {
@@ -474,7 +515,10 @@ public class RadioPlayer {
 
   private void cleanup() {
     closeNetworkStream();
+    cleanupAudioOutput();
+  }
 
+  private void cleanupAudioOutput() {
     if (openAlSession != null) {
       try {
         openAlSession.close();
@@ -498,9 +542,8 @@ public class RadioPlayer {
 
   public void shutdown() {
     stop();
-    cleanup();
     if (executorService != null) {
-      executorService.shutdown();
+      executorService.shutdownNow();
     }
   }
 }

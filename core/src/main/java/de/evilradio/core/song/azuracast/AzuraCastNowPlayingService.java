@@ -131,11 +131,9 @@ public final class AzuraCastNowPlayingService {
     String normalized = shortcode.trim();
     String current = guard.activeShortcode();
     NowPlayingConnectionState state = connectionState.get();
-    // Kein Reconnect, wenn dieselbe Station schon connected/lädt – vermeidet Doppel-Switch-Races
-    if (normalized.equals(current)
-        && (state == NowPlayingConnectionState.CONNECTED
-        || state == NowPlayingConnectionState.LOADING
-        || state == NowPlayingConnectionState.RECONNECTING)) {
+    // Nur bei wirklich verbundener gleicher Station skippen.
+    // LOADING/RECONNECTING nach High-Ping sonst ewig blockiert → Widget tot.
+    if (normalized.equals(current) && state == NowPlayingConnectionState.CONNECTED) {
       return;
     }
 
