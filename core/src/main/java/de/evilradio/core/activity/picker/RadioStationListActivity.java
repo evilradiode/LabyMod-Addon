@@ -37,6 +37,7 @@ import net.labymod.api.client.gui.screen.key.InputType;
 import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.client.gui.screen.key.MouseButton;
 import net.labymod.api.client.gui.screen.widget.Widget;
+import net.labymod.api.client.gui.screen.widget.attributes.bounds.BoundsType;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget;
@@ -1232,7 +1233,15 @@ public class RadioStationListActivity extends SimpleActivity {
       }
       return super.mouseScrolled(mouse, scrollDelta);
     }
+    // ScrollWidget prüft die Mausposition nicht – ohne Hit-Test scrollt die Liste
+    // auch über dem Volume-Slider oben in der Cover-Leiste.
+    if (this.isMouseOver(this.volumeSlider, mouse)) {
+      this.controller.adjustVolumeByScroll(scrollDelta);
+      this.syncControls();
+      return true;
+    }
     if (this.stationScroll != null
+        && this.isMouseOver(this.stationScroll, mouse)
         && this.stationScroll.mouseScrolled(mouse, scrollDelta)) {
       return true;
     }
@@ -1242,6 +1251,13 @@ public class RadioStationListActivity extends SimpleActivity {
     this.controller.adjustVolumeByScroll(scrollDelta);
     this.syncControls();
     return true;
+  }
+
+  private boolean isMouseOver(@Nullable Widget widget, MutableMouse mouse) {
+    if (widget == null || !widget.isVisible()) {
+      return false;
+    }
+    return widget.bounds().isInRectangle(BoundsType.OUTER, mouse.getX(), mouse.getY());
   }
 
   private void playAndClose(int index) {
