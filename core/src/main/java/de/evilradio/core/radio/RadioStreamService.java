@@ -54,19 +54,25 @@ public class RadioStreamService {
                 if (streamObject.has("internal_name") && !streamObject.get("internal_name").isJsonNull()) {
                   internalName = streamObject.get("internal_name").getAsString();
                 }
-                String iconUrl = null;
-                if (streamObject.has("iconUrl") && !streamObject.get("iconUrl").isJsonNull()) {
-                  iconUrl = streamObject.get("iconUrl").getAsString();
-                }
+                String iconUrl = readString(streamObject, "iconUrl");
+                String iconWithLogo = readString(streamObject, "iconWithLogo");
                 RadioStream radioStream = new RadioStream(
                     streamObject.get("id").getAsInt(),
                     internalName,
                     streamObject.get("name").getAsString(),
                     streamObject.get("displayName").getAsString(),
                     streamObject.get("streamUrl").getAsString(),
-                    iconUrl
+                    iconUrl,
+                    iconWithLogo
                 );
                 radioStream.initialize();
+                logging.info(
+                    "Stream id=" + radioStream.getId()
+                        + " display=" + radioStream.getDisplayName()
+                        + " iconUrl=" + iconUrl
+                        + " iconWithLogo=" + iconWithLogo
+                        + " resolved=" + radioStream.resolvedIconUrl()
+                );
                 loaded.add(radioStream);
               }
             });
@@ -83,6 +89,14 @@ public class RadioStreamService {
             this.runOnRenderThread(callback);
           }
         });
+  }
+
+  private static String readString(JsonObject object, String key) {
+    if (!object.has(key) || object.get(key).isJsonNull()) {
+      return null;
+    }
+    String value = object.get(key).getAsString();
+    return value == null || value.isBlank() ? null : value;
   }
 
   public void addChangeListener(Runnable listener) {
