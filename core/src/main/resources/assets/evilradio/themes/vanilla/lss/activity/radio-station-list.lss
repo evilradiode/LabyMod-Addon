@@ -320,7 +320,7 @@
 
 .station-scroll {
   width: 100%;
-  height: 250;
+  height: var(--station-scroll-height);
 }
 
 .station-scroll Scrollbar {
@@ -381,7 +381,7 @@
 
 .schedule-scroll {
   width: 100%;
-  height: 280;
+  height: var(--schedule-scroll-height);
 }
 
 .schedule-scroll Scrollbar {

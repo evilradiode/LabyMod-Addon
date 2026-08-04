@@ -120,6 +120,22 @@ public class RadioStationListActivity extends SimpleActivity {
   private boolean lastNowPlayingHadDuration;
   private float equalizerLayoutWidth = -1.0F;
   private static final String COVER_PROGRESS_WIDTH_KEY = "--picker-progress-width";
+  private static final String STATION_SCROLL_HEIGHT_VAR = "--station-scroll-height";
+  private static final String SCHEDULE_SCROLL_HEIGHT_VAR = "--schedule-scroll-height";
+  private static final float STATION_SCROLL_MAX_HEIGHT = 250.0F;
+  private static final float STATION_SCROLL_MIN_HEIGHT = 120.0F;
+  private static final float SCHEDULE_SCROLL_MAX_HEIGHT = 280.0F;
+  private static final float SCHEDULE_SCROLL_MIN_HEIGHT = 120.0F;
+  /**
+   * Padding + Header + Tabs + Now Playing + VerticalList-Gaps (space-between 7).
+   * Siehe radio-station-list.lss (.picker-panel / .picker-header / .picker-tabs / .picker-now-playing).
+   */
+  private static final float STATIONS_CHROME_HEIGHT = 163.0F;
+  /**
+   * Padding + Header + Tabs + Day-Chips + Gaps (inkl. schedule-panel space-between 8).
+   */
+  private static final float SCHEDULE_CHROME_HEIGHT = 128.0F;
+  private static final float SCREEN_HEIGHT_USAGE = 0.92F;
   private static final float COVER_PROGRESS_TRACK_WIDTH = 140f;
   private static final float COVER_PROGRESS_TRACK_WIDTH_NO_EQ = 170f;
 
@@ -238,6 +254,7 @@ public class RadioStationListActivity extends SimpleActivity {
 
     this.document.addChild(panel);
     this.appliedCoverKey = null;
+    this.applyAdaptiveScrollHeights();
     if (this.activeTab == PickerTab.STATIONS) {
       this.refreshNowPlaying();
     } else if (this.addon.scheduleService().days().isEmpty()) {
@@ -249,6 +266,40 @@ public class RadioStationListActivity extends SimpleActivity {
         }
       });
     }
+  }
+
+  /**
+   * Kürzt die Listen-Scrollhöhe, wenn das Panel sonst größer als der Screen wäre
+   * (z. B. 1080p + GUI Scale 3 ≈ 360 GUI-Einheiten).
+   */
+  private void applyAdaptiveScrollHeights() {
+    float screenHeight = this.bounds().getHeight();
+    if (screenHeight <= 1.0F) {
+      this.addon.labyAPI().minecraft().executeNextTick(this::applyAdaptiveScrollHeights);
+      return;
+    }
+
+    float maxPanelHeight = screenHeight * SCREEN_HEIGHT_USAGE;
+    if (this.stationScroll != null) {
+      float height = clamp(
+          maxPanelHeight - STATIONS_CHROME_HEIGHT,
+          STATION_SCROLL_MIN_HEIGHT,
+          STATION_SCROLL_MAX_HEIGHT
+      );
+      this.stationScroll.setVariable(STATION_SCROLL_HEIGHT_VAR, height);
+    }
+    if (this.scheduleScroll != null) {
+      float height = clamp(
+          maxPanelHeight - SCHEDULE_CHROME_HEIGHT,
+          SCHEDULE_SCROLL_MIN_HEIGHT,
+          SCHEDULE_SCROLL_MAX_HEIGHT
+      );
+      this.scheduleScroll.setVariable(SCHEDULE_SCROLL_HEIGHT_VAR, height);
+    }
+  }
+
+  private static float clamp(float value, float min, float max) {
+    return Math.max(min, Math.min(max, value));
   }
 
   private void buildStationsContent(VerticalListWidget<Widget> panel) {
@@ -352,6 +403,7 @@ public class RadioStationListActivity extends SimpleActivity {
     }
 
     this.stationScroll = new ScrollWidget(list).addId("station-scroll");
+    this.stationScroll.setVariable(STATION_SCROLL_HEIGHT_VAR, STATION_SCROLL_MAX_HEIGHT);
     panel.addChild(this.stationScroll);
   }
 
@@ -414,6 +466,7 @@ public class RadioStationListActivity extends SimpleActivity {
     }
 
     this.scheduleScroll = new ScrollWidget(scheduleList).addId("schedule-scroll");
+    this.scheduleScroll.setVariable(SCHEDULE_SCROLL_HEIGHT_VAR, SCHEDULE_SCROLL_MAX_HEIGHT);
     panel.addChild(this.scheduleScroll);
   }
 
