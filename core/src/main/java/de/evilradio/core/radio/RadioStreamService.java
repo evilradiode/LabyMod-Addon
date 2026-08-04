@@ -54,14 +54,17 @@ public class RadioStreamService {
                 if (streamObject.has("internal_name") && !streamObject.get("internal_name").isJsonNull()) {
                   internalName = streamObject.get("internal_name").getAsString();
                 }
+                String iconUrl = null;
+                if (streamObject.has("iconUrl") && !streamObject.get("iconUrl").isJsonNull()) {
+                  iconUrl = streamObject.get("iconUrl").getAsString();
+                }
                 RadioStream radioStream = new RadioStream(
                     streamObject.get("id").getAsInt(),
                     internalName,
                     streamObject.get("name").getAsString(),
                     streamObject.get("displayName").getAsString(),
                     streamObject.get("streamUrl").getAsString(),
-                    streamObject.get("iconPath").getAsString(),
-                    streamObject.get("iconUrl").getAsString()
+                    iconUrl
                 );
                 radioStream.initialize();
                 loaded.add(radioStream);

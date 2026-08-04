@@ -1,15 +1,18 @@
 package de.evilradio.core.radio;
 
+import de.evilradio.core.EvilTextures;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.resources.ResourceLocation;
 
 public class RadioStream {
 
+  private static final ResourceLocation FALLBACK_ICON =
+      ResourceLocation.create("evilradio", "textures/logo.png");
+
   private final int id;
   private final String azuraCastShortcode;
   private final String url;
   private final String name;
-  private final String iconPath;
   private final String displayName;
   private final String iconUrl;
 
@@ -21,7 +24,6 @@ public class RadioStream {
       String name,
       String displayName,
       String streamUrl,
-      String iconPath,
       String iconUrl
   ) {
     this.id = id;
@@ -29,22 +31,14 @@ public class RadioStream {
     this.name = name;
     this.displayName = displayName;
     this.url = streamUrl;
-    this.iconPath = iconPath;
     this.iconUrl = iconUrl;
   }
 
   public RadioStream initialize() {
-    if (this.iconPath != null && !this.iconPath.isEmpty()) {
-      try {
-        String[] parts = this.iconPath.split(":", 2);
-        if (parts.length == 2) {
-          this.icon = Icon.texture(ResourceLocation.create(parts[0], parts[1]));
-        } else {
-          this.icon = Icon.texture(ResourceLocation.create("evilradio", this.iconPath));
-        }
-      } catch (Exception e) {
-        this.icon = Icon.texture(ResourceLocation.create("evilradio", "textures/stations/default.png"));
-      }
+    if (this.iconUrl != null && !this.iconUrl.isBlank()) {
+      this.icon = Icon.url(this.iconUrl, FALLBACK_ICON);
+    } else {
+      this.icon = EvilTextures.LOGO;
     }
     return this;
   }
