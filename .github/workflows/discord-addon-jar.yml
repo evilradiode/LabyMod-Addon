@@ -1,0 +1,154 @@
+# Sendet die Addon-JAR nach erfolgreichem Build an Discord.
+# Unabhängig von "LabyAddon Build" – ändert diesen Workflow nicht.
+name: Discord Addon JAR
+
+on:
+  workflow_run:
+    workflows: ["LabyAddon Build"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  notify-discord:
+    name: Post JAR to Discord
+    runs-on: ubuntu-latest
+    # Nur bei erfolgreichem Build auf master/main (Push oder manuell) – keine PRs
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') &&
+        (github.event.workflow_run.head_branch == 'master' || github.event.workflow_run.head_branch == 'main')
+      )
+    steps:
+      - name: Check Discord webhook secret
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "${DISCORD_WEBHOOK_URL}" ]; then
+            echo "::error::Secret DISCORD_WEBHOOK_URL fehlt. Bitte unter Settings → Secrets and variables → Actions anlegen."
+            exit 1
+          fi
+
+      - name: Download build artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: Artifacts
+          path: artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      # Manueller Lauf ohne vorherigen Build: JAR selbst erzeugen
+      - name: Checkout
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up JDK 25
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'corretto'
+          java-version: '25'
+
+      - name: Set up Gradle
+        if: github.event_name == 'workflow_dispatch'
+        uses: gradle/actions/setup-gradle@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6.1.1
+        with:
+          validate-wrappers: true
+
+      - name: Build release JAR
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          ./gradlew build createReleaseJar --full-stacktrace
+          mkdir -p artifacts
+          cp build/libs/*-release.jar artifacts/
+
+      - name: Resolve JAR and metadata
+        id: jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="$(find artifacts -type f -name '*-release.jar' | head -n 1)"
+          if [ -z "${JAR}" ]; then
+            echo "::error::Keine *-release.jar gefunden."
+            ls -laR artifacts || true
+            exit 1
+          fi
+          echo "path=${JAR}" >> "${GITHUB_OUTPUT}"
+          echo "name=$(basename "${JAR}")" >> "${GITHUB_OUTPUT}"
+          echo "size=$(du -h "${JAR}" | cut -f1)" >> "${GITHUB_OUTPUT}"
+
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "${GITHUB_OUTPUT}"
+            echo "branch=${{ github.event.workflow_run.head_branch }}" >> "${GITHUB_OUTPUT}"
+            echo "run_url=${{ github.event.workflow_run.html_url }}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "sha=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+            echo "branch=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
+            echo "run_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Post JAR to Discord webhook
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JAR_PATH: ${{ steps.jar.outputs.path }}
+          JAR_NAME: ${{ steps.jar.outputs.name }}
+          JAR_SIZE: ${{ steps.jar.outputs.size }}
+          COMMIT_SHA: ${{ steps.jar.outputs.sha }}
+          BRANCH: ${{ steps.jar.outputs.branch }}
+          RUN_URL: ${{ steps.jar.outputs.run_url }}
+          REPO: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import json, os
+          short = os.environ["COMMIT_SHA"][:7]
+          size_bytes = os.path.getsize(os.environ["JAR_PATH"])
+          too_large = size_bytes > 10 * 1024 * 1024
+          description = (
+            f"**Branch:** `{os.environ['BRANCH']}`\n"
+            f"**Commit:** [`{short}`]({os.environ['SERVER_URL']}/{os.environ['REPO']}/commit/{os.environ['COMMIT_SHA']})\n"
+            f"**Größe:** {os.environ['JAR_SIZE']}"
+          )
+          if too_large:
+            description += (
+              " (zu groß für Discord-Upload)\n"
+              f"**Download:** [Build Artifacts]({os.environ['RUN_URL']})"
+            )
+          else:
+            description += (
+              "\n"
+              f"**Build:** [GitHub Actions]({os.environ['RUN_URL']})\n"
+              "JAR ist als Anhang angehängt."
+            )
+          payload = {
+            "username": "Evil-Radio CI",
+            "embeds": [{
+              "title": "Evil-Radio Addon JAR",
+              "description": description,
+              "color": 0xE74C3C,
+              "footer": {"text": os.environ["JAR_NAME"]},
+            }],
+          }
+          with open("/tmp/discord-payload.json", "w", encoding="utf-8") as out:
+            json.dump(payload, out, ensure_ascii=False)
+          with open("/tmp/discord-too-large", "w", encoding="utf-8") as flag:
+            flag.write("1" if too_large else "0")
+          PY
+
+          if [ "$(cat /tmp/discord-too-large)" = "0" ]; then
+            curl -sS -f -X POST "${DISCORD_WEBHOOK_URL}" \
+              -F "payload_json=</tmp/discord-payload.json" \
+              -F "file1=@${JAR_PATH};filename=${JAR_NAME}"
+          else
+            echo "::warning::JAR größer als 10 MB – sende nur Build-Link (kein Attachment)."
+            curl -sS -f -H "Content-Type: application/json" \
+              --data-binary @/tmp/discord-payload.json \
+              "${DISCORD_WEBHOOK_URL}"
+          fi
+
+          echo "Discord-Webhook erfolgreich gesendet (${JAR_NAME})."
