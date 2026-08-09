@@ -213,6 +213,10 @@
         "name": "Song Änderung Benachrichtigung",
         "description": "Bekomme eine Benachrichtigung beim wechseln des Songs"
       },
+      "showLiveChatNotification": {
+        "name": "Modi-Live Chat-Nachricht",
+        "description": "Zeigt im Chat eine Nachricht, wenn laut Sendeplan ein Modi live geht – unabhängig davon, ob gerade Radio läuft."
+      },
       "autoStopOnFocusLoss": {
         "name": "Auto-Stop bei Fokus-Verlust",
         "description": "Stoppe den Stream automatisch, wenn das Spiel-Fenster den Fokus verliert"
@@ -265,8 +269,16 @@
       }
     },
     "schedule": {
-      "liveMessage": "EvilRadio ist jetzt live! ",
+      "liveMessage": "%s ist jetzt live – %s (%s)",
+      "liveHint": "Schalte jetzt den Mashup-Sender ein.",
+      "listenButton": "[Zuhören]",
+      "listenHover": "Klicken, um Mashup zu starten",
+      "listenStarted": "Mashup gestartet: %s",
+      "listenAlreadyPlaying": "Mashup läuft bereits.",
+      "listenUnavailable": "Mashup-Sender ist gerade nicht verfügbar.",
+      "listenDisabled": "Evil-Radio ist deaktiviert.",
       "twitchUrl": "https://www.twitch.tv/evilradiode",
+      "twitchHover": "Twitch öffnen",
       "loading": "Sendeplan wird geladen…",
       "empty": "Keine Sendungen an diesem Tag",
       "grussbox": "Grußbox"

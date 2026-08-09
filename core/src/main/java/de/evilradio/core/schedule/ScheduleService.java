@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.evilradio.core.EvilRadioAddon;
+import de.evilradio.core.command.ListenMashupCommand;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -15,6 +16,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.labymod.api.client.component.Component;
+import net.labymod.api.client.component.event.ClickEvent;
+import net.labymod.api.client.component.event.HoverEvent;
+import net.labymod.api.client.component.format.NamedTextColor;
+import net.labymod.api.client.component.format.TextColor;
+import net.labymod.api.client.component.format.TextDecoration;
 import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.io.web.request.Request;
 import net.labymod.api.util.logging.Logging;
@@ -50,7 +56,7 @@ public class ScheduleService {
   public void startScheduleChecker() {
     this.loadAndCacheSchedule(null);
 
-    this.scheduleCheckTask = Task.builder(this::checkSchedule).repeat(5, TimeUnit.MINUTES).build();
+    this.scheduleCheckTask = Task.builder(this::checkSchedule).repeat(1, TimeUnit.MINUTES).build();
     this.scheduleCheckTask.execute();
 
     this.hourlyUpdateTask = Task.builder(() -> this.loadAndCacheSchedule(null))
@@ -160,26 +166,8 @@ public class ScheduleService {
             return;
           }
 
-          ScheduleShow currentShow = this.findCurrentOrNextShow(scheduleArray);
-
-          if (currentShow != null) {
-            if (this.shouldSendNotification(currentShow)) {
-              String showKey = currentShow.getDate() + "_" + currentShow.getStartTime();
-              if (!showKey.equals(this.lastNotifiedShowKey)) {
-                if (this.isShowStillValid(scheduleArray, currentShow)) {
-                  this.lastNotifiedShowKey = showKey;
-                  this.sendLiveNotification(currentShow);
-                } else {
-                  this.logging.info(
-                      "Sendung wurde kurzfristig abgesagt: " + currentShow.getShowName());
-                }
-              }
-            } else if (this.isShowFinished(currentShow)) {
-              this.lastNotifiedShowKey = null;
-            }
-          }
-
           this.applyParsedSchedule(scheduleArray);
+          this.checkCachedShows();
         });
   }
 
@@ -194,27 +182,14 @@ public class ScheduleService {
   }
 
   private void checkCachedShows() {
-    LocalDate today = LocalDate.now();
-    LocalTime now = LocalTime.now();
-
     for (ScheduleShow show : this.cachedShows) {
-      LocalDate showDate = this.parseDate(show.getDate());
-      LocalTime startTime = this.parseTime(show.getStartTime());
-
-      if (showDate == null || startTime == null || !showDate.equals(today)) {
+      if (!this.shouldSendNotification(show)) {
         continue;
       }
-
-      LocalTime startTimeMinus10 = startTime.minusMinutes(10);
-      LocalTime startTimePlus5 = startTime.plusMinutes(5);
-
-      if ((now.isAfter(startTimeMinus10) || now.equals(startTimeMinus10))
-          && (now.isBefore(startTimePlus5) || now.equals(startTimePlus5))) {
-        String showKey = show.getDate() + "_" + show.getStartTime();
-        if (!showKey.equals(this.lastNotifiedShowKey)) {
-          this.lastNotifiedShowKey = showKey;
-          this.sendLiveNotification(show);
-        }
+      String showKey = show.getDate() + "_" + show.getStartTime();
+      if (!showKey.equals(this.lastNotifiedShowKey)) {
+        this.lastNotifiedShowKey = showKey;
+        this.sendLiveNotification(show);
       }
     }
   }
@@ -393,83 +368,10 @@ public class ScheduleService {
     return durationMinutes <= 10;
   }
 
-  private boolean isShowStillValid(JsonArray scheduleArray, ScheduleShow show) {
-    for (JsonElement dayElement : scheduleArray) {
-      JsonArray dayDataArray = this.extractDayEntries(dayElement);
-      if (dayDataArray == null || dayDataArray.size() == 0) {
-        continue;
-      }
-
-      JsonObject dayInfo = this.findDayInfo(dayDataArray);
-      if (dayInfo == null || !dayInfo.has("datum")) {
-        continue;
-      }
-      if (!dayInfo.get("datum").getAsString().equals(show.getDate())) {
-        continue;
-      }
-
-      for (int i = 0; i < dayDataArray.size(); i++) {
-        ScheduleShow parsed = this.parseShowEntry(
-            dayDataArray.get(i), show.getDate(), show.getWeekday());
-        if (parsed != null && parsed.getStartTime().equals(show.getStartTime())) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private @Nullable ScheduleShow findCurrentOrNextShow(JsonArray scheduleArray) {
-    LocalDate today = LocalDate.now();
-    LocalTime now = LocalTime.now();
-
-    for (JsonElement dayElement : scheduleArray) {
-      JsonArray dayDataArray = this.extractDayEntries(dayElement);
-      if (dayDataArray == null || dayDataArray.size() == 0) {
-        continue;
-      }
-
-      JsonObject dayInfo = this.findDayInfo(dayDataArray);
-      if (dayInfo == null || !dayInfo.has("datum")) {
-        continue;
-      }
-
-      String dateStr = dayInfo.get("datum").getAsString();
-      LocalDate showDate = this.parseDate(dateStr);
-      if (showDate == null
-          || showDate.isBefore(today)
-          || showDate.isAfter(today.plusDays(1))) {
-        continue;
-      }
-
-      String weekday = dayInfo.has("wochentag") ? dayInfo.get("wochentag").getAsString() : "";
-
-      for (int i = 0; i < dayDataArray.size(); i++) {
-        ScheduleShow show = this.parseShowEntry(dayDataArray.get(i), dateStr, weekday);
-        if (show == null) {
-          continue;
-        }
-
-        LocalTime startTime = this.parseTime(show.getStartTime());
-        if (startTime == null) {
-          continue;
-        }
-
-        if (showDate.equals(today)) {
-          if (now.isAfter(startTime.minusMinutes(10))
-              || now.equals(startTime)
-              || now.isBefore(startTime.plusHours(4))) {
-            return show;
-          }
-        } else if (showDate.equals(today.plusDays(1))) {
-          return show;
-        }
-      }
-    }
-
-    return null;
-  }
-
+  /**
+   * Chat-Hinweis nur kurz nach dem geplanten Sendungsstart (nicht vorher).
+   * Fenster: Startzeit bis +8 Minuten – bei 1-Minuten-Check zuverlässig, ohne Frühwarnung.
+   */
   private boolean shouldSendNotification(ScheduleShow show) {
     LocalDate today = LocalDate.now();
     LocalTime now = LocalTime.now();
@@ -480,35 +382,60 @@ public class ScheduleService {
       return false;
     }
 
-    LocalTime startTimeMinus10 = startTime.minusMinutes(10);
-    LocalTime startTimePlus30 = startTime.plusMinutes(30);
-    return (now.isAfter(startTimeMinus10) || now.equals(startTimeMinus10))
-        && (now.isBefore(startTimePlus30) || now.equals(startTimePlus30));
-  }
-
-  private boolean isShowFinished(ScheduleShow show) {
-    LocalDate today = LocalDate.now();
-    LocalTime now = LocalTime.now();
-
-    LocalDate showDate = this.parseDate(show.getDate());
-    LocalTime startTime = this.parseTime(show.getStartTime());
-    if (showDate == null || startTime == null) {
-      return false;
-    }
-    if (showDate.equals(today)) {
-      return now.isAfter(startTime.plusMinutes(30));
-    }
-    return showDate.isBefore(today);
+    long minutesSinceStart = ChronoUnit.MINUTES.between(startTime, now);
+    return minutesSinceStart >= 0 && minutesSinceStart <= 8;
   }
 
   private void sendLiveNotification(ScheduleShow show) {
+    if (!this.addon.configuration().enabled().get()
+        || !this.addon.configuration().showLiveChatNotification().get()) {
+      return;
+    }
+
     this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-      Component message = Component.translatable("evilradio.schedule.liveMessage")
-          .color(net.labymod.api.client.component.format.NamedTextColor.GRAY);
+      String moderator = show.getModerator() == null || show.getModerator().isBlank()
+          ? "EvilRadio"
+          : show.getModerator().trim();
+      String showName = show.getShowName() == null || show.getShowName().isBlank()
+          ? "Live"
+          : show.getShowName().trim();
+      String timeLabel = formatScheduleTimeLabel(show);
+
+      Component prefix = Component.text("[Evil-Radio] ")
+          .color(NamedTextColor.DARK_RED)
+          .decorate(TextDecoration.BOLD);
+
+      Component listenButton = Component.translatable("evilradio.schedule.listenButton")
+          .color(NamedTextColor.GREEN)
+          .decorate(TextDecoration.BOLD, TextDecoration.UNDERLINED)
+          .clickEvent(ClickEvent.runCommand("/" + ListenMashupCommand.COMMAND_NAME))
+          .hoverEvent(HoverEvent.showText(
+              Component.translatable("evilradio.schedule.listenHover")
+                  .color(NamedTextColor.GRAY)));
+
+      Component message = Component.empty()
+          .append(prefix)
+          .append(Component.translatable(
+                  "evilradio.schedule.liveMessage",
+                  Component.text(moderator).color(NamedTextColor.GOLD),
+                  Component.text(showName).color(NamedTextColor.AQUA),
+                  Component.text(timeLabel).color(NamedTextColor.YELLOW))
+              .color(NamedTextColor.GRAY))
+          .append(Component.newline())
+          .append(prefix)
+          .append(Component.translatable("evilradio.schedule.liveHint")
+              .color(NamedTextColor.GRAY))
+          .append(Component.space())
+          .append(listenButton);
 
       if (show.isTwitch()) {
-        message = message.append(Component.translatable("evilradio.schedule.twitchUrl")
-            .color(net.labymod.api.client.component.format.TextColor.color(145, 70, 255)));
+        message = message.append(Component.space())
+            .append(Component.translatable("evilradio.schedule.twitchUrl")
+                .color(TextColor.color(145, 70, 255))
+                .clickEvent(ClickEvent.openUrl("https://www.twitch.tv/evilradiode"))
+                .hoverEvent(HoverEvent.showText(
+                    Component.translatable("evilradio.schedule.twitchHover")
+                        .color(NamedTextColor.LIGHT_PURPLE))));
       }
 
       this.addon.labyAPI().minecraft().chatExecutor().displayClientMessage(message);
@@ -517,9 +444,20 @@ public class ScheduleService {
     this.logging.info(
         "Live-Benachrichtigung gesendet für Sendung: "
             + show.getShowName()
+            + " / "
+            + show.getModerator()
             + " um "
             + show.getStartTime()
             + (show.isTwitch() ? " (mit Twitch-Link)" : ""));
+  }
+
+  private static String formatScheduleTimeLabel(ScheduleShow show) {
+    String start = show.getStartTime();
+    String end = show.getEndTime();
+    if (end == null || end.isBlank()) {
+      return start + " Uhr";
+    }
+    return start + "–" + end + " Uhr";
   }
 
   private void runOnRender(@Nullable Runnable onDone) {

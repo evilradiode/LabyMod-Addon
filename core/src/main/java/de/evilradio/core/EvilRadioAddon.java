@@ -1,5 +1,7 @@
 package de.evilradio.core;
 
+import de.evilradio.core.activity.picker.RadioStationListOpener;
+import de.evilradio.core.command.ListenMashupCommand;
 import de.evilradio.core.configuration.AutoStartSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
@@ -11,7 +13,6 @@ import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
 import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSongService;
-import de.evilradio.core.activity.picker.RadioStationListOpener;
 import net.labymod.api.Laby;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.component.Component;
@@ -79,6 +80,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.labyAPI().eventBus().registerListener(new AudioStreamDebugSettingsListener(this));
     this.syncAudioStreamDebug();
     configuration().audioStreamDebug().addChangeListener(enabled -> this.syncAudioStreamDebug());
+
+    this.registerCommand(new ListenMashupCommand(this));
 
     this.labyAPI().eventBus().registerListener(new RadioStationListOpener(this));
 

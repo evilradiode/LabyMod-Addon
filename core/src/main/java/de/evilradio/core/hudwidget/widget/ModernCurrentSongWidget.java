@@ -72,6 +72,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private String lastArtistName = "";
   private Component lastLivePrefix = null;
   private boolean lastLiveBadgeTwitchPhase;
+  /** Ob der Previous-Block aktuell im Tree hängt (für HUD-Höhe / Snapping). */
+  private boolean previousSectionMounted;
 
   public ModernCurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget, boolean isEditorContext) {
     this.addon = addon;
@@ -92,6 +94,11 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     this.lastTrackName = "";
     this.lastArtistName = "";
     this.lastLivePrefix = null;
+    this.previousSectionMounted = false;
+    this.previousSongContainer = null;
+    this.previousSongIconWidget = null;
+    this.previousTrackWidget = null;
+    this.previousArtistWidget = null;
     this.lastLiveBadgeTwitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
 
     this.setVariable(MAX_WIDTH_VARIABLE_KEY, MAX_PLAYER_WIDTH);
@@ -150,40 +157,56 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     songContainer.addContent(content);
     this.addContent(songContainer);
 
-    if(this.hudWidget.getConfig().showLastSong().get()) {
-      this.previousSongContainer = new FlexibleContentWidget().addId("previous-song-container");
-      this.previousSongContainer.setVisible(this.hudWidget.getConfig().showLastSong().get());
-
-      FlexibleContentWidget previousSongContent = new FlexibleContentWidget().addId("previous-song-content");
-
-      this.previousSongIconWidget = new IconWidget(EvilTextures.LOGO).addId("previous-song-cover");
-      previousSongContent.addContent(this.previousSongIconWidget);
-
-      FlexibleContentWidget previousSongPlayer = new FlexibleContentWidget().addId("previous-player");
-
-      previousSongPlayer.addContent(ComponentWidget.i18n("evilradio.widget.previousSong").addId("previous-song-label"));
-
-      this.previousTrackWidget = new MarqueeComponentWidget();
-      this.previousTrackWidget.addId("previous-song-track");
-      previousSongPlayer.addContent(this.previousTrackWidget);
-
-      this.previousArtistWidget = new MarqueeComponentWidget();
-      this.previousArtistWidget.addId("previous-song-artist");
-      previousSongPlayer.addContent(this.previousArtistWidget);
-
-      previousSongContent.addFlexibleContent(previousSongPlayer);
-      this.previousSongContainer.addContent(previousSongContent);
-      this.addContent(this.previousSongContainer);
-
-      this.previousMarquee.clear();
-      this.previousMarquee.register(this.previousTrackWidget);
-      this.previousMarquee.register(this.previousArtistWidget);
+    CurrentSong currentSong = this.addon.currentSongService().getCurrentSong();
+    CurrentSong previousSong = this.addon.currentSongService().getPreviousSong();
+    // Nur mounten wenn wirklich Inhalt da ist – sonst bleibt HUD-Höhe/Snapping zu groß
+    if (shouldMountPreviousSection(currentSong, previousSong)) {
+      this.mountPreviousSongSection();
     }
 
     this.applyScrollMode();
 
-    this.updateTrack(this.addon.currentSongService().getCurrentSong(), this.addon.currentSongService()
-        .getPreviousSong());
+    this.updateTrack(currentSong, previousSong);
+  }
+
+  private void mountPreviousSongSection() {
+    this.previousSongContainer = new FlexibleContentWidget().addId("previous-song-container");
+
+    FlexibleContentWidget previousSongContent = new FlexibleContentWidget().addId("previous-song-content");
+
+    this.previousSongIconWidget = new IconWidget(EvilTextures.LOGO).addId("previous-song-cover");
+    previousSongContent.addContent(this.previousSongIconWidget);
+
+    FlexibleContentWidget previousSongPlayer = new FlexibleContentWidget().addId("previous-player");
+
+    previousSongPlayer.addContent(ComponentWidget.i18n("evilradio.widget.previousSong").addId("previous-song-label"));
+
+    this.previousTrackWidget = new MarqueeComponentWidget();
+    this.previousTrackWidget.addId("previous-song-track");
+    previousSongPlayer.addContent(this.previousTrackWidget);
+
+    this.previousArtistWidget = new MarqueeComponentWidget();
+    this.previousArtistWidget.addId("previous-song-artist");
+    previousSongPlayer.addContent(this.previousArtistWidget);
+
+    previousSongContent.addFlexibleContent(previousSongPlayer);
+    this.previousSongContainer.addContent(previousSongContent);
+    this.addContent(this.previousSongContainer);
+
+    this.previousMarquee.clear();
+    this.previousMarquee.register(this.previousTrackWidget);
+    this.previousMarquee.register(this.previousArtistWidget);
+    this.previousSectionMounted = true;
+  }
+
+  private boolean shouldMountPreviousSection(CurrentSong currentSong, CurrentSong previousSong) {
+    if (!this.hudWidget.getConfig().showLastSong().get()) {
+      return false;
+    }
+    if (currentSong != null && currentSong.isOnAir()) {
+      return false;
+    }
+    return previousSong != null && previousSong.isUsableAsPreviousSong();
   }
 
   @Override
@@ -268,6 +291,9 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       this.lastTrackName = "";
       this.lastArtistName = "";
       this.lastLivePrefix = null;
+      if (this.syncPreviousSectionMount(null, previousSong)) {
+        return;
+      }
       if (isPlaying && currentStream != null) {
         this.streamWidget.setComponent(Component.text(stationLabel(currentStream, false)).color(this.stationTextColor()));
         this.statusWidget.setComponent(Component.empty());
@@ -340,43 +366,48 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     this.progressTrackMaxWidth = Math.max(40f, playerWidth - (timeWidth > 0 ? timeWidth + 6 : 0));
     this.setVariable(PROGRESS_MAX_WIDTH_VARIABLE_KEY, this.progressTrackMaxWidth);
 
-    if(this.previousArtistWidget != null && this.previousTrackWidget != null) {
-      CurrentSong displayPrevious = previousSong;
-      // Während Live / bei Müll-History kein „Vorheriger Song“
-      if (currentSong != null && currentSong.isOnAir()) {
-        displayPrevious = null;
-      } else if (displayPrevious != null && !displayPrevious.isUsableAsPreviousSong()) {
-        displayPrevious = null;
-      }
-      if (displayPrevious == null) {
-        if (this.previousSongContainer != null) {
-          this.previousSongContainer.setVisible(false);
-        }
-      } else {
-        if (this.previousSongContainer != null) {
-          this.previousSongContainer.setVisible(this.hudWidget.getConfig().showLastSong().get());
-        }
+    // Mount-Status muss zur HUD-Höhe passen – setVisible(false) reicht für Snapping nicht
+    if (this.syncPreviousSectionMount(currentSong, previousSong)) {
+      return;
+    }
 
-        String previousTrackName = limitedTitle(displayPrevious.getDisplayTitle());
-        String previousArtistName = displayPrevious.getArtist();
+    if (this.previousSectionMounted
+        && this.previousArtistWidget != null
+        && this.previousTrackWidget != null
+        && previousSong != null) {
+      String previousTrackName = limitedTitle(previousSong.getDisplayTitle());
+      String previousArtistName = previousSong.getArtist();
 
-        float previousTrackWidth = fontRenderer.getWidth(previousTrackName);
-        float previousArtistWidth = fontRenderer.getWidth(previousArtistName == null ? "" : previousArtistName);
-        float previousNaturalWidth = Math.max(previousTrackWidth, previousArtistWidth);
-        float previousPlayerWidth = Math.clamp(previousNaturalWidth, 160f, MAX_PLAYER_WIDTH);
+      float previousTrackWidth = fontRenderer.getWidth(previousTrackName);
+      float previousArtistWidth = fontRenderer.getWidth(previousArtistName == null ? "" : previousArtistName);
+      float previousNaturalWidth = Math.max(previousTrackWidth, previousArtistWidth);
+      float previousPlayerWidth = Math.clamp(previousNaturalWidth, 160f, MAX_PLAYER_WIDTH);
 
-        this.setVariable(PREVIOUS_MAX_WIDTH_VARIABLE_KEY, previousPlayerWidth);
+      this.setVariable(PREVIOUS_MAX_WIDTH_VARIABLE_KEY, previousPlayerWidth);
 
-        this.previousTrackWidget.setMarqueeText(previousTrackName, this.songTextColor());
-        this.previousArtistWidget.setMarqueeText(
-            previousArtistName == null ? "" : previousArtistName, this.artistTextColor());
-        this.previousMarquee.onContentChanged();
-        this.applyCover(displayPrevious, this.previousSongIconWidget);
-      }
+      this.previousTrackWidget.setMarqueeText(previousTrackName, this.songTextColor());
+      this.previousArtistWidget.setMarqueeText(
+          previousArtistName == null ? "" : previousArtistName, this.artistTextColor());
+      this.previousMarquee.onContentChanged();
+      this.applyCover(previousSong, this.previousSongIconWidget);
     }
 
     this.applyCover(currentSong, this.coverWidget);
     this.updateProgress(currentSong);
+  }
+
+  /**
+   * Hängt den Previous-Block an bzw. entfernt ihn per Reinit, damit die HUD-Bounds schrumpfen.
+   *
+   * @return {@code true} wenn ein Reinit ausgelöst wurde (Caller soll abbrechen)
+   */
+  private boolean syncPreviousSectionMount(CurrentSong currentSong, CurrentSong previousSong) {
+    boolean shouldMount = shouldMountPreviousSection(currentSong, previousSong);
+    if (shouldMount == this.previousSectionMounted) {
+      return false;
+    }
+    this.reInitialize();
+    return true;
   }
 
   private void refreshStreamLine(CurrentSong currentSong) {

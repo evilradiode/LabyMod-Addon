@@ -34,6 +34,9 @@ public class EvilRadioConfiguration extends AddonConfig {
   private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
 
   @SwitchSetting
+  private final ConfigProperty<Boolean> showLiveChatNotification = new ConfigProperty<>(true);
+
+  @SwitchSetting
   private final ConfigProperty<Boolean> autoStopOnFocusLoss = new ConfigProperty<>(false);
 
   @SliderSetting(min = 0, max = 100, steps = 2f)
@@ -82,6 +85,10 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Boolean> showSongChangeNotification() {
     return showSongChangeNotification;
+  }
+
+  public ConfigProperty<Boolean> showLiveChatNotification() {
+    return this.showLiveChatNotification;
   }
 
   public ConfigProperty<Boolean> autoStopOnFocusLoss() {
