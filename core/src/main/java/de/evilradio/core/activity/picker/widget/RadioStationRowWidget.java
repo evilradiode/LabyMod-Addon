@@ -257,12 +257,12 @@ public class RadioStationRowWidget extends DivWidget {
     }
     if (this.onAir) {
       name = name
-          .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+          .append(Component.text(" | ").color(NamedTextColor.GRAY))
           .append(Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED));
     }
     if (this.twitch) {
       name = name
-          .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+          .append(Component.text(" | ").color(NamedTextColor.GRAY))
           .append(Component.translatable("evilradio.widget.twitch").color(TextColor.color(145, 70, 255)));
     }
     return name;

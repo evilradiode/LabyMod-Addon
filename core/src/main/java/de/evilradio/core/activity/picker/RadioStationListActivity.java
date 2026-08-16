@@ -766,12 +766,12 @@ public class RadioStationListActivity extends SimpleActivity {
         this.syncMashupStatusToRows(this.mashupOnAir, this.mashupTwitch);
         if (this.mashupOnAir) {
           stationLine = stationLine
-              .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+              .append(Component.text(" | ").color(NamedTextColor.GRAY))
               .append(Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED));
         }
         if (this.mashupTwitch) {
           stationLine = stationLine
-              .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+              .append(Component.translatable(" | ").color(NamedTextColor.GRAY))
               .append(Component.translatable("evilradio.widget.twitch")
                   .color(TextColor.color(145, 70, 255)));
         }

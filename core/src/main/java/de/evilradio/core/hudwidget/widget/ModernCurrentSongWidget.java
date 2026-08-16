@@ -301,7 +301,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     Component streamLine = Component.text(streamDisplayName).color(this.stationTextColor());
     if (this.lastLivePrefix != null) {
       streamLine = streamLine
-          .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+          .append(Component.text(" | ").color(NamedTextColor.GRAY))
           .append(this.lastLivePrefix);
     }
     this.streamWidget.setComponent(streamLine);
@@ -382,7 +382,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     Component streamLine = Component.text(streamDisplayName).color(this.stationTextColor());
     if (this.lastLivePrefix != null) {
       streamLine = streamLine
-          .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+          .append(Component.text(" | ").color(NamedTextColor.GRAY))
           .append(this.lastLivePrefix);
     }
     this.streamWidget.setComponent(streamLine);

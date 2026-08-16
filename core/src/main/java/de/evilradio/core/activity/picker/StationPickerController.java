@@ -44,7 +44,7 @@ public final class StationPickerController {
 
     return Component.translatable("evilradio.picker.volumeLabel", Component.text(String.valueOf(volumeInt)))
         .color(NamedTextColor.YELLOW)
-        .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+        .append(Component.text(" | ").color(NamedTextColor.GRAY))
         .append(playStopStatus);
   }
 

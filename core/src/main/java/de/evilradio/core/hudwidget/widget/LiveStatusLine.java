@@ -2,10 +2,10 @@ package de.evilradio.core.hudwidget.widget;
 
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
-import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.component.format.TextColor;
+import net.labymod.api.util.I18n;
 
 /**
  * On-Air-/Twitch-Zeile für Mashup. Bei beiden Flags abwechselnd nur eines anzeigen,
@@ -64,14 +64,14 @@ final class LiveStatusLine {
     }
     if (showTwitch) {
       if (hasContent) {
-        line = line.append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY));
+        line = line.append(Component.text(" | ").color(NamedTextColor.GRAY));
       }
       line = line.append(Component.translatable("evilradio.widget.twitch").color(TWITCH_COLOR));
       hasContent = true;
     }
     if (onAir && song.getModeratorName() != null && !song.getModeratorName().isEmpty()) {
       if (hasContent) {
-        line = line.append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY));
+        line = line.append(Component.text(" | ").color(NamedTextColor.GRAY));
       }
       line = line.append(Component.text(song.getModeratorName()).color(NamedTextColor.WHITE));
       hasContent = true;
@@ -92,33 +92,23 @@ final class LiveStatusLine {
     StringBuilder builder = new StringBuilder();
     boolean hasContent = false;
     if (showOnAir) {
-      builder.append(translateOr("evilradio.widget.onAir", "● ON AIR"));
+      builder.append(I18n.translate("evilradio.widget.onAir"));
       hasContent = true;
     }
     if (showTwitch) {
       if (hasContent) {
-        builder.append(translateOr("evilradio.widget.statusSeparator", " | "));
+        builder.append(" | ");
       }
-      builder.append(translateOr("evilradio.widget.twitch", "● TWITCH"));
+      builder.append(I18n.translate("evilradio.widget.twitch"));
       hasContent = true;
     }
     if (onAir && song.getModeratorName() != null && !song.getModeratorName().isEmpty()) {
       if (hasContent) {
-        builder.append(translateOr("evilradio.widget.statusSeparator", " | "));
+        builder.append(" | ");
       }
       builder.append(song.getModeratorName());
     }
     return builder.toString();
   }
 
-  private static String translateOr(String key, String fallback) {
-    try {
-      String translated = Laby.labyAPI().internationalization().getTranslation(key);
-      if (translated != null && !translated.isBlank() && !translated.equals(key)) {
-        return translated;
-      }
-    } catch (Throwable ignored) {
-    }
-    return fallback;
-  }
 }

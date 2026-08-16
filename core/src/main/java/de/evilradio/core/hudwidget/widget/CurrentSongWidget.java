@@ -275,7 +275,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       status = this.lastLivePrefix;
       if (!timeLabel.isEmpty()) {
         status = status
-            .append(Component.translatable("evilradio.widget.statusSeparator").color(NamedTextColor.GRAY))
+            .append(Component.text(" | ").color(NamedTextColor.GRAY))
             .append(Component.text(timeLabel).color(NamedTextColor.DARK_GRAY));
       }
     } else if (!timeLabel.isEmpty()) {

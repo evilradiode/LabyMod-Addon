@@ -1,6 +1,6 @@
 package de.evilradio.core.song;
 
-import net.labymod.api.Laby;
+import net.labymod.api.util.I18n;
 
 /**
  * Unveränderlicher Snapshot der Now-Playing-Daten eines Senders.
@@ -62,8 +62,8 @@ public final class CurrentSong {
     this.stationShortcode = stationShortcode;
     this.adBreak = ad;
     if (ad) {
-      this.title = translateOrDefault("evilradio.widget.adBreakTitle", "Jetzt läuft");
-      this.artist = translateOrDefault("evilradio.widget.adBreakArtist", "Werbung");
+      this.title = I18n.translate("evilradio.widget.adBreakTitle");
+      this.artist = I18n.translate("evilradio.widget.adBreakArtist");
     } else {
       this.title = rawTitle;
       this.artist = rawArtist;
@@ -118,18 +118,6 @@ public final class CurrentSong {
 
   private static boolean isAdBreakMarker(String value) {
     return value != null && value.trim().equalsIgnoreCase(AD_BREAK_MARKER);
-  }
-
-  private static String translateOrDefault(String key, String fallback) {
-    try {
-      String translated = Laby.labyAPI().internationalization().getTranslation(key);
-      if (translated != null && !translated.isBlank() && !translated.equals(key)) {
-        return translated;
-      }
-    } catch (Throwable ignored) {
-      // API ggf. noch nicht bereit
-    }
-    return fallback;
   }
 
   public int getStationId() {
