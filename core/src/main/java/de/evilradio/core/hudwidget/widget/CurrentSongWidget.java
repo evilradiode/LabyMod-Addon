@@ -2,7 +2,6 @@ package de.evilradio.core.hudwidget.widget;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
-import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
@@ -30,14 +29,13 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
   private final EvilRadioAddon addon;
   private final CurrentSongHudWidget hudWidget;
-  private final boolean isEditorContext;
 
-  private static final String MAX_WIDTH_VARIABLE_KEY = "--current-song-widget-max-width";
-  private static final String MIN_WIDTH_VARIABLE_KEY = "--current-song-widget-min-width";
+  private static final String MAX_PLAYER_WIDTH_KEY = "--current-song-widget-max-player-width";
   private static final String PROGRESS_FILL_WIDTH_KEY = "--current-song-progress-width";
   private static final String BACKGROUND_VARIABLE_KEY = "--song-widget-bg";
+  private static final String PROGRESS_BAR_COLOR_VARIABLE_KEY = "--song-widget-progress-bar-color";
 
-  private static final float MAX_PLAYER_WIDTH = 220f;
+  private static final float MAX_PLAYER_WIDTH = 160f;
 
   private ComponentWidget streamWidget;
   private ComponentWidget statusWidget;
@@ -45,8 +43,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private ComponentWidget artistWidget;
 
   private IconWidget coverWidget;
-  private DivWidget controlsWidget;
-  private IconWidget playPauseWidget;
   private DivWidget progressTrack;
   private DivWidget progressFill;
 
@@ -57,13 +53,13 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   private boolean lastRenderedHadDuration;
   private float progressTrackMaxWidth = 200f;
   private String lastTrackName = "";
+  private String lastArtistName = "";
   private Component lastLivePrefix = Component.empty();
   private boolean lastLiveBadgeTwitchPhase;
 
-  public CurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget, boolean isEditorContext) {
+  public CurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget) {
     this.addon = addon;
     this.hudWidget = hudWidget;
-    this.isEditorContext = isEditorContext;
   }
 
   @Override
@@ -76,17 +72,13 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.lastRenderedProgressPercent = -1;
     this.lastRenderedHadDuration = false;
     this.lastTrackName = "";
+    this.lastArtistName = "";
     this.lastLivePrefix = Component.empty();
     this.lastLiveBadgeTwitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
 
-    this.setVariable(MAX_WIDTH_VARIABLE_KEY, MAX_PLAYER_WIDTH);
-    this.setVariable(MIN_WIDTH_VARIABLE_KEY, 160);
+    this.setVariable(MAX_PLAYER_WIDTH_KEY, MAX_PLAYER_WIDTH);
     this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
     this.applyBackgroundColor();
-
-    if (this.isEditorContext) {
-      this.addId("maximized");
-    }
 
     boolean showCover = this.hudWidget.getConfig().showCover().get();
     if (!showCover) {
@@ -104,65 +96,26 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.addContent(this.coverWidget);
     }
 
-    FlexibleContentWidget player = new FlexibleContentWidget();
-    player.addId("player");
+    FlexibleContentWidget player = new FlexibleContentWidget().addId("player");
 
-    FlexibleContentWidget textAndControl = new FlexibleContentWidget();
-    textAndControl.addId("text-and-control");
+    VerticalListWidget<ComponentWidget> text = new VerticalListWidget<>().addId("text");
 
-    VerticalListWidget<ComponentWidget> text = new VerticalListWidget<>();
-    text.addId("text");
-
-    // Immer 4 Zeilen – wie im Original-Layout
     this.streamWidget = ComponentWidget.empty();
     text.addChild(this.streamWidget);
+
+    this.trackWidget = ComponentWidget.empty().addId("track");
+    text.addChild(this.trackWidget);
+
+    this.artistWidget = ComponentWidget.empty().addId("artist");
+    text.addChild(this.artistWidget);
 
     this.statusWidget = ComponentWidget.empty();
     text.addChild(this.statusWidget);
 
-    this.trackWidget = ComponentWidget.empty();
-    text.addChild(this.trackWidget);
+    player.addFlexibleContent(text);
 
-    this.artistWidget = ComponentWidget.empty();
-    text.addChild(this.artistWidget);
-
-    this.controlsWidget = new DivWidget();
-    this.controlsWidget.addId("controls");
-
-    this.playPauseWidget = new IconWidget(
-        !this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY
-    );
-    this.playPauseWidget.addId("play");
-    this.playPauseWidget.setPressable(() -> {
-      this.playPauseWidget.icon().set(
-          this.addon.radioManager().isPlaying() ? SpriteControls.PLAY : SpriteControls.PAUSE
-      );
-
-      if (this.addon.radioManager().isPlaying()) {
-        this.addon.radioManager().stopStream(true);
-      } else {
-        this.addon.setUserManuallyStopped(false);
-        this.addon.radioManager().playStream(
-            this.addon.radioStreamService().getLastSelectedStream()
-        );
-      }
-    });
-    this.controlsWidget.addChild(this.playPauseWidget);
-
-    if (leftAligned) {
-      textAndControl.addFlexibleContent(text);
-      textAndControl.addContent(this.controlsWidget);
-    } else {
-      textAndControl.addContent(this.controlsWidget);
-      textAndControl.addFlexibleContent(text);
-    }
-
-    player.addFlexibleContent(textAndControl);
-
-    this.progressTrack = new DivWidget();
-    this.progressTrack.addId("progress-track");
-    this.progressFill = new DivWidget();
-    this.progressFill.addId("progress-fill");
+    this.progressTrack = new DivWidget().addId("progress-track");
+    this.progressFill = new DivWidget().addId("progress-fill");
     this.progressTrack.addChild(this.progressFill);
     player.addContent(this.progressTrack);
 
@@ -178,15 +131,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   @Override
   public void tick() {
     super.tick();
-
-    if (!this.isEditorContext) {
-      boolean isChatOpen = Laby.references().chatAccessor().isChatOpen();
-      if (isChatOpen) {
-        this.addId("maximized");
-      } else {
-        this.removeId("maximized");
-      }
-    }
 
     CurrentSong song = this.addon.currentSongService().getCurrentSong();
     if (song != null) {
@@ -257,6 +201,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     if (currentSong == null) {
       this.lastTrackName = "";
+      this.lastArtistName = "";
       this.lastLivePrefix = Component.empty();
       if (isPlaying && currentStream != null) {
         this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(this.stationTextColor()));
@@ -279,7 +224,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         this.artistWidget.setComponent(Component.empty());
         this.setProgressVisible(false);
       }
-      this.controlsWidget.setVisible(false);
       return;
     }
 
@@ -295,29 +239,25 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.lastLivePrefix = live == null ? Component.empty() : live;
     this.renderStatusLine(currentSong);
 
-    this.lastTrackName = limitedTitle(currentSong.getDisplayTitle());
-    this.trackWidget.setComponent(Component.text(this.lastTrackName).color(this.songTextColor()));
-
-    String artistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
-    this.artistWidget.setComponent(Component.text(artistName).color(this.artistTextColor()));
+    this.lastTrackName = currentSong.getDisplayTitle();
+    this.lastArtistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
+    this.trackWidget.setComponent(Component.text(this.lastTrackName, this.songTextColor()));
+    this.artistWidget.setComponent(Component.text(this.lastArtistName, this.artistTextColor()));
 
     FontRenderer fontRenderer = Laby.references().minecraftFontRenderer();
-    float minWidgetWidth = (!hasId("no-cover") ? 44 : 0) + 30;
     String statusSample = statusLinePlain(currentSong);
     float streamNameWidth = fontRenderer.getWidth(streamDisplayName);
     float statusWidth = fontRenderer.getWidth(statusSample);
     float trackWidth = fontRenderer.getWidth(this.lastTrackName);
-    float artistWidth = fontRenderer.getWidth(artistName);
-    float contentWidth = Math.max(
-        Math.max(streamNameWidth, statusWidth),
-        Math.max(trackWidth, artistWidth)
+    float artistWidth = fontRenderer.getWidth(this.lastArtistName);
+    float naturalWidth = Math.max(
+        Math.max(streamNameWidth, trackWidth),
+        Math.max(artistWidth, statusWidth)
     );
+    float playerWidth = Math.clamp(naturalWidth + 4f, 160f, MAX_PLAYER_WIDTH);
 
-    this.setVariable(MIN_WIDTH_VARIABLE_KEY, Math.max(minWidgetWidth, streamNameWidth));
-    this.setVariable(MAX_WIDTH_VARIABLE_KEY, minWidgetWidth + contentWidth);
-    this.progressTrackMaxWidth = Math.max(40f, contentWidth);
+    this.progressTrackMaxWidth = Math.max(40f, playerWidth);
 
-    this.controlsWidget.setVisible(true);
     this.applyCover(currentSong);
     this.updateProgress(currentSong);
   }
@@ -354,17 +294,6 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       return timeLabel.isEmpty() ? livePlain : livePlain + " | " + timeLabel;
     }
     return timeLabel;
-  }
-
-  private String limitedTitle(String title) {
-    if (title == null) {
-      return "";
-    }
-    int max = CurrentSongHudWidget.MAX_TITLE_LENGTH;
-    if (title.length() <= max) {
-      return title;
-    }
-    return title.substring(0, max);
   }
 
   private static String formatTimeLabel(CurrentSong song) {
@@ -469,6 +398,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
   private void applyBackgroundColor() {
     this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
+    int progressColor = this.hudWidget.getConfig().progressBarColor().get().get();
+    this.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
+    if (this.progressFill != null) {
+      this.progressFill.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
+    }
   }
 
   private TextColor stationTextColor() {

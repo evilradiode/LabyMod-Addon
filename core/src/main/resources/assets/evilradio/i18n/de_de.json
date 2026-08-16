@@ -94,7 +94,6 @@
       "noStreamSelected": "Kein Sender ausgewählt",
       "onAir": "● ON AIR",
       "twitch": "● TWITCH",
-      "statusSeparator": " | ",
       "adBreakTitle": "Jetzt läuft",
       "adBreakArtist": "Werbung",
       "previousSong": "Vorheriger Song"
@@ -118,10 +117,6 @@
         "showLastSong": {
           "name": "Vorheriger Song anzeigen",
           "description": "Zeige den letzten Song im Widget. (Nur Modernes Widget)"
-        },
-        "scrollLongText": {
-          "name": "Langen Text scrollen",
-          "description": "Wenn aktiv, laufen zu lange Titel/Interpreten als Lauftext durch. Wenn deaktiviert, werden sie mit … abgeschnitten."
         },
         "backgroundBlur": {
           "name": "Hintergrund Blur",

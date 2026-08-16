@@ -1,3 +1,5 @@
+import net.labymod.labygradle.common.extension.model.labymod.ReleaseChannels
+
 plugins {
     id("net.labymod.labygradle")
     id("net.labymod.labygradle.addon")
@@ -29,6 +31,7 @@ labyMod {
         description = "Ein Radio-Addon für LabyMod 4"
         minecraftVersion = "*"
         version = rootProject.version.toString()
+        releaseChannel = ReleaseChannels.SNAPSHOT
     }
 }
 

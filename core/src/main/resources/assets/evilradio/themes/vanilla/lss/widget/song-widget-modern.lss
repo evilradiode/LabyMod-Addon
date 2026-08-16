@@ -7,9 +7,7 @@ ModernCurrentSong {
   .song-container {
     left: 0;
     top: 0;
-    min-width: 220;
-    width: fit-content;
-    max-width: 400;
+    width: 220;
     height: fit-content;
     filter: blur(var(--modern-song-widget-blur));
     border-radius: 10;
@@ -31,8 +29,7 @@ ModernCurrentSong {
     .player {
       height: fit-content;
       orientation: vertical;
-      width: var(--modern-song-widget-max-width);
-      max-width: 320;
+      width: var(--modern-song-widget-max-player-width);
       padding-left: 5;
       padding-right: 2;
 
@@ -46,32 +43,22 @@ ModernCurrentSong {
         margin-top: 2;
         width: 100%;
         height: 9;
-        stencil-translation: true;
-
-        .marquee-label {
-          left: 0;
-          top: 0;
-          max-lines: 1;
-          max-lines-clip-text: false;
-          overflow-strategy: wrap;
-          width: fit-content;
-        }
+        max-lines: 1;
+        scroll-text: true;
+        scroll-mode: loop;
+        scroll-speed: 10.0;
+        scroll-gap: 25.0;
       }
 
       .artist {
         margin-top: 2;
         width: 100%;
         height: 9;
-        stencil-translation: true;
-
-        .marquee-label {
-          left: 0;
-          top: 0;
-          max-lines: 1;
-          max-lines-clip-text: false;
-          overflow-strategy: wrap;
-          width: fit-content;
-        }
+        max-lines: 1;
+        scroll-text: true;
+        scroll-mode: loop;
+        scroll-speed: 10.0;
+        scroll-gap: 25.0;
       }
 
       .progress-row {
@@ -85,7 +72,7 @@ ModernCurrentSong {
           margin-top: 1.5;
           border-radius: 5;
           height: 4;
-          width: var(--modern-song-widget-progress-max-width);
+          width: 78%;
           background-color: rgba(255, 255, 255, 0.12);
 
           .progress-fill {
@@ -118,9 +105,7 @@ ModernCurrentSong {
     left: 0;
     top: 0;
     margin-top: 2;
-    min-width: 220;
-    width: fit-content;
-    max-width: 400;
+    width: 220;
     height: fit-content;
     filter: blur(var(--modern-song-widget-blur));
     border-radius: 10;
@@ -133,7 +118,6 @@ ModernCurrentSong {
 
     .previous-song-content {
       width: fit-content;
-      max-width: 100%;
       height: fit-content;
       overwrite-width: false;
       margin: 4 4 4 4;
@@ -152,8 +136,7 @@ ModernCurrentSong {
       .previous-player {
         height: fit-content;
         orientation: vertical;
-        width: var(--modern-song-widget-max-width);
-        max-width: 320;
+        width: calc(var(--modern-song-widget-max-player-width) + 20);
         padding-left: 5;
         padding-right: 2;
 
@@ -167,33 +150,23 @@ ModernCurrentSong {
         .previous-song-artist {
           width: 100%;
           height: fit-content;
-          stencil-translation: true;
-
-          .marquee-label {
-            left: 0;
-            top: 0;
-            max-lines: 1;
-            max-lines-clip-text: false;
-            overflow-strategy: wrap;
-            width: fit-content;
-            font-size: 0.7;
-          }
+          max-lines: 1;
+          font-size: 0.7;
+          scroll-text: true;
+          scroll-mode: loop;
+          scroll-speed: 10.0;
+          scroll-gap: 25.0;
         }
 
         .previous-song-track {
           width: 100%;
           height: fit-content;
-          stencil-translation: true;
-
-          .marquee-label {
-            left: 0;
-            top: 0;
-            max-lines: 1;
-            max-lines-clip-text: false;
-            overflow-strategy: wrap;
-            width: fit-content;
-            font-size: 0.7;
-          }
+          max-lines: 1;
+          font-size: 0.7;
+          scroll-text: true;
+          scroll-mode: loop;
+          scroll-speed: 10.0;
+          scroll-gap: 25.0;
         }
 
       }

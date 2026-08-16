@@ -25,11 +25,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public static final String COVER_VISIBILITY_REASON = "cover_visibility";
   public static final String SONG_CHANGE_REASON = "song_change";
   public static final String COLOR_REASON = "color_style";
-  public static final String SCROLL_TEXT_REASON = "scroll_text";
   public static final String TOGGLE_PREVIOUS_SONG_REASON = "toggle_previous_song";
-
-  /** Feste Obergrenze für Songtitel (Zeichen). */
-  public static final int MAX_TITLE_LENGTH = 150;
 
   /** Minecraft-Grau (#AAAAAA) – bisher NamedTextColor.GRAY */
   public static final Color DEFAULT_STATION_COLOR = Color.ofRGB(170, 170, 170);
@@ -86,10 +82,6 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COLOR_REASON))
     );
-    config.scrollLongText.addChangeListener(
-        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
-            () -> this.requestUpdate(SCROLL_TEXT_REASON))
-    );
     config.useModernWidget.addChangeListener((property, oldValue, newValue) -> {
       if (this.hudWidgetWidget != null) {
         this.hudWidgetWidget.reInitialize();
@@ -106,10 +98,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     super.initialize(widget);
     this.hudWidgetWidget = widget;
     if (this.config.useModernWidget.get()) {
-      widget.addChild(new ModernCurrentSongWidget(this.addon, this, widget.accessor().isEditor()));
+      widget.addChild(new ModernCurrentSongWidget(this.addon, this));
       widget.addId("current-song-modern");
     } else {
-      widget.addChild(new CurrentSongWidget(this.addon, this, widget.accessor().isEditor()));
+      widget.addChild(new CurrentSongWidget(this.addon, this));
       widget.addId("current-song");
     }
   }
@@ -142,10 +134,6 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @IntroducedIn(namespace = "evilradio", value = "1.1.0")
     @SwitchSetting
     private final ConfigProperty<Boolean> showLastSong = ConfigProperty.create(false);
-
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-    @SwitchSetting
-    private final ConfigProperty<Boolean> scrollLongText = ConfigProperty.create(true);
 
     @SettingSection("customization")
 
@@ -184,10 +172,6 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
     public ConfigProperty<Boolean> showLastSong() {
       return showLastSong;
-    }
-
-    public ConfigProperty<Boolean> scrollLongText() {
-      return this.scrollLongText;
     }
 
     public ConfigProperty<Integer> backgroundBlur() {
