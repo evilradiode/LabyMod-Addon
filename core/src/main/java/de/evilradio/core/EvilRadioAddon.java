@@ -85,11 +85,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
     this.labyAPI().eventBus().registerListener(new RadioStationListOpener(this));
 
-    // Falls ein früherer Listen-Overlay-Crash die Kamera gelockt hat.
-    if (Laby.references().cameraLockController().isLocked()) {
-      Laby.references().cameraLockController().unlock();
-    }
-
     this.labyAPI().hudWidgetRegistry().categoryRegistry().register(HUD_WIDGET_CATEGORY);
     this.labyAPI().hudWidgetRegistry().register(this.currentSongHudWidget = new CurrentSongHudWidget(this));
 
