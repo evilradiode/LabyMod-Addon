@@ -14,6 +14,7 @@ import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.screen.activity.Activity;
+import net.labymod.api.client.gui.screen.widget.attributes.PriorityLayer;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.activity.Document;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget;
@@ -31,11 +32,21 @@ public class ActivityListener implements Updatable {
 
   public ActivityListener(EvilRadioAddon addon) {
     this.addon = addon;
+    this.addon.configuration().showMainMenuPlayer().addChangeListener(enabled ->
+        this.addon.labyAPI().minecraft().executeOnRenderThread(
+            () -> this.applyMainMenuPlayerVisibility(enabled)));
   }
 
   @Subscribe
   public void onActivityInitialize(ActivityInitializeEvent event) {
-    if(!event.getIdentifier().equals("labymod:main_menu")) return;
+    if (!isMenuPlayerHost(event.getIdentifier())) {
+      return;
+    }
+    this.mainMenuActivity = event.activity();
+    this.clearMainMenuPlayerWidgets();
+    if (!this.addon.configuration().showMainMenuPlayer().get()) {
+      return;
+    }
     this.addRadioController(event.activity());
   }
 
@@ -64,6 +75,8 @@ public class ActivityListener implements Updatable {
     }
   }
 
+  private Activity mainMenuActivity;
+  private FlexibleContentWidget songContainer;
   private IconWidget coverWidget;
   private ComponentWidget streamWidget;
   private ComponentWidget trackWidget;
@@ -71,12 +84,41 @@ public class ActivityListener implements Updatable {
 
   private ButtonWidget playPauseButton;
 
+  private static final String MAIN_MENU_ACTIVITY_ID = "labymod:main_menu";
+  private static final String MULTIPLAYER_ACTIVITY_ID = "labymod:multiplayer";
+
   private static final float MAX_PLAYER_WIDTH = 160f;
 
   private static final String MAX_PLAYER_WIDTH_KEY = "--modern-song-widget-max-player-width";
 
   private Component lastLivePrefix = null;
   private boolean lastLiveBadgeTwitchPhase;
+
+  private void applyMainMenuPlayerVisibility(boolean enabled) {
+    if (this.mainMenuActivity == null) {
+      return;
+    }
+    if (enabled) {
+      if (this.songContainer == null) {
+        this.addRadioController(this.mainMenuActivity);
+      } else {
+        this.songContainer.setVisible(true);
+      }
+      return;
+    }
+    if (this.songContainer != null) {
+      this.songContainer.setVisible(false);
+    }
+  }
+
+  private void clearMainMenuPlayerWidgets() {
+    this.songContainer = null;
+    this.coverWidget = null;
+    this.streamWidget = null;
+    this.trackWidget = null;
+    this.artistWidget = null;
+    this.playPauseButton = null;
+  }
 
   private void addRadioController(Activity activity) {
     Document document = activity.document();
@@ -86,7 +128,8 @@ public class ActivityListener implements Updatable {
 
     this.lastLivePrefix = null;
 
-    FlexibleContentWidget songContainer = new FlexibleContentWidget().addId("song-container");
+    this.songContainer = new FlexibleContentWidget().addId("song-container");
+    this.songContainer.priorityLayer().set(PriorityLayer.VERY_FRONT);
 
     FlexibleContentWidget content = new FlexibleContentWidget().addId("content");
 
@@ -117,20 +160,7 @@ public class ActivityListener implements Updatable {
     controlsContainer.addEntry(previousButton);
 
     this.playPauseButton = ButtonWidget.icon(this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY).addId("play-pause");
-    this.playPauseButton.setPressable(() -> {
-      if (this.addon.radioManager().getCurrentStream() == null && !this.addon.radioManager().isPlaying()) {
-        RadioStream lastStream = this.addon.radioStreamService().findStreamById(this.addon.configuration().lastStreamId().get());
-        if (lastStream != null) {
-          this.addon.radioManager().playStream(lastStream);
-        } else {
-          this.addon.radioManager().togglePlayStop();
-        }
-      } else {
-        this.addon.radioManager().togglePlayStop();
-      }
-      this.playPauseButton.updateIcon(this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY);
-      this.addon.radioStationListActivity().startNowPlayingSession();
-    });
+    this.playPauseButton.setPressable(this::togglePlayback);
     controlsContainer.addEntry(this.playPauseButton);
 
     ButtonWidget nextButton = ButtonWidget.icon(SpriteControls.NEXT).addId("next");
@@ -154,9 +184,9 @@ public class ActivityListener implements Updatable {
 
     content.addFlexibleContent(player);
 
-    songContainer.addContent(content);
+    this.songContainer.addContent(content);
 
-    document.addChildInitialized(songContainer);
+    document.addChildInitialized(this.songContainer);
 
     this.refreshPlayPauseIcon();
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
@@ -192,7 +222,31 @@ public class ActivityListener implements Updatable {
 
     if (nextPlayable == null) return;
 
+    this.playPauseButton.updateIcon(SpriteControls.PAUSE);
     this.addon.radioManager().playStream(nextPlayable);
+    this.refreshPlayPauseIcon();
+    this.updateTrack(this.addon.currentSongService().getCurrentSong());
+    if (this.addon.radioStationListActivity() != null) {
+      this.addon.radioStationListActivity().startNowPlayingSession();
+    }
+  }
+
+  private void togglePlayback() {
+    boolean startPlayback = !this.addon.radioManager().isPlaying();
+    this.playPauseButton.updateIcon(startPlayback ? SpriteControls.PAUSE : SpriteControls.PLAY);
+
+    if (startPlayback && this.addon.radioManager().getCurrentStream() == null) {
+      RadioStream lastStream = this.addon.radioStreamService().findStreamById(
+          this.addon.configuration().lastStreamId().get());
+      if (lastStream != null) {
+        this.addon.radioManager().playStream(lastStream);
+      } else {
+        this.addon.radioManager().togglePlayStop();
+      }
+    } else {
+      this.addon.radioManager().togglePlayStop();
+    }
+
     this.refreshPlayPauseIcon();
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
     if (this.addon.radioStationListActivity() != null) {
@@ -248,7 +302,8 @@ public class ActivityListener implements Updatable {
         }
       } else {
         this.streamWidget.setComponent(Component.empty());
-        this.trackWidget.setComponent(Component.empty());
+        this.trackWidget.setComponent(Component.translatable("evilradio.widget.clickPlayToStart")
+            .color(NamedTextColor.GRAY));
         this.artistWidget.setComponent(Component.empty());
       }
       return;
@@ -290,14 +345,15 @@ public class ActivityListener implements Updatable {
 
   private Icon stationIcon() {
     RadioStream stream = this.addon.radioManager().getCurrentStream();
-    if (stream == null) {
-      stream = this.addon.radioStreamService().findStreamById(
-          this.addon.configuration().lastStreamId().get());
-    }
     if (stream != null && stream.getIcon() != null) {
       return stream.getIcon();
     }
     return EvilTextures.LOGO;
+  }
+
+  private static boolean isMenuPlayerHost(String identifier) {
+    return MAIN_MENU_ACTIVITY_ID.equals(identifier)
+        || MULTIPLAYER_ACTIVITY_ID.equals(identifier);
   }
 
   private static String stationLabel(RadioStream stream, boolean compact) {

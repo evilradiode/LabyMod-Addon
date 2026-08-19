@@ -27,6 +27,9 @@ public class EvilRadioConfiguration extends AddonConfig {
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
 
+  @SwitchSetting
+  private final ConfigProperty<Boolean> showMainMenuPlayer = new ConfigProperty<>(true);
+
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
   private final StationPickerSubSettings stationPicker = new StationPickerSubSettings();
 
@@ -73,6 +76,10 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Key> radioMenuKeybind() {
     return this.radioMenuKeybind;
+  }
+
+  public ConfigProperty<Boolean> showMainMenuPlayer() {
+    return this.showMainMenuPlayer;
   }
 
   public StationPickerSubSettings stationPicker() {

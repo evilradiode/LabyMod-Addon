@@ -96,7 +96,8 @@
       "twitch": "● TWITCH",
       "adBreakTitle": "Jetzt läuft",
       "adBreakArtist": "Werbung",
-      "previousSong": "Vorheriger Song"
+      "previousSong": "Vorheriger Song",
+      "clickPlayToStart": "Klicke auf Play, um Evil Radio zu starten"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -167,6 +168,10 @@
       "radioMenuKeybind": {
         "name": "Radio-Menü Tastenkürzel",
         "description": "Taste zum Öffnen des Radio-Menüs"
+      },
+      "showMainMenuPlayer": {
+        "name": "Radio-Player in Menüs",
+        "description": "Zeigt den Radio-Player im LabyMod-Hauptmenü und in der Serverliste an."
       },
       "stationPicker": {
         "name": "Sender-Menü",
