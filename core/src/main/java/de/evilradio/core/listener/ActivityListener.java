@@ -288,20 +288,14 @@ public class ActivityListener implements Updatable {
   }
 
   private void applyStationIcon() {
-    if (this.coverWidget == null) {
-      return;
-    }
+    if (this.coverWidget == null) return;
     Icon icon = this.stationIcon();
-    if (this.coverWidget.icon().get() == icon) {
-      return;
-    }
+    if (this.coverWidget.icon().get() == icon) return;
     this.coverWidget.icon().set(icon);
   }
 
   private void refreshPlayPauseIcon() {
-    if (this.playPauseButton == null) {
-      return;
-    }
+    if (this.playPauseButton == null) return;
     this.playPauseButton.updateIcon(
         this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY);
   }
