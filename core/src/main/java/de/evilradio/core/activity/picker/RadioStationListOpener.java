@@ -21,17 +21,11 @@ public final class RadioStationListOpener {
 
   @Subscribe
   public void onKey(KeyEvent event) {
-    if (event.state() != State.PRESS) {
-      return;
-    }
-    if (!Boolean.TRUE.equals(this.addon.configuration().enabled().get())) {
-      return;
-    }
+    if (event.state() != State.PRESS) return;
+    if (!this.addon.configuration().enabled().get()) return;
 
     Key openKey = this.addon.configuration().radioMenuKeybind().get();
-    if (event.key() != openKey) {
-      return;
-    }
+    if (event.key() != openKey) return;
 
     LabyScreen current = Laby.labyAPI().minecraft().minecraftWindow().currentLabyScreen();
     if (current instanceof RadioStationListActivity) {
@@ -41,13 +35,11 @@ public final class RadioStationListOpener {
     }
 
     // Nur ingame öffnen (Maus gegriffen = kein anderer Screen).
-    if (!Laby.labyAPI().minecraft().isMouseLocked()) {
-      return;
-    }
+    if (!Laby.labyAPI().minecraft().isMouseLocked()) return;
 
     Laby.labyAPI().minecraft().executeNextTick(() ->
         Laby.labyAPI().minecraft().minecraftWindow()
-            .displayScreen(new RadioStationListActivity(this.addon)));
+            .displayScreen(this.addon.radioStationListActivity()));
     event.setCancelled(true);
   }
 }
