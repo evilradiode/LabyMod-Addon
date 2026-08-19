@@ -1,10 +1,12 @@
 package de.evilradio.core;
 
+import de.evilradio.core.activity.picker.RadioStationListActivity;
 import de.evilradio.core.activity.picker.RadioStationListOpener;
 import de.evilradio.core.command.ListenMashupCommand;
 import de.evilradio.core.configuration.AutoStartSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
+import de.evilradio.core.listener.ActivityListener;
 import de.evilradio.core.listener.AudioStreamDebugSettingsListener;
 import de.evilradio.core.listener.GameListener;
 import de.evilradio.core.radio.AudioStreamDebug;
@@ -39,6 +41,9 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private ScheduleService scheduleService;
 
   private CurrentSongHudWidget currentSongHudWidget;
+  private ActivityListener activityListener;
+  private RadioStationListActivity radioStationListActivity;
+
   private boolean wasWindowFocused = true;
   private RadioStream streamBeforeFocusLoss = null;
   private boolean userManuallyStopped = false;
@@ -74,9 +79,12 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
         this.startLastStreamWithDelay("game start");
       }
     });
+
+    this.radioStationListActivity = new RadioStationListActivity(this);
     
     // Event-Bus registrieren für Event-Handler
     this.labyAPI().eventBus().registerListener(new GameListener(this));
+    this.labyAPI().eventBus().registerListener(this.activityListener = new ActivityListener(this));
     this.labyAPI().eventBus().registerListener(new AudioStreamDebugSettingsListener(this));
     this.syncAudioStreamDebug();
     configuration().audioStreamDebug().addChangeListener(enabled -> this.syncAudioStreamDebug());
@@ -157,6 +165,9 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       if(this.currentSongHudWidget.isEnabled()) {
         this.currentSongHudWidget.requestUpdate(reason);
       }
+      if(this.activityListener != null) {
+        this.activityListener.update(reason);
+      }
     });
   }
 
@@ -190,6 +201,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   
   public ScheduleService scheduleService() {
     return scheduleService;
+  }
+
+  public RadioStationListActivity radioStationListActivity() {
+    return radioStationListActivity;
   }
 
   /**

@@ -1,0 +1,101 @@
+  .song-container {
+    right: 5;
+    bottom: 20;
+    width: 220;
+    height: fit-content;
+    filter: blur(25);
+    border-radius: 10;
+    border-thickness: 2;
+    border-color: var(--background-color-border);
+    background-color: var(--background-color);
+    box-shadow: none;
+    orientation: vertical;
+
+    .content {
+      width: fit-content;
+      max-width: 100%;
+      height: fit-content;
+      overwrite-width: false;
+      margin: 4 8 4 4;
+      orientation: horizontal;
+
+      .player {
+        top: 0;
+        left: 0;
+        height: fit-content;
+        orientation: vertical;
+        width: var(--modern-song-widget-max-player-width);
+        padding-left: 5;
+        padding-right: 2;
+
+        .stream-name {
+          max-lines: 1;
+          overflow-strategy: clip;
+          width: 100%;
+        }
+
+        .track {
+          margin-top: 2;
+          width: 100%;
+          height: 10;
+          max-lines: 1;
+          scroll-text: true;
+          scroll-mode: loop;
+          scroll-speed: 10.0;
+          scroll-gap: 25.0;
+        }
+
+        .artist {
+          margin-top: 2;
+          width: 100%;
+          height: 10;
+          max-lines: 1;
+          scroll-text: true;
+          scroll-mode: loop;
+          scroll-speed: 10.0;
+          scroll-gap: 25.0;
+        }
+
+      }
+
+    }
+
+    .controls {
+      top: 0;
+      margin-top: 2;
+      left: 0;
+      width: fit-content;
+      height: fit-content;
+
+      .previous {
+        height: 10;
+        width: 10;
+      }
+
+      .play-pause {
+        height: 10;
+        width: 10;
+      }
+
+      .next {
+        height: 10;
+        width: 10;
+      }
+
+      .volume-slider {
+        width: 125;
+        height: 10;
+    }
+
+  }
+
+  .cover {
+    width: 44;
+    height: 44;
+    right: 0;
+    top: 0;
+    margin-top: 0;
+    margin-left: 2;
+    border-radius: 10;
+    visible: true;
+  }
