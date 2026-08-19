@@ -97,7 +97,11 @@
       "adBreakTitle": "Now playing",
       "adBreakArtist": "Advertisement",
       "previousSong": "Previous Song",
-      "clickPlayToStart": "Click play to start Evil Radio"
+      "clickPlayToStart": "Press play to start",
+      "openPicker": "Stations",
+      "mashupLive": "Mashup is live",
+      "mashupLiveTitle": "%s is live",
+      "mashupLiveSwitch": "Play Mashup"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -261,6 +265,13 @@
       "audioStreamDebug": {
         "name": "Audio Stream Debug",
         "description": "Writes detailed audio debug messages to logs/evilradio/audio-debug.log (dropouts, underruns, reconnects)."
+      },
+      "previewMashupLiveBanner": {
+        "name": "Preview Mashup live banner",
+        "text": "Toggle",
+        "description": "Shows the Mashup live banner on the menu player, even if no show is on air.",
+        "enabledHint": "Debug banner on. Open the main menu or server list.",
+        "disabledHint": "Debug banner off. Real Mashup status is used again."
       },
       "reloadStreams": {
         "name": "Reload Streams (only if you have problems)",

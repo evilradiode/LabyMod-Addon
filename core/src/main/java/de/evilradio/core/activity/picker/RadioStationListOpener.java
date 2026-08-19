@@ -37,9 +37,7 @@ public final class RadioStationListOpener {
     // Nur ingame öffnen (Maus gegriffen = kein anderer Screen).
     if (!Laby.labyAPI().minecraft().isMouseLocked()) return;
 
-    Laby.labyAPI().minecraft().executeNextTick(() ->
-        Laby.labyAPI().minecraft().minecraftWindow()
-            .displayScreen(this.addon.radioStationListActivity()));
+    this.addon.openStationPicker();
     event.setCancelled(true);
   }
 }

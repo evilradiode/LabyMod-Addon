@@ -39,9 +39,11 @@ public final class LiveStatusLine {
     if (!isMashup(stream) || song == null) {
       return null;
     }
+    return buildBadges(song.isOnAir(), song.isTwitch(), song.getModeratorName(), preferTwitch);
+  }
 
-    boolean onAir = song.isOnAir();
-    boolean twitch = song.isTwitch();
+  public static Component buildBadges(
+      boolean onAir, boolean twitch, String moderatorName, boolean preferTwitch) {
     if (!onAir && !twitch) {
       return null;
     }
@@ -69,11 +71,11 @@ public final class LiveStatusLine {
       line = line.append(Component.translatable("evilradio.widget.twitch").color(TWITCH_COLOR));
       hasContent = true;
     }
-    if (onAir && song.getModeratorName() != null && !song.getModeratorName().isEmpty()) {
+    if (moderatorName != null && !moderatorName.isEmpty()) {
       if (hasContent) {
         line = line.append(Component.text(" | ").color(NamedTextColor.GRAY));
       }
-      line = line.append(Component.text(song.getModeratorName()).color(NamedTextColor.WHITE));
+      line = line.append(Component.text(moderatorName).color(NamedTextColor.WHITE));
       hasContent = true;
     }
     return hasContent ? line : null;

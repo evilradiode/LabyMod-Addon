@@ -84,6 +84,63 @@ public class ScheduleService {
     return Collections.unmodifiableList(this.cachedShows);
   }
 
+  /**
+   * Aktuell laufende Sendung: zuerst {@code onair} von heute, sonst Zeitfenster.
+   */
+  public @Nullable ScheduleShow currentOnAirShow() {
+    LocalDate today = LocalDate.now();
+    ScheduleShow todayOnAir = null;
+    ScheduleShow anyOnAir = null;
+    for (ScheduleShow show : this.cachedShows) {
+      if (!show.isOnAir()) {
+        continue;
+      }
+      if (anyOnAir == null) {
+        anyOnAir = show;
+      }
+      LocalDate showDate = this.parseDate(show.getDate());
+      if (showDate != null && showDate.equals(today)) {
+        todayOnAir = show;
+        break;
+      }
+    }
+    if (todayOnAir != null) {
+      return todayOnAir;
+    }
+    if (anyOnAir != null) {
+      return anyOnAir;
+    }
+    return this.showAt(today, LocalTime.now());
+  }
+
+  private @Nullable ScheduleShow showAt(LocalDate date, LocalTime time) {
+    for (ScheduleShow show : this.cachedShows) {
+      LocalDate showDate = this.parseDate(show.getDate());
+      if (showDate == null || !showDate.equals(date)) {
+        continue;
+      }
+      LocalTime start = this.parseTime(show.getStartTime());
+      if (start == null) {
+        continue;
+      }
+      LocalTime end = this.parseTime(show.getEndTime());
+      if (end == null) {
+        if (!time.isBefore(start)) {
+          return show;
+        }
+        continue;
+      }
+      boolean overnight = end.isBefore(start);
+      boolean inWindow = overnight
+          ? !time.isBefore(start) || time.isBefore(end)
+          : !time.isBefore(start) && time.isBefore(end);
+      if (inWindow) {
+        return show;
+      }
+    }
+    return null;
+  }
+
   public @Nullable ScheduleDay dayByDate(String date) {
     if (date == null) {
       return null;

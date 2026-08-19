@@ -207,6 +207,19 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     return radioStationListActivity;
   }
 
+  public ActivityListener activityListener() {
+    return this.activityListener;
+  }
+
+  public void openStationPicker() {
+    if (!this.configuration().enabled().get() || this.radioStationListActivity == null) {
+      return;
+    }
+    this.labyAPI().minecraft().executeNextTick(() ->
+        this.labyAPI().minecraft().minecraftWindow()
+            .displayScreen(this.radioStationListActivity));
+  }
+
   /**
    * Addon-Version aus der Laby-AddonInfo (Fallback {@code unknown}).
    */

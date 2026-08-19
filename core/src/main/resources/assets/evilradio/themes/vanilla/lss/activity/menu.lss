@@ -1,7 +1,7 @@
   .song-container {
     right: 5;
     bottom: 20;
-    width: 220;
+    width: 132;
     height: fit-content;
     priority-layer: very_front;
     filter: blur(25);
@@ -12,91 +12,294 @@
     box-shadow: none;
     orientation: vertical;
 
+    alignment-y: top;
+
+    .mashup-live-banner {
+      width: 100%;
+      height: 0;
+      margin: 0;
+      padding: 0;
+      border-thickness: 0;
+      background-color: rgba(220, 40, 40, 0.28);
+      border-radius: 8;
+      border-color: rgba(255, 90, 90, 0.55);
+      orientation: vertical;
+      alignment-x: center;
+      interactable: true;
+      priority-layer: very_front;
+
+      .mashup-live-title {
+        width: 100%;
+        height: fit-content;
+        max-lines: 2;
+        overflow-strategy: clip;
+        font-size: 0.6;
+        alignment-x: center;
+
+        Component {
+          alignment-x: center;
+        }
+      }
+
+      .mashup-live-detail {
+        margin-top: 1;
+        width: 100%;
+        height: fit-content;
+        max-lines: 1;
+        overflow-strategy: clip;
+        font-size: 0.6;
+        alignment-x: center;
+
+        Component {
+          alignment-x: center;
+        }
+      }
+    }
+
+    .mashup-live-banner.switch {
+      height: fit-content;
+      margin: 6 6 0 6;
+      padding: 4 5 4 5;
+      border-thickness: 1;
+    }
+
+    .mashup-live-banner.switch:hover {
+      background-color: rgba(220, 50, 50, 0.42);
+    }
+
+    .mashup-live-banner.actions {
+      height: fit-content;
+      margin: 6 6 0 6;
+      padding: 4 4 4 4;
+      border-thickness: 1;
+      background-color: rgba(220, 40, 40, 0.18);
+    }
+
+    .mashup-live-grussbox {
+      width: 100%;
+      height: 14;
+      padding: 0 2 0 2;
+      font-size: 0.55;
+      text-align: center;
+      background-color: rgba(180, 30, 30, 0.55);
+      border-radius: 4;
+      border-thickness: 1;
+      border-color: rgba(255, 90, 90, 0.55);
+      interactable: true;
+    }
+
+    .mashup-live-grussbox:hover {
+      background-color: rgba(220, 50, 50, 0.75);
+    }
+
+    .mashup-live-twitch {
+      width: 100%;
+      height: 14;
+      margin-top: 3;
+      padding: 0 2 0 2;
+      font-size: 0.55;
+      text-align: center;
+      background-color: rgba(100, 50, 180, 0.4);
+      border-radius: 4;
+      border-thickness: 1;
+      border-color: rgba(145, 70, 255, 0.55);
+      interactable: true;
+    }
+
+    .mashup-live-twitch:hover {
+      background-color: rgba(145, 70, 255, 0.65);
+    }
+
     .content {
-      width: fit-content;
-      max-width: 100%;
+      width: 100%;
       height: fit-content;
       overwrite-width: false;
-      margin: 4 8 4 4;
-      orientation: horizontal;
+      margin: 6;
+      orientation: vertical;
+      alignment-x: center;
+
+      .cover {
+        left: 50%;
+        width: 56;
+        height: 56;
+        alignment-x: center;
+        margin-bottom: 5;
+        border-radius: 10;
+        visible: true;
+      }
 
       .player {
-        top: 0;
-        left: 0;
+        width: 100%;
         height: fit-content;
         orientation: vertical;
-        width: var(--modern-song-widget-max-player-width);
-        padding-left: 5;
-        padding-right: 2;
 
         .stream-name {
+          left: 50%;
+          alignment-x: center;
+          width: fit-content;
+          max-width: 100%;
           max-lines: 1;
           overflow-strategy: clip;
+
+          Component {
+            alignment-x: center;
+          }
+        }
+
+        .live-status {
+          height: 0;
+          margin: 0;
           width: 100%;
+          max-lines: 1;
+          overflow-strategy: clip;
+        }
+
+        .live-status.active {
+          left: 50%;
+          alignment-x: center;
+          margin-top: 2;
+          width: fit-content;
+          max-width: 100%;
+          height: fit-content;
+
+          Component {
+            alignment-x: center;
+          }
         }
 
         .track {
+          alignment-x: center;
           margin-top: 2;
           width: 100%;
           height: 10;
           max-lines: 1;
+          overflow-strategy: clip;
           scroll-text: true;
           scroll-mode: loop;
           scroll-speed: 10.0;
           scroll-gap: 25.0;
+
+          Component {
+            alignment-x: center;
+          }
+        }
+
+        .track.idle {
+          height: fit-content;
+          max-lines: 2;
+          scroll-text: false;
         }
 
         .artist {
+          alignment-x: center;
           margin-top: 2;
           width: 100%;
           height: 10;
           max-lines: 1;
+          overflow-strategy: clip;
           scroll-text: true;
           scroll-mode: loop;
           scroll-speed: 10.0;
           scroll-gap: 25.0;
+
+          Component {
+            alignment-x: center;
+          }
         }
 
-      }
+        .progress-row {
+          margin-top: 5;
+          width: 100%;
+          height: fit-content;
+          orientation: vertical;
+          alignment-x: center;
 
+          .progress-track {
+            width: 100%;
+            height: 4;
+            border-radius: 5;
+            background-color: rgba(255, 255, 255, 0.12);
+            interactable: false;
+
+            .progress-fill {
+              top: 0;
+              left: 0;
+              height: 4;
+              width: var(--menu-song-progress-width);
+              border-radius: 5;
+              background-color: rgb(255, 85, 85);
+            }
+
+            &.indeterminate {
+              .progress-fill {
+                opacity: 0.4;
+              }
+            }
+          }
+
+          .status {
+            left: 50%;
+            alignment-x: center;
+            margin-top: 2;
+            width: fit-content;
+            max-width: 100%;
+            height: 8;
+            max-lines: 1;
+            font-size: 0.65;
+            overflow-strategy: clip;
+
+            Component {
+              alignment-x: center;
+            }
+          }
+        }
+      }
     }
 
     .controls {
-      top: 0;
-      margin-top: 2;
-      left: 0;
+      margin-top: 5;
+      left: 50%;
       width: fit-content;
       height: fit-content;
+      alignment-x: center;
+      space-between-entries: 6;
 
       .previous {
-        height: 10;
-        width: 10;
+        height: 12;
+        width: 12;
       }
 
       .play-pause {
-        height: 10;
-        width: 10;
+        height: 12;
+        width: 12;
       }
 
       .next {
-        height: 10;
-        width: 10;
+        height: 12;
+        width: 12;
       }
-
-      .volume-slider {
-        width: 125;
-        height: 10;
     }
 
-  }
+    .station-picker {
+      margin-top: 5;
+      width: 100%;
+      height: 14;
+      padding: 0;
+      font-size: 0.65;
+      text-align: center;
+      background-color: rgba(255, 255, 255, 0.08);
+      border-radius: 6;
+      border-thickness: 1;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
 
-  .cover {
-    width: 44;
-    height: 44;
-    right: 0;
-    top: 0;
-    margin-top: 0;
-    margin-left: 2;
-    border-radius: 10;
-    visible: true;
+    .station-picker:hover {
+      background-color: rgba(255, 255, 255, 0.14);
+    }
+
+    .volume-slider {
+      margin-top: 5;
+      width: 100%;
+      height: 10;
+    }
   }
