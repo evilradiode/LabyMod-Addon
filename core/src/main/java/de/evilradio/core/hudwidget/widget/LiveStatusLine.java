@@ -11,7 +11,7 @@ import net.labymod.api.util.I18n;
  * On-Air-/Twitch-Zeile für Mashup. Bei beiden Flags abwechselnd nur eines anzeigen,
  * damit die Statuszeile kurz bleibt und der Songtitel Platz hat.
  */
-final class LiveStatusLine {
+public final class LiveStatusLine {
 
   static final long ROTATE_MS = 3000L;
   private static final TextColor TWITCH_COLOR = TextColor.color(145, 70, 255);
@@ -19,7 +19,7 @@ final class LiveStatusLine {
   private LiveStatusLine() {
   }
 
-  static boolean showTwitchPhase(long nowMs) {
+  public static boolean showTwitchPhase(long nowMs) {
     return ((nowMs / ROTATE_MS) & 1L) == 1L;
   }
 
@@ -27,7 +27,7 @@ final class LiveStatusLine {
     return stream != null && stream.getName() != null && stream.getName().equalsIgnoreCase("Mashup");
   }
 
-  static boolean hasLiveBadges(CurrentSong song) {
+  public static boolean hasLiveBadges(CurrentSong song) {
     return song != null && (song.isOnAir() || song.isTwitch());
   }
 
@@ -35,7 +35,7 @@ final class LiveStatusLine {
    * @param preferTwitch {@code true} → Twitch-Phase, {@code false} → On-Air-Phase
    *                     (nur relevant wenn beides aktiv)
    */
-  static Component buildPrefix(RadioStream stream, CurrentSong song, boolean preferTwitch) {
+  public static Component buildPrefix(RadioStream stream, CurrentSong song, boolean preferTwitch) {
     if (!isMashup(stream) || song == null) {
       return null;
     }
