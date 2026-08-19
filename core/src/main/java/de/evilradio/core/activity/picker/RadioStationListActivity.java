@@ -583,7 +583,7 @@ public class RadioStationListActivity extends SimpleActivity {
     }
   }
 
-  private void startNowPlayingSession() {
+  public void startNowPlayingSession() {
     this.stopNowPlayingSession();
     Set<String> shortcodes = new LinkedHashSet<>();
     for (RadioStream stream : this.displayStreams) {
