@@ -60,9 +60,7 @@ public class ActivityListener implements Updatable {
   public void update(String reason) {
     if (reason == null || reason.equals(CurrentSongHudWidget.SONG_CHANGE_REASON)) {
       this.refreshPlayPauseIcon();
-      this.updateTrack(
-          this.addon.currentSongService().getCurrentSong(),
-          this.addon.currentSongService().getPreviousSong());
+      this.updateTrack(this.addon.currentSongService().getCurrentSong());
     }
   }
 
@@ -161,16 +159,12 @@ public class ActivityListener implements Updatable {
     document.addChildInitialized(songContainer);
 
     this.refreshPlayPauseIcon();
-    this.updateTrack(
-        this.addon.currentSongService().getCurrentSong(),
-        this.addon.currentSongService().getPreviousSong());
+    this.updateTrack(this.addon.currentSongService().getCurrentSong());
   }
 
   private void switchStream(int direction) {
     List<RadioStream> streams = this.addon.radioStreamService().streams();
-    if (streams.isEmpty()) {
-      return;
-    }
+    if (streams.isEmpty()) return;
 
     RadioStream current = this.addon.radioManager().getCurrentStream();
     int currentIndex = -1;
@@ -196,15 +190,11 @@ public class ActivityListener implements Updatable {
       }
     }
 
-    if (nextPlayable == null) {
-      return;
-    }
+    if (nextPlayable == null) return;
 
     this.addon.radioManager().playStream(nextPlayable);
     this.refreshPlayPauseIcon();
-    this.updateTrack(
-        this.addon.currentSongService().getCurrentSong(),
-        this.addon.currentSongService().getPreviousSong());
+    this.updateTrack(this.addon.currentSongService().getCurrentSong());
     if (this.addon.radioStationListActivity() != null) {
       this.addon.radioStationListActivity().startNowPlayingSession();
     }
@@ -230,10 +220,8 @@ public class ActivityListener implements Updatable {
     this.streamWidget.setComponent(streamLine);
   }
 
-  private void updateTrack(CurrentSong currentSong, CurrentSong previousSong) {
-    if (this.trackWidget == null || this.artistWidget == null || this.streamWidget == null) {
-      return;
-    }
+  private void updateTrack(CurrentSong currentSong) {
+    if (this.trackWidget == null || this.artistWidget == null || this.streamWidget == null) return;
 
     boolean isPlaying = this.addon.radioManager().isPlaying();
     RadioStream currentStream = this.addon.radioManager().getCurrentStream();
@@ -313,15 +301,11 @@ public class ActivityListener implements Updatable {
   }
 
   private static String stationLabel(RadioStream stream, boolean compact) {
-    if (stream == null) {
-      return "";
-    }
+    if (stream == null) return "";
     String name = stream.getDisplayName() != null && !stream.getDisplayName().isBlank()
         ? stream.getDisplayName()
         : stream.getName();
-    if (name == null || name.isBlank()) {
-      return "";
-    }
+    if (name == null || name.isBlank()) return "";
     return compact ? name : "EvilRadio - " + name;
   }
 
