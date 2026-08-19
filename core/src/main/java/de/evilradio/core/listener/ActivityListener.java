@@ -226,9 +226,6 @@ public class ActivityListener implements Updatable {
     this.addon.radioManager().playStream(nextPlayable);
     this.refreshPlayPauseIcon();
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
-    if (this.addon.radioStationListActivity() != null) {
-      this.addon.radioStationListActivity().startNowPlayingSession();
-    }
   }
 
   private void togglePlayback() {
@@ -249,9 +246,6 @@ public class ActivityListener implements Updatable {
 
     this.refreshPlayPauseIcon();
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
-    if (this.addon.radioStationListActivity() != null) {
-      this.addon.radioStationListActivity().startNowPlayingSession();
-    }
   }
 
   private void refreshStreamLine(CurrentSong currentSong) {

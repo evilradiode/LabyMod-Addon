@@ -66,6 +66,7 @@ public class CurrentSongService {
       .connectTimeout(Duration.ofSeconds(8))
       .build();
   private final AtomicLong lastShowStatusFetchAt = new AtomicLong(0L);
+  private final AtomicLong lastStuckRefreshAt = new AtomicLong(0L);
   /** Pro Sender: letztes radioInfo-true für OnAir/Twitch-Grace. */
   private final ConcurrentHashMap<String, LiveGrace> liveGraceByStation = new ConcurrentHashMap<>();
 
@@ -128,6 +129,7 @@ public class CurrentSongService {
     this.previousSong.set(null);
     this.connectionState.set(NowPlayingConnectionState.LOADING);
     this.lastShowStatusFetchAt.set(0L);
+    this.lastStuckRefreshAt.set(0L);
 
     this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
     this.nowPlayingService.switchStation(shortcode);
@@ -164,6 +166,9 @@ public class CurrentSongService {
     }
 
     CurrentSong previous = this.currentSong.get();
+    if (isStaleRecoveredSong(previous, song)) {
+      return;
+    }
     boolean songChanged = isSongIdentityChanged(previous, song);
     boolean streamSelectedToast = Boolean.TRUE.equals(
         this.pendingStreamSelectedNotification.getAndSet(false));
@@ -229,6 +234,66 @@ public class CurrentSongService {
           streamIcon
       );
     }
+  }
+
+  /**
+   * Nach WS-Reconnect mit Recover-History kann ein bereits beendeter Track als
+   * „aktuell“ ankommen. Den nicht über einen noch laufenden Song legen.
+   */
+  private static boolean isStaleRecoveredSong(CurrentSong current, CurrentSong incoming) {
+    if (current == null || incoming == null || !isElapsedToEnd(incoming)) {
+      return false;
+    }
+    return isSongIdentityChanged(current, incoming) && !isElapsedToEnd(current);
+  }
+
+  private static boolean isElapsedToEnd(CurrentSong song) {
+    return song != null
+        && song.hasKnownDuration()
+        && song.getCurrentElapsedSeconds() >= song.getDuration();
+  }
+
+  /**
+   * Wenn der lokale Fortschritt am Ende klebt (typisch nach WS-Recover ohne Live-Pub),
+   * aktuellen Song per AzuraCast-REST nachladen – unabhängig vom Picker.
+   */
+  public void refreshIfStuckAtEnd() {
+    if (this.addon.radioManager() == null || !this.addon.radioManager().isPlaying()) {
+      return;
+    }
+    CurrentSong song = this.currentSong.get();
+    if (!isElapsedToEnd(song)) {
+      return;
+    }
+    long now = System.currentTimeMillis();
+    if (now - this.lastStuckRefreshAt.get() < 5_000L) {
+      return;
+    }
+    this.lastStuckRefreshAt.set(now);
+
+    final String expectedShortcode = this.currentShortcode.get();
+    if (expectedShortcode == null || expectedShortcode.isBlank()) {
+      return;
+    }
+    this.fetchAllNowPlaying(songs -> {
+      if (songs == null || songs.isEmpty()) {
+        return;
+      }
+      CurrentSong fresh = songs.get(expectedShortcode);
+      if (fresh == null) {
+        for (Map.Entry<String, CurrentSong> entry : songs.entrySet()) {
+          if (expectedShortcode.equalsIgnoreCase(entry.getKey())) {
+            fresh = entry.getValue();
+            break;
+          }
+        }
+      }
+      if (fresh == null || !fresh.isValid()) {
+        return;
+      }
+      CurrentSong apply = fresh;
+      this.addon.labyAPI().minecraft().executeOnRenderThread(() -> this.onNowPlayingSong(apply));
+    });
   }
 
   private static boolean isSongIdentityChanged(CurrentSong previous, CurrentSong next) {
@@ -696,6 +761,7 @@ public class CurrentSongService {
     this.twitchNotificationSent = false;
     this.pendingStreamSelectedNotification.set(false);
     this.lastShowStatusFetchAt.set(0L);
+    this.lastStuckRefreshAt.set(0L);
     this.artworkCache.bumpGeneration();
   }
 

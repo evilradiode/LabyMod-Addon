@@ -195,6 +195,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     CurrentSong song = this.addon.currentSongService().getCurrentSong();
     if (song != null) {
       this.updateProgress(song);
+      this.addon.currentSongService().refreshIfStuckAtEnd();
       boolean twitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
       if (twitchPhase != this.lastLiveBadgeTwitchPhase
           && LiveStatusLine.hasLiveBadges(song)

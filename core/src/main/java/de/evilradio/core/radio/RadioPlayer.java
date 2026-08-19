@@ -91,6 +91,8 @@ public class RadioPlayer {
     this.lastWriteDoneMs = 0L;
 
     playbackTask = executorService.submit(() -> runPlayback(streamUrl, epoch));
+    // Sofort true, damit UI (Play/Pause) nicht auf HTTP-Connect / ersten Frame wartet.
+    this.isPlaying = true;
   }
 
   private void runPlayback(String streamUrl, long epoch) {

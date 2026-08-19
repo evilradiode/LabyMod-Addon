@@ -43,6 +43,10 @@ public class GameListener {
    */
   @Subscribe
   public void onWorldEnter(WorldEnterEvent event) {
+    if (this.addon.radioManager() != null && this.addon.radioManager().isPlaying()) {
+      return;
+    }
+
     // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
     if (this.addon.isUserManuallyStopped()) return;
 

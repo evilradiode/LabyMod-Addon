@@ -5,7 +5,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import de.evilradio.core.song.CurrentSong;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -37,7 +39,81 @@ public final class NowPlayingMessageParser {
 
   public static Optional<ParsedPublication> extractPublication(JsonObject message) {
     List<ParsedPublication> all = extractAllPublications(message);
-    return all.isEmpty() ? Optional.empty() : Optional.of(all.get(0));
+    return latestPublication(all);
+  }
+
+  /**
+   * Bei {@code recover:true} liefert Centrifugo die History älteste zuerst.
+   * Die erste Publication ist oft ein schon fertiger Track (HUD bleibt bei Ende/Ende
+   * stehen), deshalb die zeitlich neueste nehmen.
+   */
+  static Optional<ParsedPublication> latestPublication(List<ParsedPublication> publications) {
+    if (publications == null || publications.isEmpty()) {
+      return Optional.empty();
+    }
+    ParsedPublication latest = publications.get(0);
+    for (int i = 1; i < publications.size(); i++) {
+      if (isNewerPublication(publications.get(i), latest)) {
+        latest = publications.get(i);
+      }
+    }
+    return Optional.of(latest);
+  }
+
+  /**
+   * Pro Sender nur eine Publication: lieber noch laufend, sonst neuestes {@code played_at}.
+   */
+  static List<ParsedPublication> collapseRecoveredPublications(List<ParsedPublication> publications) {
+    if (publications == null || publications.size() <= 1) {
+      return publications == null ? List.of() : publications;
+    }
+    Map<String, ParsedPublication> byChannel = new LinkedHashMap<>();
+    for (ParsedPublication publication : publications) {
+      if (publication == null || publication.song() == null) {
+        continue;
+      }
+      String key = publicationKey(publication);
+      ParsedPublication existing = byChannel.get(key);
+      if (existing == null || isNewerPublication(publication, existing)) {
+        byChannel.put(key, publication);
+      }
+    }
+    return new ArrayList<>(byChannel.values());
+  }
+
+  private static boolean isNewerPublication(ParsedPublication candidate, ParsedPublication current) {
+    boolean candidateLive = isStillPlaying(candidate);
+    boolean currentLive = isStillPlaying(current);
+    if (candidateLive != currentLive) {
+      return candidateLive;
+    }
+    return playedAt(candidate) >= playedAt(current);
+  }
+
+  private static boolean isStillPlaying(ParsedPublication publication) {
+    CurrentSong song = publication == null ? null : publication.song();
+    if (song == null) {
+      return false;
+    }
+    if (!song.hasKnownDuration()) {
+      return true;
+    }
+    return song.getCurrentElapsedSeconds() < song.getDuration();
+  }
+
+  private static String publicationKey(ParsedPublication publication) {
+    if (publication.channel() != null && !publication.channel().isBlank()) {
+      return publication.channel();
+    }
+    String shortcode = publication.song() == null ? null : publication.song().getStationShortcode();
+    return shortcode == null || shortcode.isBlank() ? "" : "station:" + shortcode;
+  }
+
+  private static long playedAt(ParsedPublication publication) {
+    if (publication == null || publication.song() == null) {
+      return 0L;
+    }
+    return publication.song().getPlayedAt();
   }
 
   /**
@@ -77,7 +153,8 @@ public final class NowPlayingMessageParser {
           result.add(ParsedPublication.of(channel, snapshot.get()));
         }
       }
-      return result;
+      // recover:true sendet die History – nur den noch laufenden / neuesten Track pro Sender.
+      return collapseRecoveredPublications(result);
     }
 
     if (message.has("pub")) {
