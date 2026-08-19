@@ -8,7 +8,6 @@ import de.evilradio.core.hudwidget.widget.LiveStatusLine;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
 import de.evilradio.core.song.NowPlayingConnectionState;
-import de.evilradio.core.song.artwork.ArtworkCache;
 import java.util.List;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
@@ -59,9 +58,11 @@ public class ActivityListener implements Updatable {
 
   @Override
   public void update(String reason) {
-    if (reason.equals(CurrentSongHudWidget.SONG_CHANGE_REASON)) {
-      this.updateTrack(this.addon.currentSongService().getCurrentSong(), this.addon.currentSongService()
-          .getPreviousSong());
+    if (reason == null || reason.equals(CurrentSongHudWidget.SONG_CHANGE_REASON)) {
+      this.refreshPlayPauseIcon();
+      this.updateTrack(
+          this.addon.currentSongService().getCurrentSong(),
+          this.addon.currentSongService().getPreviousSong());
     }
   }
 
@@ -76,8 +77,6 @@ public class ActivityListener implements Updatable {
 
   private static final String MAX_PLAYER_WIDTH_KEY = "--modern-song-widget-max-player-width";
 
-  private String appliedCoverUrl;
-  private long appliedArtworkGeneration = -1L;
   private Component lastLivePrefix = null;
   private boolean lastLiveBadgeTwitchPhase;
 
@@ -87,11 +86,13 @@ public class ActivityListener implements Updatable {
 
     activity.setVariable(MAX_PLAYER_WIDTH_KEY, MAX_PLAYER_WIDTH);
 
+    this.lastLivePrefix = null;
+
     FlexibleContentWidget songContainer = new FlexibleContentWidget().addId("song-container");
 
     FlexibleContentWidget content = new FlexibleContentWidget().addId("content");
 
-    this.coverWidget = new IconWidget(EvilTextures.LOGO);
+    this.coverWidget = new IconWidget(this.stationIcon());
     this.coverWidget.addId("cover");
     content.addContent(this.coverWidget);
 
@@ -158,6 +159,11 @@ public class ActivityListener implements Updatable {
     songContainer.addContent(content);
 
     document.addChildInitialized(songContainer);
+
+    this.refreshPlayPauseIcon();
+    this.updateTrack(
+        this.addon.currentSongService().getCurrentSong(),
+        this.addon.currentSongService().getPreviousSong());
   }
 
   private void switchStream(int direction) {
@@ -195,10 +201,10 @@ public class ActivityListener implements Updatable {
     }
 
     this.addon.radioManager().playStream(nextPlayable);
-    if (this.playPauseButton != null) {
-      this.playPauseButton.updateIcon(
-          this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY);
-    }
+    this.refreshPlayPauseIcon();
+    this.updateTrack(
+        this.addon.currentSongService().getCurrentSong(),
+        this.addon.currentSongService().getPreviousSong());
     if (this.addon.radioStationListActivity() != null) {
       this.addon.radioStationListActivity().startNowPlayingSession();
     }
@@ -239,6 +245,7 @@ public class ActivityListener implements Updatable {
 
     if (currentSong == null) {
       this.lastLivePrefix = null;
+      this.applyStationIcon();
       if (isPlaying && currentStream != null) {
         this.streamWidget.setComponent(Component.text(stationLabel(currentStream, false)).color(NamedTextColor.WHITE));
         if (state == NowPlayingConnectionState.RECONNECTING) {
@@ -277,42 +284,38 @@ public class ActivityListener implements Updatable {
     this.trackWidget.setComponent(Component.text(currentSong.getDisplayTitle(), NamedTextColor.WHITE));
     this.artistWidget.setComponent(Component.text(currentSong.getArtist() == null ? "" : currentSong.getArtist(), NamedTextColor.WHITE));
 
-    this.applyCover(currentSong, this.coverWidget);
+    this.applyStationIcon();
   }
 
-  private void applyCover(CurrentSong currentSong, IconWidget coverWidget) {
-    if (coverWidget == null || currentSong == null) {
+  private void applyStationIcon() {
+    if (this.coverWidget == null) {
       return;
     }
-
-    ArtworkCache cache = this.addon.currentSongService().artworkCache();
-    long generation = cache.currentGeneration();
-    String url = currentSong.getImageUrl();
-    String cacheKey = ArtworkCache.key(
-        currentSong.getStationShortcode(),
-        currentSong.getSongId(),
-        url
-    );
-    cache.put(cacheKey, url);
-
-    cache.applyIfCurrent(generation, url, artworkUrl -> {
-      if (generation != cache.currentGeneration()) {
-        return;
-      }
-      if (artworkUrl.equals(this.appliedCoverUrl) && generation == this.appliedArtworkGeneration) {
-        return;
-      }
-      this.appliedCoverUrl = artworkUrl;
-      this.appliedArtworkGeneration = generation;
-      coverWidget.icon().set(Icon.url(artworkUrl));
-    });
-
-    if (url == null || url.isBlank()) {
-      if (this.appliedCoverUrl != null) {
-        return;
-      }
-      coverWidget.icon().set(EvilTextures.LOGO);
+    Icon icon = this.stationIcon();
+    if (this.coverWidget.icon().get() == icon) {
+      return;
     }
+    this.coverWidget.icon().set(icon);
+  }
+
+  private void refreshPlayPauseIcon() {
+    if (this.playPauseButton == null) {
+      return;
+    }
+    this.playPauseButton.updateIcon(
+        this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY);
+  }
+
+  private Icon stationIcon() {
+    RadioStream stream = this.addon.radioManager().getCurrentStream();
+    if (stream == null) {
+      stream = this.addon.radioStreamService().findStreamById(
+          this.addon.configuration().lastStreamId().get());
+    }
+    if (stream != null && stream.getIcon() != null) {
+      return stream.getIcon();
+    }
+    return EvilTextures.LOGO;
   }
 
   private static String stationLabel(RadioStream stream, boolean compact) {
