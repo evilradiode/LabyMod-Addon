@@ -1,7 +1,6 @@
 package de.evilradio.core.configuration;
 
 import de.evilradio.core.EvilRadioAddon;
-import de.evilradio.core.listener.ActivityListener;
 import net.labymod.api.addon.AddonConfig;
 import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.ButtonSetting;
@@ -28,8 +27,8 @@ public class EvilRadioConfiguration extends AddonConfig {
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
 
-  @SwitchSetting
-  private final ConfigProperty<Boolean> showMainMenuPlayer = new ConfigProperty<>(true);
+  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  private final MenuPlayerSubSettings showMainMenuPlayer = new MenuPlayerSubSettings();
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
   private final StationPickerSubSettings stationPicker = new StationPickerSubSettings();
@@ -55,15 +54,6 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SwitchSetting
   private final ConfigProperty<Boolean> audioStreamDebug = new ConfigProperty<>(false);
 
-  @MethodOrder(after = "audioStreamDebug")
-  @ButtonSetting
-  public void previewMashupLiveBanner() {
-    ActivityListener listener = EvilRadioAddon.instance().activityListener();
-    if (listener != null) {
-      listener.toggleDebugMashupLiveBanner();
-    }
-  }
-
   @Exclude
   private final ConfigProperty<EqualizerStyle> equalizerStyle =
       new ConfigProperty<>(EqualizerStyle.BARS);
@@ -88,8 +78,12 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.radioMenuKeybind;
   }
 
-  public ConfigProperty<Boolean> showMainMenuPlayer() {
+  public MenuPlayerSubSettings menuPlayer() {
     return this.showMainMenuPlayer;
+  }
+
+  public ConfigProperty<Boolean> showMainMenuPlayer() {
+    return this.showMainMenuPlayer.enabled();
   }
 
   public StationPickerSubSettings stationPicker() {

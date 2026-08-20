@@ -101,7 +101,14 @@
       "openPicker": "Senderwahl",
       "mashupLive": "Mashup ist live",
       "mashupLiveTitle": "%s ist live",
-      "mashupLiveSwitch": "Jetzt Mashup"
+      "mashupLiveSwitch": "Jetzt Mashup",
+      "mashupUpcomingTitle": "Heute %s Uhr",
+      "mashupUpcomingDetail": "%s mit %s",
+      "mashupUpcomingWith": "mit %s",
+      "minimizePlayer": "Minimieren",
+      "movePlayerLeft": "Nach links schieben",
+      "movePlayerRight": "Nach rechts schieben",
+      "restorePlayer": "Radio-Player öffnen"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -175,7 +182,19 @@
       },
       "showMainMenuPlayer": {
         "name": "Radio-Player in Menüs",
-        "description": "Zeigt den Radio-Player im LabyMod-Hauptmenü und in der Serverliste an."
+        "description": "Zeigt den Radio-Player im LabyMod-Hauptmenü und in der Serverliste an.",
+        "position": {
+          "name": "Position",
+          "description": "Ecke, in der der Player liegt.",
+          "type": {
+            "bottomRight": "Unten rechts",
+            "bottomLeft": "Unten links"
+          }
+        },
+        "debugForceMashupLive": {
+          "name": "Live-Banner testen",
+          "description": "Blendet den Mashup-Live-Kasten im Menü-Player ein, unabhängig von einer echten Sendung."
+        }
       },
       "stationPicker": {
         "name": "Sender-Menü",
@@ -266,13 +285,6 @@
         "name": "Audio-Stream-Debug",
         "description": "Schreibt detaillierte Audio-Debug-Meldungen in logs/evilradio/audio-debug.log (Aussetzer, Underruns, Reconnects)."
       },
-      "previewMashupLiveBanner": {
-        "name": "Mashup-Live-Banner testen",
-        "text": "umschalten",
-        "description": "Blendet den Mashup-Live-Kasten im Menü-Player ein, unabhängig von einer echten Sendung.",
-        "enabledHint": "Debug-Banner an. Hauptmenü oder Serverliste öffnen.",
-        "disabledHint": "Debug-Banner aus. Es gilt wieder der echte Mashup-Status."
-      },
       "reloadStreams": {
         "name": "Streams neu laden (nur bei Problemen)",
         "text": "neu laden",
@@ -292,7 +304,10 @@
       "twitchHover": "Twitch öffnen",
       "loading": "Sendeplan wird geladen…",
       "empty": "Keine Sendungen an diesem Tag",
-      "grussbox": "Grußbox"
+      "grussbox": "Grußbox",
+      "grussboxHover": "Gruß senden",
+      "twitch": "Twitch",
+      "twitchButtonHover": "Stream öffnen"
     }
   }
 }

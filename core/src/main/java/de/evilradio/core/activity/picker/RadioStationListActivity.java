@@ -203,7 +203,7 @@ public class RadioStationListActivity extends SimpleActivity {
       title = Component.translatable("evilradio.picker.selectStation").color(NamedTextColor.RED);
     }
     header.addChild(ComponentWidget.component(title).addId("picker-title"));
-    header.addChild(ButtonWidget.text("✕", this::displayPreviousScreen).addId("picker-close-x"));
+    header.addChild(ButtonWidget.text("X", this::displayPreviousScreen).addId("picker-close-x"));
     panel.addChild(header);
 
     HorizontalListWidget tabs = new HorizontalListWidget().addId("picker-tabs");
@@ -354,7 +354,7 @@ public class RadioStationListActivity extends SimpleActivity {
       this.equalizerStyleButton = null;
       coverStrip.addId("no-eq");
     }
-    this.playPauseButton = ButtonWidget.text(
+    this.playPauseButton = ButtonWidget.icon(
         this.playPauseIcon(),
         this::togglePlayPause
     ).addId("picker-play-pause");
@@ -1192,7 +1192,7 @@ public class RadioStationListActivity extends SimpleActivity {
 
   private void syncControls() {
     if (this.playPauseButton != null) {
-      this.playPauseButton.updateComponent(Component.text(this.playPauseIcon()));
+      this.playPauseButton.updateIcon(this.playPauseIcon());
     }
     if (this.volumeSlider != null && !this.volumeSlider.isDragging()) {
       float volume = this.addon.configuration().volume().get();
@@ -1202,8 +1202,10 @@ public class RadioStationListActivity extends SimpleActivity {
     }
   }
 
-  private String playPauseIcon() {
-    return this.controller.radioManager().isPlaying() ? "⏹" : "▶";
+  private Icon playPauseIcon() {
+    return this.controller.radioManager().isPlaying()
+        ? EvilTextures.SpriteControls.PAUSE
+        : EvilTextures.SpriteControls.PLAY;
   }
 
   private void togglePlayPause() {

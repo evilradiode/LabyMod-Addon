@@ -127,6 +127,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     });
 
     configuration().audioStreamDebug().visibilitySupplier(() -> AudioStreamDebug.isUuidAllowed(this.labyAPI().getUniqueId()));
+    configuration().menuPlayer().debugForceMashupLive().visibilitySupplier(
+        () -> AudioStreamDebug.isUuidAllowed(this.labyAPI().getUniqueId()));
 
   }
 

@@ -113,6 +113,37 @@ public class ScheduleService {
     return this.showAt(today, LocalTime.now());
   }
 
+  /**
+   * Nächste geplante Sendung von heute, die noch nicht begonnen hat.
+   */
+  public @Nullable ScheduleShow nextUpcomingShowToday() {
+    LocalDate today = LocalDate.now();
+    LocalTime now = LocalTime.now();
+    ScheduleShow next = null;
+    LocalTime nextStart = null;
+    for (ScheduleShow show : this.cachedShows) {
+      LocalDate showDate = this.parseDate(show.getDate());
+      if (showDate == null || !showDate.equals(today)) {
+        continue;
+      }
+      if (show.isOnAir()) {
+        continue;
+      }
+      if (this.isShowCancelled(show.getStartTime(), show.getEndTime())) {
+        continue;
+      }
+      LocalTime start = this.parseTime(show.getStartTime());
+      if (start == null || !start.isAfter(now)) {
+        continue;
+      }
+      if (nextStart == null || start.isBefore(nextStart)) {
+        next = show;
+        nextStart = start;
+      }
+    }
+    return next;
+  }
+
   private @Nullable ScheduleShow showAt(LocalDate date, LocalTime time) {
     for (ScheduleShow show : this.cachedShows) {
       LocalDate showDate = this.parseDate(show.getDate());

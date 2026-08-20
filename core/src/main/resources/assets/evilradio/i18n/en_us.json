@@ -101,7 +101,14 @@
       "openPicker": "Stations",
       "mashupLive": "Mashup is live",
       "mashupLiveTitle": "%s is live",
-      "mashupLiveSwitch": "Play Mashup"
+      "mashupLiveSwitch": "Play Mashup",
+      "mashupUpcomingTitle": "Today %s",
+      "mashupUpcomingDetail": "%s with %s",
+      "mashupUpcomingWith": "with %s",
+      "minimizePlayer": "Minimize",
+      "movePlayerLeft": "Move to the left",
+      "movePlayerRight": "Move to the right",
+      "restorePlayer": "Open radio player"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -175,7 +182,19 @@
       },
       "showMainMenuPlayer": {
         "name": "Radio player in menus",
-        "description": "Show the radio player in the LabyMod main menu and the server list."
+        "description": "Show the radio player in the LabyMod main menu and the server list.",
+        "position": {
+          "name": "Position",
+          "description": "Corner where the player is placed.",
+          "type": {
+            "bottomRight": "Bottom right",
+            "bottomLeft": "Bottom left"
+          }
+        },
+        "debugForceMashupLive": {
+          "name": "Preview live banner",
+          "description": "Shows the Mashup live banner on the menu player, even if no show is on air."
+        }
       },
       "stationPicker": {
         "name": "Station menu",
@@ -266,13 +285,6 @@
         "name": "Audio Stream Debug",
         "description": "Writes detailed audio debug messages to logs/evilradio/audio-debug.log (dropouts, underruns, reconnects)."
       },
-      "previewMashupLiveBanner": {
-        "name": "Preview Mashup live banner",
-        "text": "Toggle",
-        "description": "Shows the Mashup live banner on the menu player, even if no show is on air.",
-        "enabledHint": "Debug banner on. Open the main menu or server list.",
-        "disabledHint": "Debug banner off. Real Mashup status is used again."
-      },
       "reloadStreams": {
         "name": "Reload Streams (only if you have problems)",
         "text": "Reload",
@@ -292,7 +304,10 @@
       "twitchHover": "Open Twitch",
       "loading": "Loading schedule…",
       "empty": "No shows on this day",
-      "grussbox": "Greeting box"
+      "grussbox": "Greeting box",
+      "grussboxHover": "Send a greeting",
+      "twitch": "Twitch",
+      "twitchButtonHover": "Open stream"
     }
   }
 }

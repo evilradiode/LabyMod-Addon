@@ -5,8 +5,10 @@ import de.evilradio.core.EvilTextures;
 import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.activity.picker.StationPickerController;
 import de.evilradio.core.activity.widget.MashupLiveBannerWidget;
+import de.evilradio.core.configuration.MenuPlayerSubSettings.MenuPlayerPosition;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.hudwidget.widget.LiveStatusLine;
+import de.evilradio.core.radio.AudioStreamDebug;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.schedule.ScheduleShow;
 import de.evilradio.core.song.CurrentSong;
@@ -20,6 +22,7 @@ import net.labymod.api.models.OperatingSystem;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.screen.activity.Activity;
+import net.labymod.api.client.gui.screen.widget.Widget;
 import net.labymod.api.client.gui.screen.widget.attributes.PriorityLayer;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
@@ -29,6 +32,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.FlexibleContentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.HorizontalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
+import net.labymod.api.event.Phase;
 import net.labymod.api.event.Subscribe;
 import net.labymod.api.event.client.gui.screen.ActivityInitializeEvent;
 import net.labymod.api.event.client.lifecycle.GameTickEvent;
@@ -43,6 +47,17 @@ public class ActivityListener implements Updatable {
     this.addon.configuration().showMainMenuPlayer().addChangeListener(enabled ->
         this.addon.labyAPI().minecraft().executeOnRenderThread(
             () -> this.applyMainMenuPlayerVisibility(enabled)));
+    this.addon.configuration().menuPlayer().position().addChangeListener(position ->
+        this.addon.labyAPI().minecraft().executeOnRenderThread(this::rebuildMenuPlayer));
+    this.addon.configuration().menuPlayer().debugForceMashupLive().addChangeListener(enabled ->
+        this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
+          this.lastBannerMode = -1;
+          if (Boolean.TRUE.equals(enabled) && this.debugForceMashupLive()) {
+            this.applyMashupLiveBanner(DEBUG_MASHUP_LIVE);
+          } else {
+            this.refreshMashupLiveBanner();
+          }
+        }));
   }
 
   @Subscribe
@@ -60,6 +75,9 @@ public class ActivityListener implements Updatable {
 
   @Subscribe
   public void onGameTick(GameTickEvent event) {
+    if (event.phase() != Phase.PRE || this.songContainer == null) {
+      return;
+    }
 
     CurrentSong song = this.addon.currentSongService().getCurrentSong();
     if (song != null) {
@@ -72,10 +90,6 @@ public class ActivityListener implements Updatable {
     if (twitchPhase != this.lastLiveBadgeTwitchPhase && this.hasRotatingLiveLine(song)) {
       this.lastLiveBadgeTwitchPhase = twitchPhase;
       this.refreshLiveLine(song);
-    }
-
-    if (this.mashupLiveBanner != null) {
-      this.applyMashupLiveBanner(this.mashupShowStatus);
     }
   }
 
@@ -91,6 +105,7 @@ public class ActivityListener implements Updatable {
   private FlexibleContentWidget songContainer;
   private FlexibleContentWidget songContent;
   private MashupLiveBannerWidget mashupLiveBanner;
+  private IconWidget restoreWidget;
   private IconWidget coverWidget;
   private ComponentWidget streamWidget;
   private ComponentWidget liveWidget;
@@ -117,28 +132,17 @@ public class ActivityListener implements Updatable {
   private boolean lastRenderedHadDuration;
   private ShowStatus mashupShowStatus;
   private Task mashupLiveTask;
-  private boolean debugForceMashupLive;
+  private boolean menuPlayerMinimized;
   private int lastBannerMode;
+  private boolean menuRelayoutScheduled;
+  private boolean menuPlayerAttached;
 
   private static final ShowStatus DEBUG_MASHUP_LIVE =
       new ShowStatus(true, true, "Debug-DJ", 0L, 0L, "20:00", "22:00");
 
-  public void toggleDebugMashupLiveBanner() {
-    this.debugForceMashupLive = !this.debugForceMashupLive;
-    this.lastBannerMode = -1;
-    this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-      if (this.debugForceMashupLive) {
-        this.applyMashupLiveBanner(DEBUG_MASHUP_LIVE);
-        this.addon.notification(
-            Component.translatable("evilradio.settings.previewMashupLiveBanner.name"),
-            Component.translatable("evilradio.settings.previewMashupLiveBanner.enabledHint"));
-      } else {
-        this.refreshMashupLiveBanner();
-        this.addon.notification(
-            Component.translatable("evilradio.settings.previewMashupLiveBanner.name"),
-            Component.translatable("evilradio.settings.previewMashupLiveBanner.disabledHint"));
-      }
-    });
+  private boolean debugForceMashupLive() {
+    return this.addon.configuration().menuPlayer().debugForceMashupLive().get()
+        && AudioStreamDebug.isUuidAllowed(this.addon.labyAPI().getUniqueId());
   }
 
   private void applyMainMenuPlayerVisibility(boolean enabled) {
@@ -146,18 +150,30 @@ public class ActivityListener implements Updatable {
       return;
     }
     if (enabled) {
-      if (this.songContainer == null) {
-        this.addRadioController(this.mainMenuActivity);
-      } else {
-      this.songContainer.setVisible(true);
-      this.startMashupLiveUpdates();
-      }
+      this.rebuildMenuPlayer();
       return;
     }
-    if (this.songContainer != null) {
-      this.songContainer.setVisible(false);
-    }
+    this.removeMenuPlayerFromDocument();
     this.stopMashupLiveUpdates();
+    this.detachMenuPlayerWidgets();
+  }
+
+  private void rebuildMenuPlayer() {
+    if (this.mainMenuActivity == null || !this.addon.configuration().showMainMenuPlayer().get()) {
+      return;
+    }
+    this.removeMenuPlayerFromDocument();
+    this.detachMenuPlayerWidgets();
+    this.addRadioController(this.mainMenuActivity);
+  }
+
+  private void removeMenuPlayerFromDocument() {
+    if (this.mainMenuActivity == null) {
+      return;
+    }
+    Document document = this.mainMenuActivity.document();
+    document.removeChild("song-container");
+    document.removeChild("player-restore");
   }
 
   private void clearMainMenuPlayerWidgets() {
@@ -165,15 +181,19 @@ public class ActivityListener implements Updatable {
     this.detachMenuPlayerWidgets();
     this.mashupShowStatus = null;
     this.lastBannerMode = 0;
+    this.menuRelayoutScheduled = false;
+    this.menuPlayerAttached = false;
     this.lastRenderedElapsed = -1L;
     this.lastRenderedProgressPercent = -1;
     this.lastRenderedHadDuration = false;
   }
 
   private void detachMenuPlayerWidgets() {
+    this.menuPlayerAttached = false;
     this.songContainer = null;
     this.songContent = null;
     this.mashupLiveBanner = null;
+    this.restoreWidget = null;
     this.coverWidget = null;
     this.streamWidget = null;
     this.liveWidget = null;
@@ -191,9 +211,48 @@ public class ActivityListener implements Updatable {
     activity.addStyle("evilradio", "activity/menu.lss");
 
     this.lastLivePrefix = null;
+    this.lastRenderedElapsed = -1L;
+    this.lastRenderedProgressPercent = -1;
+    this.lastRenderedHadDuration = false;
+    if (this.menuPlayerMinimized) {
+      this.restoreWidget = new IconWidget(EvilTextures.LOGO).addId("player-restore");
+      this.restoreWidget.priorityLayer().set(PriorityLayer.VERY_FRONT);
+      this.applyMenuPlayerPosition(this.restoreWidget);
+      this.restoreWidget.setHoverComponent(
+          Component.translatable("evilradio.widget.restorePlayer").color(NamedTextColor.GRAY));
+      this.restoreWidget.setPressable(() -> {
+        this.menuPlayerMinimized = false;
+        this.rebuildMenuPlayer();
+      });
+      document.addChildInitialized(this.restoreWidget);
+      this.startMashupLiveUpdates();
+      return;
+    }
 
     this.songContainer = new FlexibleContentWidget().addId("song-container");
     this.songContainer.priorityLayer().set(PriorityLayer.VERY_FRONT);
+    this.applyMenuPlayerPosition(this.songContainer);
+
+    HorizontalListWidget chrome = new HorizontalListWidget().addId("player-chrome");
+    boolean left = this.isMenuPlayerLeft();
+    ButtonWidget moveButton = ButtonWidget.text(left ? ">" : "<", this::toggleMenuPlayerSide)
+        .addId("player-move");
+    moveButton.priorityLayer().set(PriorityLayer.VERY_FRONT);
+    moveButton.setHoverComponent(
+        Component.translatable(
+                left ? "evilradio.widget.movePlayerRight" : "evilradio.widget.movePlayerLeft")
+            .color(NamedTextColor.GRAY));
+    chrome.addEntry(moveButton);
+
+    ButtonWidget closeButton = ButtonWidget.text("X", () -> {
+      this.menuPlayerMinimized = true;
+      this.rebuildMenuPlayer();
+    }).addId("player-close");
+    closeButton.priorityLayer().set(PriorityLayer.VERY_FRONT);
+    closeButton.setHoverComponent(
+        Component.translatable("evilradio.widget.minimizePlayer").color(NamedTextColor.GRAY));
+    chrome.addEntry(closeButton);
+    this.songContainer.addContent(chrome);
 
     this.mashupLiveBanner = new MashupLiveBannerWidget();
     this.mashupLiveBanner.addId("mashup-live-banner");
@@ -204,7 +263,8 @@ public class ActivityListener implements Updatable {
         this.lastBannerMode,
         this.showGrussboxButton(),
         this.showTwitchButton(),
-        this.mashupShowStatus);
+        this.mashupShowStatus,
+        this.upcomingShow());
 
     this.songContent = new FlexibleContentWidget().addId("content");
 
@@ -216,6 +276,7 @@ public class ActivityListener implements Updatable {
 
     this.streamWidget = ComponentWidget.empty();
     this.streamWidget.addId("stream-name");
+    this.setLayoutHidden(this.streamWidget, true);
     player.addContent(this.streamWidget);
 
     this.liveWidget = ComponentWidget.empty();
@@ -228,6 +289,7 @@ public class ActivityListener implements Updatable {
 
     this.artistWidget = ComponentWidget.empty();
     this.artistWidget.addId("artist");
+    this.setLayoutHidden(this.artistWidget, true);
     player.addContent(this.artistWidget);
 
     this.progressRow = new FlexibleContentWidget().addId("progress-row");
@@ -238,7 +300,7 @@ public class ActivityListener implements Updatable {
     this.progressRow.addContent(this.progressTrack);
     this.statusWidget = ComponentWidget.empty().addId("status");
     this.progressRow.addContent(this.statusWidget);
-    this.progressRow.setVisible(false);
+    this.setLayoutHidden(this.progressRow, true);
     player.addContent(this.progressRow);
 
     HorizontalListWidget controlsContainer = new HorizontalListWidget().addId("controls");
@@ -281,10 +343,10 @@ public class ActivityListener implements Updatable {
     this.songContainer.addContent(this.mashupLiveBanner);
     this.songContainer.addContent(this.songContent);
 
-    document.addChildInitialized(this.songContainer);
-
     this.refreshPlayPauseIcon();
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
+    document.addChildInitialized(this.songContainer);
+    this.menuPlayerAttached = true;
     this.startMashupLiveUpdates();
   }
 
@@ -358,13 +420,18 @@ public class ActivityListener implements Updatable {
           this.mashupShowStatus.moderatorName(),
           this.lastLiveBadgeTwitchPhase);
     }
-    if (this.lastLivePrefix == null) {
+    boolean active = this.lastLivePrefix != null;
+    boolean wasActive = this.liveWidget.hasId("active");
+    if (!active) {
       this.liveWidget.setComponent(Component.empty());
       this.liveWidget.removeId("active");
-      return;
+    } else {
+      this.liveWidget.setComponent(this.lastLivePrefix);
+      this.liveWidget.addId("active");
     }
-    this.liveWidget.setComponent(this.lastLivePrefix);
-    this.liveWidget.addId("active");
+    if (wasActive != active) {
+      this.scheduleMenuRelayout();
+    }
   }
 
   private boolean hasRotatingLiveLine(CurrentSong song) {
@@ -386,7 +453,8 @@ public class ActivityListener implements Updatable {
 
     this.streamWidget.setVisible(true);
     this.trackWidget.setVisible(true);
-    this.artistWidget.setVisible(true);
+    this.setLayoutHidden(this.streamWidget, false);
+    this.setLayoutHidden(this.artistWidget, false);
     this.trackWidget.removeId("idle");
 
     if (currentSong == null) {
@@ -403,16 +471,16 @@ public class ActivityListener implements Updatable {
           this.trackWidget.setComponent(Component.translatable("evilradio.widget.loadingSong")
               .color(NamedTextColor.DARK_GRAY));
           this.artistWidget.setComponent(Component.empty());
-          this.artistWidget.setVisible(false);
+          this.setLayoutHidden(this.artistWidget, true);
         }
       } else {
         this.streamWidget.setComponent(Component.empty());
-        this.streamWidget.setVisible(false);
+        this.setLayoutHidden(this.streamWidget, true);
         this.trackWidget.addId("idle");
         this.trackWidget.setComponent(Component.translatable("evilradio.widget.clickPlayToStart")
             .color(NamedTextColor.GRAY));
         this.artistWidget.setComponent(Component.empty());
-        this.artistWidget.setVisible(false);
+        this.setLayoutHidden(this.artistWidget, true);
       }
       this.setProgressVisible(false);
       this.applyMashupLiveBanner(this.mashupShowStatus);
@@ -430,7 +498,7 @@ public class ActivityListener implements Updatable {
     this.trackWidget.setComponent(Component.text(currentSong.getDisplayTitle(), NamedTextColor.WHITE));
     String artist = currentSong.getArtist() == null ? "" : currentSong.getArtist();
     this.artistWidget.setComponent(Component.text(artist, NamedTextColor.WHITE));
-    this.artistWidget.setVisible(!artist.isBlank());
+    this.setLayoutHidden(this.artistWidget, artist.isBlank());
 
     this.applyStationIcon();
     this.updateProgress(currentSong);
@@ -453,6 +521,9 @@ public class ActivityListener implements Updatable {
     if (elapsed == this.lastRenderedElapsed
         && percent == this.lastRenderedProgressPercent
         && hasDuration == this.lastRenderedHadDuration) {
+      if (this.progressRow != null && this.progressRow.hasId("hidden")) {
+        this.setProgressVisible(true);
+      }
       return;
     }
     this.lastRenderedElapsed = elapsed;
@@ -506,7 +577,7 @@ public class ActivityListener implements Updatable {
       }
     }
     if (this.progressRow != null) {
-      this.progressRow.setVisible(visible);
+      this.setLayoutHidden(this.progressRow, !visible);
     }
     if (this.progressTrack != null && !visible) {
       this.progressTrack.removeId("indeterminate");
@@ -551,7 +622,7 @@ public class ActivityListener implements Updatable {
   }
 
   private void refreshMashupLiveBanner() {
-    if (this.debugForceMashupLive) {
+    if (this.debugForceMashupLive()) {
       this.addon.labyAPI().minecraft().executeOnRenderThread(
           () -> this.applyMashupLiveBanner(DEBUG_MASHUP_LIVE));
       return;
@@ -565,7 +636,7 @@ public class ActivityListener implements Updatable {
   }
 
   private void applyMashupLiveBanner(ShowStatus show) {
-    if (this.debugForceMashupLive) {
+    if (this.debugForceMashupLive()) {
       this.mashupShowStatus = DEBUG_MASHUP_LIVE;
     } else if (show != null) {
       this.mashupShowStatus = show;
@@ -573,13 +644,47 @@ public class ActivityListener implements Updatable {
     if (this.mashupLiveBanner == null) {
       return;
     }
+    int previousMode = this.lastBannerMode;
     this.lastBannerMode = this.currentBannerMode();
-    this.mashupLiveBanner.apply(
+    boolean structureChanged = this.mashupLiveBanner.apply(
         this.lastBannerMode,
         this.showGrussboxButton(),
         this.showTwitchButton(),
-        this.mashupShowStatus);
+        this.mashupShowStatus,
+        this.upcomingShow());
     this.refreshLiveLine(this.addon.currentSongService().getCurrentSong());
+    if (structureChanged || previousMode != this.lastBannerMode) {
+      this.scheduleMenuRelayout();
+    }
+  }
+
+  private void setLayoutHidden(Widget widget, boolean hidden) {
+    if (widget == null) {
+      return;
+    }
+    boolean wasHidden = widget.hasId("hidden");
+    widget.setVisible(!hidden);
+    if (hidden) {
+      widget.addId("hidden");
+    } else {
+      widget.removeId("hidden");
+    }
+    if (wasHidden != hidden && widget != this.progressRow) {
+      this.scheduleMenuRelayout();
+    }
+  }
+
+  private void scheduleMenuRelayout() {
+    if (this.menuRelayoutScheduled || !this.menuPlayerAttached) {
+      return;
+    }
+    this.menuRelayoutScheduled = true;
+    this.addon.labyAPI().minecraft().executeNextTick(() -> {
+      this.menuRelayoutScheduled = false;
+      if (this.menuPlayerAttached) {
+        this.rebuildMenuPlayer();
+      }
+    });
   }
 
   private int currentBannerMode() {
@@ -592,6 +697,9 @@ public class ActivityListener implements Updatable {
     if (live && listening && this.hasLiveActionButtons()) {
       return MashupLiveBannerWidget.MODE_ACTIONS;
     }
+    if (!live && this.upcomingShow() != null) {
+      return MashupLiveBannerWidget.MODE_UPCOMING;
+    }
     return MashupLiveBannerWidget.MODE_HIDDEN;
   }
 
@@ -600,7 +708,7 @@ public class ActivityListener implements Updatable {
   }
 
   private boolean showTwitchButton() {
-    if (this.debugForceMashupLive) {
+    if (this.debugForceMashupLive()) {
       return true;
     }
     if (this.mashupShowStatus != null && this.mashupShowStatus.twitch()) {
@@ -611,7 +719,7 @@ public class ActivityListener implements Updatable {
   }
 
   private boolean showGrussboxButton() {
-    if (this.debugForceMashupLive) {
+    if (this.debugForceMashupLive()) {
       return true;
     }
     ScheduleShow liveShow = this.addon.scheduleService().currentOnAirShow();
@@ -620,6 +728,31 @@ public class ActivityListener implements Updatable {
 
   private static void openUrl(String url) {
     OperatingSystem.getPlatform().openUrl(url);
+  }
+
+  private ScheduleShow upcomingShow() {
+    if (this.debugForceMashupLive()) {
+      return null;
+    }
+    return this.addon.scheduleService().nextUpcomingShowToday();
+  }
+
+  private void applyMenuPlayerPosition(Widget widget) {
+    widget.removeId("left");
+    widget.removeId("right");
+    widget.addId(this.isMenuPlayerLeft() ? "left" : "right");
+  }
+
+  private boolean isMenuPlayerLeft() {
+    MenuPlayerPosition position = this.addon.configuration().menuPlayer().position().get();
+    return position != null && position.isLeft();
+  }
+
+  private void toggleMenuPlayerSide() {
+    this.addon.configuration().menuPlayer().position().set(
+        this.isMenuPlayerLeft()
+            ? MenuPlayerPosition.BOTTOM_RIGHT
+            : MenuPlayerPosition.BOTTOM_LEFT);
   }
 
   private boolean isListeningToMashup() {
