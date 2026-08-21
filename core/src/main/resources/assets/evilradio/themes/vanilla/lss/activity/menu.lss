@@ -71,7 +71,7 @@
     }
 
     .player-move .button-text {
-      padding: 0;
+      padding-right: 2;
     }
 
     .player-move:hover {
@@ -92,7 +92,7 @@
     }
 
     .player-close .button-text {
-      padding: 0;
+      padding-right: 1;
     }
 
     .player-close:hover {

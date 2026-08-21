@@ -23,20 +23,20 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
   private static final TextColor TWITCH_PURPLE = TextColor.color(145, 70, 255);
 
   private int mode;
-  private boolean showGrussbox;
+  private boolean showWishBox;
   private boolean showTwitch;
   private ShowStatus showStatus;
   private ScheduleShow upcomingShow;
   private Runnable playMashup;
-  private Runnable openGrussbox;
+  private Runnable openWishBox;
   private Runnable openTwitch;
   private ComponentWidget titleWidget;
   private ComponentWidget detailWidget;
   private boolean treeInitialized;
 
-  public void bind(Runnable playMashup, Runnable openGrussbox, Runnable openTwitch) {
+  public void bind(Runnable playMashup, Runnable openWishBox, Runnable openTwitch) {
     this.playMashup = playMashup;
-    this.openGrussbox = openGrussbox;
+    this.openWishBox = openWishBox;
     this.openTwitch = openTwitch;
   }
 
@@ -46,16 +46,16 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
 
   public boolean apply(
       int mode,
-      boolean showGrussbox,
+      boolean showWishBox,
       boolean showTwitch,
       ShowStatus showStatus,
       ScheduleShow upcomingShow) {
     boolean structureChanged = mode != this.mode
-        || showGrussbox != this.showGrussbox
+        || showWishBox != this.showWishBox
         || showTwitch != this.showTwitch
         || !sameUpcoming(this.upcomingShow, upcomingShow);
     this.mode = mode;
-    this.showGrussbox = showGrussbox;
+    this.showWishBox = showWishBox;
     this.showTwitch = showTwitch;
     this.showStatus = showStatus;
     this.upcomingShow = upcomingShow;
@@ -121,21 +121,21 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
       this.refreshLiveTitle();
 
       HorizontalListWidget actions = new HorizontalListWidget().addId("mashup-live-actions");
-      if (this.showGrussbox) {
-        ButtonWidget grussbox = ButtonWidget.component(
+      if (this.showWishBox) {
+        ButtonWidget wishBox = ButtonWidget.component(
             Component.translatable("evilradio.schedule.grussbox").color(NamedTextColor.WHITE),
             () -> {
-              if (this.openGrussbox != null) {
-                this.openGrussbox.run();
+              if (this.openWishBox != null) {
+                this.openWishBox.run();
               }
             })
             .addId("mashup-live-grussbox");
         if (!this.showTwitch) {
-          grussbox.addId("alone");
+          wishBox.addId("alone");
         }
-        grussbox.setHoverComponent(
+        wishBox.setHoverComponent(
             Component.translatable("evilradio.schedule.grussboxHover").color(NamedTextColor.GRAY));
-        actions.addEntry(grussbox);
+        actions.addEntry(wishBox);
       }
       if (this.showTwitch) {
         ButtonWidget twitch = ButtonWidget.component(
@@ -146,7 +146,7 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
               }
             })
             .addId("mashup-live-twitch");
-        if (!this.showGrussbox) {
+        if (!this.showWishBox) {
           twitch.addId("alone");
         }
         twitch.setHoverComponent(
@@ -159,9 +159,7 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
   }
 
   private void refreshLiveTitle() {
-    if (this.titleWidget == null || this.showStatus == null) {
-      return;
-    }
+    if (this.titleWidget == null || this.showStatus == null) return;
     String moderator = this.showStatus.moderatorName();
     if (moderator != null && !moderator.isBlank()) {
       this.titleWidget.setComponent(
@@ -176,9 +174,7 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
   }
 
   private void refreshUpcomingText() {
-    if (this.titleWidget == null || this.detailWidget == null || this.upcomingShow == null) {
-      return;
-    }
+    if (this.titleWidget == null || this.detailWidget == null || this.upcomingShow == null) return;
     String time = this.upcomingShow.getStartTime() == null ? "" : this.upcomingShow.getStartTime();
     this.titleWidget.setComponent(
         Component.translatable("evilradio.widget.mashupUpcomingTitle", Component.text(time))
@@ -201,12 +197,8 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
   }
 
   private static boolean sameUpcoming(ScheduleShow left, ScheduleShow right) {
-    if (left == right) {
-      return true;
-    }
-    if (left == null || right == null) {
-      return false;
-    }
+    if (left == right) return true;
+    if (left == null || right == null) return false;
     return java.util.Objects.equals(left.getDate(), right.getDate())
         && java.util.Objects.equals(left.getStartTime(), right.getStartTime())
         && java.util.Objects.equals(left.getShowName(), right.getShowName())

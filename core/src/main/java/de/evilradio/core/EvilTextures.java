@@ -20,4 +20,14 @@ public class EvilTextures {
 
   }
 
+  public static class SpriteCommon {
+
+    public static final ThemeTextureLocation COMMON = ThemeTextureLocation.of("evilradio:common", 128, 128);
+
+    public static final Icon X = Icon.sprite(COMMON, 0, 0, 16);
+    public static final Icon ARROW_RIGHT = Icon.sprite(COMMON, 1, 0, 16);
+    public static final Icon ARROW_LEFT = Icon.sprite(COMMON, 2, 0, 16);
+
+  }
+
 }
