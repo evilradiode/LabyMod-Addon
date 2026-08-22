@@ -4,8 +4,7 @@ RadioStationRow {
   height: 44;
   background-color: var(--picker-row-bg);
   background-color-transition-duration: 120;
-  border-radius: 8;
-  border-thickness: 1;
+  border: 1;
   border-color: rgba(255, 255, 255, 0.1);
   padding: 4 6 4 6;
 }
@@ -13,20 +12,20 @@ RadioStationRow {
 RadioStationRow:hover,
 RadioStationRow.focused {
   background-color: rgba(220, 40, 40, 0.28);
-  border-thickness: 1;
+  border: 1;
   border-color: rgba(255, 80, 80, 0.5);
 }
 
 RadioStationRow.playing {
   background-color: rgba(40, 120, 60, 0.2);
-  border-thickness: 1;
+  border: 1;
   border-color: rgba(80, 220, 100, 0.55);
 }
 
 RadioStationRow.playing:hover,
 RadioStationRow.playing.focused {
   background-color: rgba(220, 40, 40, 0.28);
-  border-thickness: 1;
+  border: 1;
   border-color: rgba(255, 80, 80, 0.5);
 }
 
@@ -96,7 +95,7 @@ RadioStationRow .row-progress-track {
   top: 32;
   width: 120;
   height: 2;
-  border-radius: 1;
+  border: 1;
   background-color: rgba(255, 255, 255, 0.12);
   interactable: false;
 }
@@ -106,7 +105,6 @@ RadioStationRow .row-progress-fill {
   top: 0;
   height: 2;
   width: var(--row-progress-width);
-  border-radius: 1;
   background-color: rgba(255, 80, 80, 0.9);
   interactable: false;
 }
@@ -123,7 +121,7 @@ RadioStationRow .row-time {
   font-size: 0.48;
   text-shadow: 0 0 3 rgba(0, 0, 0, 0.85);
   background-color: rgba(0, 0, 0, 0.28);
-  border-radius: 3;
+  border: 1;
   padding: 1 2 2 2;
 }
 

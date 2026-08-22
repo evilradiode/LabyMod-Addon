@@ -3,11 +3,9 @@
     width: 32;
     height: 32;
     padding: 3;
-    border-radius: 8;
-    border-thickness: 2;
-    border-color: var(--background-color-border);
-    background-color: var(--background-color);
-    filter: blur(25);
+    background-color: rgba(20, 20, 20, 180);
+    border: 1;
+    border-color: rgba(125, 125, 125, 50);
     priority-layer: very_front;
     interactable: true;
     alignment-y: bottom;
@@ -39,11 +37,9 @@
     width: 132;
     height: fit-content;
     priority-layer: very_front;
-    filter: blur(25);
-    border-radius: 10;
-    border-thickness: 2;
-    border-color: var(--background-color-border);
-    background-color: var(--background-color);
+    background-color: rgba(20, 20, 20, 180);
+    border: 1;
+    border-color: rgba(125, 125, 125, 50);
     box-shadow: none;
     orientation: vertical;
     alignment-y: bottom;
@@ -64,18 +60,19 @@
       font-size: 0.7;
       text-align: center;
       text-color: rgb(230, 230, 230);
-      background-color: rgba(255, 255, 255, 0.08);
-      border-radius: 4;
-      border-thickness: 1;
-      border-color: rgba(255, 255, 255, 0.18);
+      background-color: rgba(180, 190, 90, 180);
+      border: 1;
+      border-color: rgba(125, 125, 125, 50);
+
+      Icon {
+        width: 10;
+        height: 10;
+      }
+
     }
 
     .player-move .button-text {
       padding-right: 2;
-    }
-
-    .player-move:hover {
-      background-color: rgba(255, 255, 255, 0.16);
     }
 
     .player-close {
@@ -85,18 +82,19 @@
       font-size: 0.7;
       text-align: center;
       text-color: rgb(255, 220, 220);
-      background-color: rgba(180, 40, 40, 0.45);
-      border-radius: 4;
-      border-thickness: 1;
-      border-color: rgba(255, 90, 90, 0.55);
+      background-color: rgba(180, 40, 40, 180);
+      border: 1;
+      border-color: rgba(125, 125, 125, 50);
+
+      Icon {
+        width: 10;
+        height: 10;
+      }
+
     }
 
     .player-close .button-text {
       padding-right: 1;
-    }
-
-    .player-close:hover {
-      background-color: rgba(220, 50, 50, 0.75);
     }
 
     .mashup-live-banner {
@@ -104,9 +102,8 @@
       height: 0;
       margin: 0;
       padding: 0;
-      border-thickness: 0;
       background-color: rgba(220, 40, 40, 0.28);
-      border-radius: 8;
+      border: 1;
       border-color: rgba(255, 90, 90, 0.55);
       orientation: vertical;
       alignment-x: center;
@@ -344,7 +341,7 @@
           .progress-track {
             width: 100%;
             height: 4;
-            border-radius: 5;
+            border: 1;
             background-color: rgba(255, 255, 255, 0.12);
             interactable: false;
 
@@ -353,7 +350,6 @@
               left: 0;
               height: 4;
               width: var(--menu-song-progress-width);
-              border-radius: 5;
               background-color: rgb(255, 85, 85);
             }
 
@@ -394,16 +390,35 @@
       .previous {
         height: 12;
         width: 12;
+
+        Icon {
+          width: 8;
+          height: 8;
+        }
+
       }
 
       .play-pause {
         height: 12;
         width: 12;
+
+        Icon {
+          width: 8;
+          height: 8;
+          padding-left: 2;
+        }
+
       }
 
       .next {
         height: 12;
         width: 12;
+
+        Icon {
+          width: 8;
+          height: 8;
+        }
+
       }
     }
 
@@ -414,19 +429,20 @@
       padding: 0;
       font-size: 0.65;
       text-align: center;
-      background-color: rgba(255, 255, 255, 0.08);
-      border-radius: 6;
-      border-thickness: 1;
+      background-color: rgba(255, 255, 255, 180);
+      border: 1;
       border-color: rgba(255, 255, 255, 0.12);
-    }
-
-    .station-picker:hover {
-      background-color: rgba(255, 255, 255, 0.14);
     }
 
     .volume-slider {
       margin-top: 4;
       width: 100%;
       height: 10;
+
+      Component {
+        padding-top: 0.5;
+        font-size: 0.8;
+      }
+
     }
   }
