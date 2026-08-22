@@ -57,6 +57,25 @@
       space-between-entries: 2;
     }
 
+    .player-settings {
+      width: 12;
+      height: 12;
+      padding: 0;
+      font-size: 0.7;
+      text-align: center;
+      text-color: rgb(230, 230, 230);
+      background-color: rgba(100, 100, 100, 180);
+      border-radius: 4;
+      border-thickness: 1;
+      border-color: rgba(255, 255, 255, 0.18);
+
+      Icon {
+        width: 8;
+        height: 8;
+      }
+
+    }
+
     .player-move {
       width: 16;
       height: 16;
@@ -64,7 +83,7 @@
       font-size: 0.7;
       text-align: center;
       text-color: rgb(230, 230, 230);
-      background-color: rgba(255, 255, 255, 0.08);
+      background-color: rgba(180, 190, 90, 0.18);
       border-radius: 4;
       border-thickness: 1;
       border-color: rgba(255, 255, 255, 0.18);
