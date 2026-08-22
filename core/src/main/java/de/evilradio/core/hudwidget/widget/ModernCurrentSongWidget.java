@@ -392,11 +392,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     } else {
       this.statusWidget.setComponent(Component.text(timeLabel).color(NamedTextColor.GRAY));
     }
-    if(song.isOnAir()) {
-      this.statusWidget.addId("on-air");
-    } else {
-      this.statusWidget.removeId("on-air");
-    }
   }
 
   private static String formatTimeLabel(CurrentSong song) {
@@ -474,11 +469,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     } else {
       fillWidth = this.progressTrackMaxWidth * 0.3f;
       this.progressTrack.addId("indeterminate");
-    }
-    if(song.isOnAir()) {
-      this.progressTrack.addId("on-air");
-    } else {
-      this.progressTrack.removeId("on-air");
     }
     this.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
     this.progressFill.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);

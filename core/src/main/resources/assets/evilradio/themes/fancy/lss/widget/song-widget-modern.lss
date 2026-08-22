@@ -72,29 +72,6 @@ ModernCurrentSong {
           margin-top: 1.5;
           border-radius: 5;
           height: 4;
-          width: 80%;
-          background-color: rgba(255, 255, 255, 0.12);
-
-          .progress-fill {
-            top: 0;
-            left: 0;
-            height: 4;
-            width: var(--modern-song-widget-progress-width);
-            border-radius: 5;
-            background-color: var(--modern-song-widget-progress-bar-color);
-          }
-
-          &.indeterminate {
-            .progress-fill {
-              opacity: 0.4;
-            }
-          }
-        }
-
-        .progress-track.on-air {
-          margin-top: 1.5;
-          border-radius: 5;
-          height: 4;
           width: 70%;
           background-color: rgba(255, 255, 255, 0.12);
 
@@ -103,6 +80,7 @@ ModernCurrentSong {
             left: 0;
             height: 4;
             width: var(--modern-song-widget-progress-width);
+            max-width: 100%;
             border-radius: 5;
             background-color: var(--modern-song-widget-progress-bar-color);
           }
@@ -121,12 +99,6 @@ ModernCurrentSong {
           overflow-strategy: clip;
         }
 
-        .status.on-air {
-          margin-left: 6;
-          font-size: 0.7;
-          max-lines: 1;
-          overflow-strategy: clip;
-        }
       }
     }
   }
