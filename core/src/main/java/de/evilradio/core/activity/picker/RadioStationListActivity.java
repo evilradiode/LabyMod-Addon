@@ -348,7 +348,7 @@ public class RadioStationListActivity extends SimpleActivity {
     coverStrip.addChild(this.coverTimeWidget);
     boolean equalizerEnabled = this.isEqualizerFeatureEnabled();
     if (equalizerEnabled) {
-      this.equalizerStyleButton = ButtonWidget.text("EQ", this::cycleEqualizerStyle)
+      this.equalizerStyleButton = ButtonWidget.icon(SpriteCommon.EQ_ICON, this::cycleEqualizerStyle)
           .addId("picker-eq-toggle");
       coverStrip.addChild(this.equalizerStyleButton);
     } else {
