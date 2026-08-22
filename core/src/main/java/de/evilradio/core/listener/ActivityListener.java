@@ -212,7 +212,6 @@ public class ActivityListener implements Updatable {
     this.lastRenderedHadDuration = false;
     if (this.menuPlayerMinimized) {
       this.restoreWidget = new IconWidget(EvilTextures.LOGO).addId("player-restore");
-      this.restoreWidget.priorityLayer().set(PriorityLayer.VERY_FRONT);
       this.applyMenuPlayerPosition(this.restoreWidget);
       this.restoreWidget.setHoverComponent(
           Component.translatable("evilradio.widget.restorePlayer").color(NamedTextColor.GRAY));
@@ -226,7 +225,6 @@ public class ActivityListener implements Updatable {
     }
 
     this.songContainer = new FlexibleContentWidget().addId("song-container");
-    this.songContainer.priorityLayer().set(PriorityLayer.VERY_FRONT);
     this.applyMenuPlayerPosition(this.songContainer);
 
     HorizontalListWidget chrome = new HorizontalListWidget().addId("player-chrome");
@@ -243,7 +241,6 @@ public class ActivityListener implements Updatable {
     boolean left = this.isMenuPlayerLeft();
     ButtonWidget moveButton = ButtonWidget.icon(left ? SpriteCommon.ARROW_RIGHT : SpriteCommon.ARROW_LEFT, this::toggleMenuPlayerSide)
         .addId("player-move");
-    moveButton.priorityLayer().set(PriorityLayer.VERY_FRONT);
     moveButton.setHoverComponent(
         Component.translatable(
                 left ? "evilradio.widget.movePlayerRight" : "evilradio.widget.movePlayerLeft")
@@ -254,7 +251,6 @@ public class ActivityListener implements Updatable {
       this.menuPlayerMinimized = true;
       this.rebuildMenuPlayer();
     }).addId("player-close");
-    closeButton.priorityLayer().set(PriorityLayer.VERY_FRONT);
     closeButton.setHoverComponent(
         Component.translatable("evilradio.widget.minimizePlayer").color(NamedTextColor.GRAY));
     chrome.addEntry(closeButton);
@@ -262,7 +258,6 @@ public class ActivityListener implements Updatable {
 
     this.mashupLiveBanner = new MashupLiveBannerWidget();
     this.mashupLiveBanner.addId("mashup-live-banner");
-    this.mashupLiveBanner.priorityLayer().set(PriorityLayer.VERY_FRONT);
     this.mashupLiveBanner.bind(this::playMashup, () -> openUrl(EvilConstants.WISH_BOX_URL), () -> openUrl(EvilConstants.TWITCH_URL));
     this.lastBannerMode = this.currentBannerMode();
     this.mashupLiveBanner.apply(
