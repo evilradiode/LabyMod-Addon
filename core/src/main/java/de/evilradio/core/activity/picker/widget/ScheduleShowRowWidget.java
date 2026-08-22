@@ -1,5 +1,6 @@
 package de.evilradio.core.activity.picker.widget;
 
+import de.evilradio.core.EvilConstants;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.schedule.ScheduleShow;
 import net.labymod.api.client.component.Component;
@@ -23,9 +24,6 @@ public class ScheduleShowRowWidget extends DivWidget {
 
   private static final TextColor TIME_ORANGE = TextColor.color(230, 126, 34);
   private static final TextColor TWITCH_PURPLE = TextColor.color(145, 70, 255);
-  private static final String GRUSSBOX_URL =
-      "https://evil-radio.de/sendeplan/music-request.php";
-  private static final String TWITCH_URL = "https://www.twitch.tv/evilradiode";
 
   private final ScheduleShow show;
   private final boolean mashupLive;
@@ -63,13 +61,13 @@ public class ScheduleShowRowWidget extends DivWidget {
       if (showGrussbox) {
         metaStack.addChild(ButtonWidget.component(
                 Component.translatable("evilradio.schedule.grussbox").color(NamedTextColor.WHITE),
-                () -> openUrl(GRUSSBOX_URL))
+                () -> openUrl(EvilConstants.WISH_BOX_URL))
             .addId("schedule-grussbox"));
       }
       if (showTwitch) {
         ButtonWidget twitchButton = ButtonWidget.component(
                 Component.translatable("evilradio.widget.twitch").color(TWITCH_PURPLE),
-                () -> openUrl(TWITCH_URL))
+                () -> openUrl(EvilConstants.TWITCH_URL))
             .addId("schedule-twitch");
         if (!showGrussbox) {
           twitchButton.addId("alone");
