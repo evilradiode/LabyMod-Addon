@@ -2,6 +2,7 @@ package de.evilradio.core.activity.picker;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
+import de.evilradio.core.EvilTextures.SpriteCommon;
 import de.evilradio.core.activity.picker.widget.RadioStationRowWidget;
 import de.evilradio.core.activity.picker.widget.ScheduleShowRowWidget;
 import de.evilradio.core.configuration.EqualizerStyle;
@@ -203,7 +204,7 @@ public class RadioStationListActivity extends SimpleActivity {
       title = Component.translatable("evilradio.picker.selectStation").color(NamedTextColor.RED);
     }
     header.addChild(ComponentWidget.component(title).addId("picker-title"));
-    header.addChild(ButtonWidget.text("X", this::displayPreviousScreen).addId("picker-close-x"));
+    header.addChild(ButtonWidget.icon(SpriteCommon.X, this::displayPreviousScreen).addId("picker-close-x"));
     panel.addChild(header);
 
     HorizontalListWidget tabs = new HorizontalListWidget().addId("picker-tabs");
