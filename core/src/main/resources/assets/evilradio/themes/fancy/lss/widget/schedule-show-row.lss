@@ -1,0 +1,171 @@
+ScheduleShowRow {
+  width: 100%;
+  height: 136;
+  background-color: rgba(255, 255, 255, 0.06);
+  border-radius: 8;
+  border-thickness: 1;
+  border-color: rgba(255, 255, 255, 0.1);
+  padding: 4 5 4 5;
+}
+
+ScheduleShowRow.on-air {
+  border-color: rgba(220, 50, 50, 0.55);
+  background-color: rgba(220, 40, 40, 0.12);
+}
+
+ScheduleShowRow.no-banner {
+  height: 48;
+}
+
+/* Links: Zeit → Avatar → Name → Badges, horizontal zentriert */
+ScheduleShowRow .schedule-meta {
+  left: 0;
+  top: 0;
+  width: 62;
+  height: 100%;
+}
+
+ScheduleShowRow .schedule-meta-stack {
+  left: 0;
+  top: 2;
+  width: 100%;
+  height: 72;
+}
+
+ScheduleShowRow .schedule-meta-stack.with-badges {
+  height: 100;
+}
+
+ScheduleShowRow .schedule-time {
+  left: 50%;
+  alignment-x: center;
+  top: 0;
+  width: fit-content;
+  height: fit-content;
+  font-size: 0.55;
+  max-lines: 2;
+  overflow-strategy: clip;
+  text-align: center;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
+}
+
+ScheduleShowRow .schedule-avatar {
+  left: 50%;
+  alignment-x: center;
+  top: 18;
+  width: 26;
+  height: 26;
+  border-radius: 13;
+}
+
+ScheduleShowRow .schedule-moderator {
+  left: 50%;
+  alignment-x: center;
+  top: 46;
+  width: fit-content;
+  height: fit-content;
+  font-size: 0.58;
+  max-lines: 1;
+  overflow-strategy: clip;
+  text-align: center;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.75);
+}
+
+ScheduleShowRow .schedule-grussbox {
+  left: 50%;
+  alignment-x: center;
+  top: 58;
+  width: 56;
+  height: 12;
+  padding: 0 2 0 2;
+  font-size: 0.34;
+  text-align: center;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
+  background-color: rgba(180, 30, 30, 0.55);
+  border-radius: 2;
+  border-thickness: 1;
+  border-color: rgba(255, 90, 90, 0.55);
+  interactable: true;
+  layer-split: before;
+}
+
+ScheduleShowRow .schedule-grussbox:hover {
+  background-color: rgba(220, 50, 50, 0.75);
+}
+
+ScheduleShowRow .schedule-twitch {
+  left: 50%;
+  alignment-x: center;
+  top: 72;
+  width: 56;
+  height: 12;
+  padding: 0 2 0 2;
+  font-size: 0.34;
+  text-align: center;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
+  background-color: rgba(100, 50, 180, 0.4);
+  border-radius: 2;
+  border-thickness: 1;
+  border-color: rgba(145, 70, 255, 0.55);
+  interactable: true;
+  layer-split: before;
+}
+
+ScheduleShowRow .schedule-twitch:hover {
+  background-color: rgba(145, 70, 255, 0.65);
+}
+
+ScheduleShowRow .schedule-twitch.alone {
+  top: 58;
+}
+
+/* Rechts: Titel (+ ON AIR), Banner */
+ScheduleShowRow .schedule-main {
+  left: 66;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+ScheduleShowRow .schedule-title {
+  left: 0;
+  top: 0;
+  right: 48;
+  width: fit-content;
+  height: fit-content;
+  font-size: 0.6;
+  max-lines: 1;
+  overflow-strategy: clip;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
+}
+
+ScheduleShowRow .schedule-on-air {
+  right: 0;
+  top: 0;
+  width: fit-content;
+  height: fit-content;
+  font-size: 0.4;
+  text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
+  background-color: rgba(180, 30, 30, 0.45);
+  border-radius: 2;
+  padding: 0 2 0 2;
+}
+
+ScheduleShowRow.no-banner .schedule-title {
+  top: 50%;
+  alignment-y: center;
+  right: 0;
+}
+
+/*
+ * Banner wie auf der Website (Landscape aus beschreibung).
+ * Breite der rechten Spalte, Höhe aus Aspect Ratio (IconWidget.getContentHeight).
+ */
+ScheduleShowRow .schedule-banner {
+  left: 0;
+  top: 13;
+  width: 214;
+  height: fit-content;
+  border-radius: 3;
+  object-fit: contain;
+}

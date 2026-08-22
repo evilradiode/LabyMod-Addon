@@ -1,0 +1,98 @@
+CurrentSong {
+  top: 0;
+  left: 0;
+  width: 210;
+  height: fit-content;
+
+  orientation: horizontal;
+  background-color: var(--song-widget-bg);
+
+  .player {
+    height: 100%;
+    orientation: vertical;
+    width: var(--current-song-widget-max-player-width);
+    padding-left: 2;
+    padding-right: 2;
+
+    .text {
+      margin-top: 0;
+      height: fit-content;
+
+      .track {
+        max-lines: 1;
+        scroll-text: true;
+        scroll-mode: loop;
+        scroll-speed: 10.0;
+        scroll-gap: 25.0;
+      }
+
+      .artist {
+        max-lines: 1;
+        scroll-text: true;
+        scroll-mode: loop;
+        scroll-speed: 10.0;
+        scroll-gap: 25.0;
+      }
+
+      Component {
+        left: 0;
+        top: 0;
+        max-lines: 1;
+        overflow-strategy: clip;
+        width: 100%;
+      }
+    }
+
+    .progress-track {
+      height: 2;
+      width: 100%;
+      margin-top: 1;
+      background-color: rgba(255, 255, 255, 0.12);
+
+      .progress-fill {
+        top: 0;
+        left: 0;
+        height: 2;
+        width: var(--current-song-progress-width);
+        background-color: var(--song-widget-progress-bar-color);
+      }
+
+      &.indeterminate {
+        .progress-fill {
+          opacity: 0.4;
+        }
+      }
+    }
+  }
+
+  .cover {
+    width: 44;
+    height: 44;
+    right: 0;
+    top: 0;
+    visible: true;
+  }
+
+  &.no-cover {
+    .cover {
+      visible: false;
+    }
+  }
+
+  &.right {
+    .text {
+      Component {
+        alignment-x: right;
+      }
+    }
+  }
+
+  &.left {
+    .text {
+      Component {
+        alignment-x: left;
+      }
+    }
+  }
+
+}
