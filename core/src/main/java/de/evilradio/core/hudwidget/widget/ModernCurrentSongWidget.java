@@ -335,9 +335,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     this.progressTrackMaxWidth = Math.max(40f, playerWidth - timeWidth);
 
     // Mount-Status muss zur HUD-Höhe passen – setVisible(false) reicht für Snapping nicht
-    if (this.syncPreviousSectionMount(currentSong, previousSong)) {
-      return;
-    }
+    if (this.syncPreviousSectionMount(currentSong, previousSong)) return;
 
     if (this.previousSectionMounted
         && this.previousArtistWidget != null
@@ -370,9 +368,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   }
 
   private void refreshStreamLine(CurrentSong currentSong) {
-    if (this.streamWidget == null || currentSong == null) {
-      return;
-    }
+    if (this.streamWidget == null || currentSong == null) return;
     RadioStream currentStream = this.addon.radioManager().getCurrentStream();
     String streamDisplayName = stationLabel(currentStream, LiveStatusLine.hasLiveBadges(currentSong));
     if (streamDisplayName.isBlank() && currentSong.getStationName() != null) {
@@ -396,6 +392,11 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     } else {
       this.statusWidget.setComponent(Component.text(timeLabel).color(NamedTextColor.GRAY));
     }
+    if(song.isOnAir()) {
+      this.statusWidget.addId("on-air");
+    } else {
+      this.statusWidget.removeId("on-air");
+    }
   }
 
   private static String formatTimeLabel(CurrentSong song) {
@@ -410,9 +411,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   }
 
   private void applyCover(CurrentSong currentSong, IconWidget coverWidget) {
-    if (coverWidget == null || currentSong == null) {
-      return;
-    }
+    if (coverWidget == null || currentSong == null) return;
 
     ArtworkCache cache = this.addon.currentSongService().artworkCache();
     long generation = cache.currentGeneration();
@@ -475,6 +474,11 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     } else {
       fillWidth = this.progressTrackMaxWidth * 0.3f;
       this.progressTrack.addId("indeterminate");
+    }
+    if(song.isOnAir()) {
+      this.progressTrack.addId("on-air");
+    } else {
+      this.progressTrack.removeId("on-air");
     }
     this.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
     this.progressFill.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
