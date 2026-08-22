@@ -143,7 +143,7 @@ ScheduleShowRow .schedule-on-air {
   right: 0;
   top: 0;
   width: fit-content;
-  height: fit-content;
+  height: 5;
   font-size: 0.4;
   text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
   background-color: rgba(180, 30, 30, 0.45);
