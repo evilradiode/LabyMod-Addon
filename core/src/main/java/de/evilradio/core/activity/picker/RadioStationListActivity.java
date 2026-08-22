@@ -3,6 +3,7 @@ package de.evilradio.core.activity.picker;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.EvilTextures.SpriteCommon;
+import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.activity.picker.widget.RadioStationRowWidget;
 import de.evilradio.core.activity.picker.widget.ScheduleShowRowWidget;
 import de.evilradio.core.configuration.EqualizerStyle;
@@ -1205,8 +1206,8 @@ public class RadioStationListActivity extends SimpleActivity {
 
   private Icon playPauseIcon() {
     return this.controller.radioManager().isPlaying()
-        ? EvilTextures.SpriteControls.PAUSE
-        : EvilTextures.SpriteControls.PLAY;
+        ? SpriteControls.STOP
+        : SpriteControls.PLAY;
   }
 
   private void togglePlayPause() {

@@ -307,7 +307,7 @@ public class ActivityListener implements Updatable {
     });
     controlsContainer.addEntry(previousButton);
 
-    this.playPauseButton = ButtonWidget.icon(this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY).addId("play-pause");
+    this.playPauseButton = ButtonWidget.icon(this.addon.radioManager().isPlaying() ? SpriteControls.STOP : SpriteControls.PLAY).addId("play-pause");
     this.playPauseButton.setPressable(this::togglePlayback);
     controlsContainer.addEntry(this.playPauseButton);
 
@@ -376,7 +376,7 @@ public class ActivityListener implements Updatable {
 
     if (nextPlayable == null) return;
 
-    this.playPauseButton.updateIcon(SpriteControls.PAUSE);
+    this.playPauseButton.updateIcon(SpriteControls.STOP);
     this.addon.radioManager().playStream(nextPlayable);
     this.refreshPlayPauseIcon();
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
@@ -384,7 +384,7 @@ public class ActivityListener implements Updatable {
 
   private void togglePlayback() {
     boolean startPlayback = !this.addon.radioManager().isPlaying();
-    this.playPauseButton.updateIcon(startPlayback ? SpriteControls.PAUSE : SpriteControls.PLAY);
+    this.playPauseButton.updateIcon(startPlayback ? SpriteControls.STOP : SpriteControls.PLAY);
 
     if (startPlayback && this.addon.radioManager().getCurrentStream() == null) {
       RadioStream lastStream = this.addon.radioStreamService().findStreamById(
@@ -588,7 +588,7 @@ public class ActivityListener implements Updatable {
   private void refreshPlayPauseIcon() {
     if (this.playPauseButton == null) return;
     this.playPauseButton.updateIcon(
-        this.addon.radioManager().isPlaying() ? SpriteControls.PAUSE : SpriteControls.PLAY);
+        this.addon.radioManager().isPlaying() ? SpriteControls.STOP : SpriteControls.PLAY);
   }
 
   private Icon stationIcon() {
