@@ -108,7 +108,8 @@
       "minimizePlayer": "Minimieren",
       "movePlayerLeft": "Nach links schieben",
       "movePlayerRight": "Nach rechts schieben",
-      "restorePlayer": "Radio-Player öffnen"
+      "restorePlayer": "Radio-Player öffnen",
+      "playerSettings": "Addon Einstellungen öffnen"
     },
     "hudWidget": {
       "evilradio_full_widget": {

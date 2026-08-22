@@ -230,6 +230,16 @@ public class ActivityListener implements Updatable {
     this.applyMenuPlayerPosition(this.songContainer);
 
     HorizontalListWidget chrome = new HorizontalListWidget().addId("player-chrome");
+
+    ButtonWidget settingsButton = ButtonWidget.icon(SpriteCommon.SETTINGS, () -> {
+      this.addon.labyAPI().coreSettingRegistry().findSetting((CharSequence) this.addon.labyAPI().getNamespace(this.addon))
+          .ifPresent(this.addon.labyAPI()::showSetting);
+    }).addId("player-settings");
+    settingsButton.setHoverComponent(
+        Component.translatable("evilradio.widget.playerSettings")
+            .color(NamedTextColor.GRAY));
+    chrome.addEntry(settingsButton);
+
     boolean left = this.isMenuPlayerLeft();
     ButtonWidget moveButton = ButtonWidget.icon(left ? SpriteCommon.ARROW_RIGHT : SpriteCommon.ARROW_LEFT, this::toggleMenuPlayerSide)
         .addId("player-move");
