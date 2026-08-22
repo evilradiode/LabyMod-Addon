@@ -28,6 +28,8 @@ public class EvilTextures {
     public static final Icon ARROW_RIGHT = Icon.sprite(COMMON, 1, 0, 16);
     public static final Icon ARROW_LEFT = Icon.sprite(COMMON, 2, 0, 16);
 
+    public static final Icon EQ_ICON = Icon.sprite(COMMON, 0, 1, 16);
+
   }
 
 }
