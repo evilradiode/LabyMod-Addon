@@ -13,30 +13,36 @@ import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.annotation.SpriteSlot;
+import net.labymod.api.configuration.loader.annotation.SpriteTexture;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.configuration.settings.annotation.SettingSection;
 import net.labymod.api.util.MethodOrder;
 
+@SpriteTexture("sprite/settings")
 @ConfigName("settings")
 public class EvilRadioConfiguration extends AddonConfig {
 
-  @SpriteSlot(x = 1)
+  @SpriteSlot()
   @SwitchSetting
   private final ConfigProperty<Boolean> enabled = new ConfigProperty<>(true);
 
+  @SpriteSlot(x = 1)
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
 
+  @SpriteSlot(x = 2)
   @SliderSetting(min = 0, max = 100, steps = 2f)
   private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
 
   @SettingSection("customization")
 
+  @SpriteSlot(x = 3)
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
   @DropdownSetting
   @DropdownEntryTranslationPrefix("evilradio.settings.menuPlayerPosition.type")
   private final ConfigProperty<MenuPlayerPosition> menuPlayerPosition = new ConfigProperty<>(MenuPlayerPosition.BOTTOM_RIGHT);
 
+  @SpriteSlot(x = 4)
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
   private final StationPickerSubSettings stationPicker = new StationPickerSubSettings();
 
@@ -46,31 +52,38 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   @SettingSection("notifications")
 
+  @SpriteSlot(x = 5)
   @SwitchSetting
   private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
 
+  @SpriteSlot(x = 6)
   @SwitchSetting
   private final ConfigProperty<Boolean> showLiveChatNotification = new ConfigProperty<>(true);
 
   @SettingSection("autoStartStop")
 
+  @SpriteSlot(y = 1)
   @DropdownSetting
   @DropdownEntryTranslationPrefix("evilradio.settings.autoStartMode.type")
   private final ConfigProperty<AutoStartMode> autoStartMode = new ConfigProperty<>(AutoStartMode.DISABLED);
 
+  @SpriteSlot(y = 1, x = 1)
   @SliderSetting(min = 0, max = 10, steps = 0.5f)
   private final ConfigProperty<Float> autoStartDelay = new ConfigProperty<>(2.0f);
 
+  @SpriteSlot(y = 1, x = 2)
   @SwitchSetting
   private final ConfigProperty<Boolean> autoStopOnFocusLoss = new ConfigProperty<>(false);
 
   @SettingSection("advanced")
 
+  @SpriteSlot(y = 1, x = 3)
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
 
   @Exclude
   private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
 
+  @SpriteSlot(y = 1, x = 4)
   @MethodOrder(after = "usageStatistics")
   @ButtonSetting
   public void reloadStreams() {
