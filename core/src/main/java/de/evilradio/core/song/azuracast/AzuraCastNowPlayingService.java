@@ -2,7 +2,6 @@ package de.evilradio.core.song.azuracast;
 
 import com.google.gson.JsonObject;
 import de.evilradio.core.song.CurrentSong;
-import de.evilradio.core.song.NowPlayingConnectionState;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -109,20 +108,14 @@ public final class AzuraCastNowPlayingService {
   }
 
   public void start() {
-    if (!started.compareAndSet(false, true)) {
-      return;
-    }
+    if (!started.compareAndSet(false, true)) return;
     stopped.set(false);
     logging.info("AzuraCast NowPlaying service started");
   }
 
   public void switchStation(String shortcode) {
-    if (stopped.get()) {
-      return;
-    }
-    if (!started.get()) {
-      start();
-    }
+    if (stopped.get()) return;
+    if (!started.get()) return;
     if (shortcode == null || shortcode.isBlank()) {
       clearSubscription();
       return;
@@ -133,13 +126,11 @@ public final class AzuraCastNowPlayingService {
     NowPlayingConnectionState state = connectionState.get();
     // Nur bei wirklich verbundener gleicher Station skippen.
     // LOADING/RECONNECTING nach High-Ping sonst ewig blockiert → Widget tot.
-    if (normalized.equals(current) && state == NowPlayingConnectionState.CONNECTED) {
-      return;
-    }
+    if (normalized.equals(current) && state == NowPlayingConnectionState.CONNECTED) return;
 
     long generation = guard.switchTo(normalized);
     cancelReconnect();
-    closeSocket(false);
+    closeSocket();
     resetSongs();
     publishState(NowPlayingConnectionState.LOADING, normalized);
     logging.info("Switching NowPlaying subscription to station:" + normalized + " generation=" + generation);
@@ -150,12 +141,10 @@ public final class AzuraCastNowPlayingService {
    * Beendet die aktuelle Subscription ohne Warn-Log (z.B. beim Stream-Stop während eines Wechsels).
    */
   public void clearSubscription() {
-    if (stopped.get()) {
-      return;
-    }
+    if (stopped.get()) return;
     guard.clear();
     cancelReconnect();
-    closeSocket(false);
+    closeSocket();
     resetSongs();
     publishState(NowPlayingConnectionState.IDLE, null);
   }
@@ -165,7 +154,7 @@ public final class AzuraCastNowPlayingService {
     started.set(false);
     cancelReconnect();
     guard.clear();
-    closeSocket(false);
+    closeSocket();
     resetSongs();
     publishState(NowPlayingConnectionState.IDLE, null);
     logging.info("AzuraCast NowPlaying service stopped");
@@ -177,15 +166,9 @@ public final class AzuraCastNowPlayingService {
   }
 
   private void connect(long generation, String shortcode, boolean isReconnect) {
-    if (stopped.get()) {
-      return;
-    }
-    if (generation != guard.currentGeneration()) {
-      return;
-    }
-    if (!Objects.equals(shortcode, guard.activeShortcode())) {
-      return;
-    }
+    if (stopped.get()) return;
+    if (generation != guard.currentGeneration()) return;
+    if (!Objects.equals(shortcode, guard.activeShortcode())) return;
 
     publishState(isReconnect ? NowPlayingConnectionState.RECONNECTING : NowPlayingConnectionState.LOADING, shortcode);
 
@@ -257,31 +240,21 @@ public final class AzuraCastNowPlayingService {
   }
 
   private void handleMessage(long generation, String shortcode, String raw) {
-    if (!guard.accepts(generation, shortcode) || stopped.get()) {
-      return;
-    }
+    if (!guard.accepts(generation, shortcode) || stopped.get()) return;
 
     var parsedMessage = NowPlayingMessageParser.parseJsonObject(raw);
-    if (parsedMessage.isEmpty()) {
-      return;
-    }
+    if (parsedMessage.isEmpty()) return;
 
     JsonObject message = parsedMessage.get();
-    if (NowPlayingMessageParser.isKeepalive(message)) {
-      return;
-    }
+    if (NowPlayingMessageParser.isKeepalive(message)) return;
 
     var publication = NowPlayingMessageParser.extractPublication(message);
-    if (publication.isEmpty()) {
-      return;
-    }
+    if (publication.isEmpty()) return;
 
     String channel = publication.get().channel();
     CurrentSong song = publication.get().song();
     String compareTarget = channel != null ? channel : song.getStationShortcode();
-    if (!guard.accepts(generation, compareTarget == null ? shortcode : compareTarget)) {
-      return;
-    }
+    if (!guard.accepts(generation, compareTarget == null ? shortcode : compareTarget)) return;
     if (song.getStationShortcode() != null
         && !song.getStationShortcode().equals(shortcode)
         && !guard.accepts(generation, song.getStationShortcode())) {
@@ -298,12 +271,8 @@ public final class AzuraCastNowPlayingService {
   }
 
   private void scheduleReconnect(long generation, String shortcode) {
-    if (stopped.get()) {
-      return;
-    }
-    if (generation != guard.currentGeneration() || !Objects.equals(shortcode, guard.activeShortcode())) {
-      return;
-    }
+    if (stopped.get()) return;
+    if (generation != guard.currentGeneration() || !Objects.equals(shortcode, guard.activeShortcode())) return;
 
     cancelReconnect();
     publishState(NowPlayingConnectionState.RECONNECTING, shortcode);
@@ -327,7 +296,7 @@ public final class AzuraCastNowPlayingService {
     }
   }
 
-  private void closeSocket(boolean triggerReconnect) {
+  private void closeSocket() {
     WebSocket socket = webSocket.getAndSet(null);
     if (socket != null) {
       try {
@@ -343,9 +312,6 @@ public final class AzuraCastNowPlayingService {
         }
       }
     }
-    if (!triggerReconnect) {
-      // no-op: caller decides whether to reconnect
-    }
   }
 
   private void resetSongs() {
@@ -357,4 +323,13 @@ public final class AzuraCastNowPlayingService {
     connectionState.set(state);
     stateListener.accept(state, shortcode);
   }
+
+  public enum NowPlayingConnectionState {
+    IDLE,
+    LOADING,
+    CONNECTED,
+    RECONNECTING,
+    DISCONNECTED
+  }
+
 }

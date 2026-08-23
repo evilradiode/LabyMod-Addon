@@ -7,6 +7,8 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.Butto
 import net.labymod.api.client.gui.screen.widget.widgets.input.KeybindWidget.KeyBindSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
 import net.labymod.api.configuration.loader.annotation.ConfigName;
 import net.labymod.api.configuration.loader.annotation.Exclude;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
@@ -18,8 +20,6 @@ import net.labymod.api.util.MethodOrder;
 @ConfigName("settings")
 public class EvilRadioConfiguration extends AddonConfig {
 
-  @SettingSection("general")
-
   @SpriteSlot(x = 1)
   @SwitchSetting
   private final ConfigProperty<Boolean> enabled = new ConfigProperty<>(true);
@@ -27,11 +27,24 @@ public class EvilRadioConfiguration extends AddonConfig {
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
 
+  @SliderSetting(min = 0, max = 100, steps = 2f)
+  private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
+
+  @SettingSection("customization")
+
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  private final MenuPlayerSubSettings showMainMenuPlayer = new MenuPlayerSubSettings();
+  @DropdownSetting
+  @DropdownEntryTranslationPrefix("evilradio.settings.menuPlayerPosition.type")
+  private final ConfigProperty<MenuPlayerPosition> menuPlayerPosition = new ConfigProperty<>(MenuPlayerPosition.BOTTOM_RIGHT);
 
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
   private final StationPickerSubSettings stationPicker = new StationPickerSubSettings();
+
+  @Exclude
+  private final ConfigProperty<EqualizerStyle> equalizerStyle =
+      new ConfigProperty<>(EqualizerStyle.BARS);
+
+  @SettingSection("notifications")
 
   @SwitchSetting
   private final ConfigProperty<Boolean> showSongChangeNotification = new ConfigProperty<>(true);
@@ -39,35 +52,35 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SwitchSetting
   private final ConfigProperty<Boolean> showLiveChatNotification = new ConfigProperty<>(true);
 
+  @SettingSection("autoStartStop")
+
+  @DropdownSetting
+  @DropdownEntryTranslationPrefix("evilradio.settings.autoStartMode.type")
+  private final ConfigProperty<AutoStartMode> autoStartMode = new ConfigProperty<>(AutoStartMode.DISABLED);
+
+  @SliderSetting(min = 0, max = 10, steps = 0.5f)
+  private final ConfigProperty<Float> autoStartDelay = new ConfigProperty<>(2.0f);
+
   @SwitchSetting
   private final ConfigProperty<Boolean> autoStopOnFocusLoss = new ConfigProperty<>(false);
-
-  @SliderSetting(min = 0, max = 100, steps = 2f)
-  private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
-
-  private final AutoStartSubSettings autoStart = new AutoStartSubSettings();
 
   @SettingSection("advanced")
 
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
 
-  @SwitchSetting
-  private final ConfigProperty<Boolean> audioStreamDebug = new ConfigProperty<>(false);
-
-  @Exclude
-  private final ConfigProperty<EqualizerStyle> equalizerStyle =
-      new ConfigProperty<>(EqualizerStyle.BARS);
-
   @Exclude
   private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
-
-  @SettingSection("other")
 
   @MethodOrder(after = "usageStatistics")
   @ButtonSetting
   public void reloadStreams() {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
   }
+
+  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @SwitchSetting
+  private final ConfigProperty<Boolean> debugForceMashupLive = new ConfigProperty<>(false);
+
 
   @Override
   public ConfigProperty<Boolean> enabled() {
@@ -78,12 +91,12 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.radioMenuKeybind;
   }
 
-  public MenuPlayerSubSettings menuPlayer() {
-    return this.showMainMenuPlayer;
+  public ConfigProperty<Float> volume() {
+    return this.volume;
   }
 
-  public ConfigProperty<Boolean> showMainMenuPlayer() {
-    return this.showMainMenuPlayer.enabled();
+  public ConfigProperty<MenuPlayerPosition> menuPlayerPosition() {
+    return menuPlayerPosition;
   }
 
   public StationPickerSubSettings stationPicker() {
@@ -102,32 +115,72 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.showLiveChatNotification;
   }
 
-  public ConfigProperty<Boolean> autoStopOnFocusLoss() {
-    return this.autoStopOnFocusLoss;
+  public ConfigProperty<AutoStartMode> autoStartMode() {
+    return autoStartMode;
   }
 
-  public ConfigProperty<Float> volume() {
-    return this.volume;
+  public ConfigProperty<Float> autoStartDelay() {
+    return autoStartDelay;
   }
-  
-  public AutoStartSubSettings autoStart() {
-    return this.autoStart;
+
+  public ConfigProperty<Boolean> autoStopOnFocusLoss() {
+    return this.autoStopOnFocusLoss;
   }
   
   public UsageStatisticsSubSettings usageStatistics() {
     return this.usageStatistics;
   }
-
-  public ConfigProperty<Boolean> audioStreamDebug() {
-    return this.audioStreamDebug;
-  }
-  
-  public ConfigProperty<Boolean> usageBasedSorting() {
-    return usageStatistics.enabled();
-  }
   
   public ConfigProperty<Integer> lastStreamId() {
     return this.lastStreamId;
+  }
+
+  public ConfigProperty<Boolean> debugForceMashupLive() {
+    return debugForceMashupLive;
+  }
+
+  public enum MenuPlayerPosition {
+    DISABLED,
+    BOTTOM_RIGHT,
+    BOTTOM_LEFT;
+
+    public boolean isLeft() {
+      return this == BOTTOM_LEFT;
+    }
+  }
+
+  public enum AutoStartMode {
+    DISABLED, ON_GAME_START, ON_SERVER_JOIN;
+
+    public boolean shouldStartOnGameStart() {
+      return this == ON_GAME_START;
+    }
+
+    public boolean shouldStartOnServerJoin() {
+      return this == ON_SERVER_JOIN;
+    }
+  }
+
+  public enum EqualizerStyle {
+    BARS,
+    PEAKS,
+    MIRROR,
+    SCOPE,
+    DOTS,
+    OFF;
+
+    public EqualizerStyle next() {
+      EqualizerStyle[] values = values();
+      return values[(this.ordinal() + 1) % values.length];
+    }
+
+    public boolean isEnabled() {
+      return this != OFF;
+    }
+
+    public String styleId() {
+      return "eq-" + this.name().toLowerCase();
+    }
   }
 
 }

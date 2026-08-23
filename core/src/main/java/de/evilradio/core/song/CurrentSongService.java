@@ -56,8 +56,8 @@ public class CurrentSongService {
 
   private final AtomicReference<CurrentSong> currentSong = new AtomicReference<>();
   private final AtomicReference<CurrentSong> previousSong = new AtomicReference<>();
-  private final AtomicReference<NowPlayingConnectionState> connectionState =
-      new AtomicReference<>(NowPlayingConnectionState.IDLE);
+  private final AtomicReference<AzuraCastNowPlayingService.NowPlayingConnectionState> connectionState =
+      new AtomicReference<>(AzuraCastNowPlayingService.NowPlayingConnectionState.IDLE);
   private final AtomicReference<String> currentShortcode = new AtomicReference<>();
   private final AtomicReference<String> currentStreamName = new AtomicReference<>();
   private final ArtworkCache artworkCache = new ArtworkCache(32);
@@ -127,7 +127,7 @@ public class CurrentSongService {
     this.artworkCache.bumpGeneration();
     this.currentSong.set(null);
     this.previousSong.set(null);
-    this.connectionState.set(NowPlayingConnectionState.LOADING);
+    this.connectionState.set(AzuraCastNowPlayingService.NowPlayingConnectionState.LOADING);
     this.lastShowStatusFetchAt.set(0L);
     this.lastStuckRefreshAt.set(0L);
 
@@ -135,12 +135,12 @@ public class CurrentSongService {
     this.nowPlayingService.switchStation(shortcode);
   }
 
-  private void onConnectionState(NowPlayingConnectionState state, String shortcode) {
+  private void onConnectionState(AzuraCastNowPlayingService.NowPlayingConnectionState state, String shortcode) {
     String active = this.currentShortcode.get();
     if (shortcode != null && active != null && !active.equals(shortcode)) {
       return;
     }
-    this.connectionState.set(state == null ? NowPlayingConnectionState.DISCONNECTED : state);
+    this.connectionState.set(state == null ? AzuraCastNowPlayingService.NowPlayingConnectionState.DISCONNECTED : state);
     this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
   }
 
@@ -197,7 +197,7 @@ public class CurrentSongService {
     this.artworkCache.put(cacheKey, song.getImageUrl());
 
     this.currentSong.set(song);
-    this.connectionState.set(NowPlayingConnectionState.CONNECTED);
+    this.connectionState.set(AzuraCastNowPlayingService.NowPlayingConnectionState.CONNECTED);
     // Während OnAir keinen „Vorherigen Song“ (History oft Live-Müll / Autopilot)
     if (song.isOnAir() && this.previousSong.get() != null) {
       this.previousSong.set(null);
@@ -757,7 +757,7 @@ public class CurrentSongService {
     this.previousSong.set(null);
     this.currentStreamName.set(null);
     this.currentShortcode.set(null);
-    this.connectionState.set(NowPlayingConnectionState.IDLE);
+    this.connectionState.set(AzuraCastNowPlayingService.NowPlayingConnectionState.IDLE);
     this.twitchNotificationSent = false;
     this.pendingStreamSelectedNotification.set(false);
     this.lastShowStatusFetchAt.set(0L);
@@ -859,7 +859,7 @@ public class CurrentSongService {
     return previousSong.get();
   }
 
-  public NowPlayingConnectionState getConnectionState() {
+  public AzuraCastNowPlayingService.NowPlayingConnectionState getConnectionState() {
     return connectionState.get();
   }
 

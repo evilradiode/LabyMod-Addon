@@ -6,7 +6,7 @@ import de.evilradio.core.EvilTextures.SpriteCommon;
 import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.activity.picker.widget.RadioStationRowWidget;
 import de.evilradio.core.activity.picker.widget.ScheduleShowRowWidget;
-import de.evilradio.core.configuration.EqualizerStyle;
+import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.configuration.StationPickerSubSettings;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.AudioSpectrumAnalyzer;
@@ -116,7 +116,7 @@ public class RadioStationListActivity extends SimpleActivity {
   private final float[] spectrumBands = new float[EQ_BAR_COUNT];
   private final float[] waveformSamples = new float[EQ_BAR_COUNT];
   private final float[] peakHolds = new float[EQ_BAR_COUNT];
-  private @Nullable EqualizerStyle appliedEqualizerStyle;
+  private @Nullable EvilRadioConfiguration.EqualizerStyle appliedEqualizerStyle;
   private @Nullable String appliedCoverKey;
   private long lastNowPlayingElapsed = -1L;
   private boolean lastNowPlayingHadDuration;
@@ -934,7 +934,7 @@ public class RadioStationListActivity extends SimpleActivity {
       return;
     }
     boolean featureEnabled = this.isEqualizerFeatureEnabled();
-    EqualizerStyle style = this.addon.configuration().equalizerStyle().get();
+    EvilRadioConfiguration.EqualizerStyle style = this.addon.configuration().equalizerStyle().get();
     this.applyEqualizerStyle(style);
     this.syncEqualizerStyleButton();
     boolean showEq = featureEnabled && playing && style.isEnabled();
@@ -962,7 +962,7 @@ public class RadioStationListActivity extends SimpleActivity {
     if (!this.isEqualizerFeatureEnabled()) {
       return;
     }
-    EqualizerStyle next = this.addon.configuration().equalizerStyle().get().next();
+    EvilRadioConfiguration.EqualizerStyle next = this.addon.configuration().equalizerStyle().get().next();
     this.addon.configuration().equalizerStyle().set(next);
     this.updateEqualizer(this.controller.radioManager().isPlaying());
   }
@@ -976,7 +976,7 @@ public class RadioStationListActivity extends SimpleActivity {
     if (!featureEnabled) {
       return;
     }
-    EqualizerStyle style = this.addon.configuration().equalizerStyle().get();
+    EvilRadioConfiguration.EqualizerStyle style = this.addon.configuration().equalizerStyle().get();
     if (style.isEnabled()) {
       this.equalizerStyleButton.removeId("off");
     } else {
@@ -984,14 +984,14 @@ public class RadioStationListActivity extends SimpleActivity {
     }
   }
 
-  private void applyEqualizerStyle(EqualizerStyle style) {
+  private void applyEqualizerStyle(EvilRadioConfiguration.EqualizerStyle style) {
     if (this.equalizerWidget == null || style == null) {
       return;
     }
     if (style == this.appliedEqualizerStyle) {
       return;
     }
-    for (EqualizerStyle known : EqualizerStyle.values()) {
+    for (EvilRadioConfiguration.EqualizerStyle known : EvilRadioConfiguration.EqualizerStyle.values()) {
       this.equalizerWidget.removeId(known.styleId());
     }
     this.equalizerWidget.addId(style.styleId());
@@ -1040,7 +1040,7 @@ public class RadioStationListActivity extends SimpleActivity {
 
     this.layoutEqualizerBars();
 
-    EqualizerStyle style = this.appliedEqualizerStyle;
+    EvilRadioConfiguration.EqualizerStyle style = this.appliedEqualizerStyle;
     if (style == null) {
       style = this.addon.configuration().equalizerStyle().get();
       this.applyEqualizerStyle(style);
@@ -1051,7 +1051,7 @@ public class RadioStationListActivity extends SimpleActivity {
       this.resetEqualizerVisuals();
       return;
     }
-    if (style == EqualizerStyle.SCOPE) {
+    if (style == EvilRadioConfiguration.EqualizerStyle.SCOPE) {
       spectrum.copyWaveform(this.waveformSamples);
       this.renderScope();
       return;

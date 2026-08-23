@@ -7,17 +7,16 @@ import de.evilradio.core.EvilTextures.SpriteCommon;
 import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.activity.picker.StationPickerController;
 import de.evilradio.core.activity.widget.MashupLiveBannerWidget;
-import de.evilradio.core.configuration.MenuPlayerSubSettings.MenuPlayerPosition;
+import de.evilradio.core.configuration.EvilRadioConfiguration.MenuPlayerPosition;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.hudwidget.widget.LiveStatusLine;
-import de.evilradio.core.radio.AudioStreamDebug;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.schedule.ScheduleShow;
 import de.evilradio.core.song.CurrentSong;
 import de.evilradio.core.song.CurrentSongService.ShowStatus;
-import de.evilradio.core.song.NowPlayingConnectionState;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import de.evilradio.core.song.azuracast.AzuraCastNowPlayingService;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.models.OperatingSystem;
@@ -25,7 +24,6 @@ import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.client.gui.screen.activity.Activity;
 import net.labymod.api.client.gui.screen.widget.Widget;
-import net.labymod.api.client.gui.screen.widget.attributes.PriorityLayer;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.activity.Document;
@@ -46,12 +44,11 @@ public class ActivityListener implements Updatable {
 
   public ActivityListener(EvilRadioAddon addon) {
     this.addon = addon;
-    this.addon.configuration().showMainMenuPlayer().addChangeListener(enabled ->
+    this.addon.configuration().menuPlayerPosition().addChangeListener(menuPlayerPosition ->
         this.addon.labyAPI().minecraft().executeOnRenderThread(
-            () -> this.applyMainMenuPlayerVisibility(enabled)));
-    this.addon.configuration().menuPlayer().position().addChangeListener(position ->
-        this.addon.labyAPI().minecraft().executeOnRenderThread(this::rebuildMenuPlayer));
-    this.addon.configuration().menuPlayer().debugForceMashupLive().addChangeListener(enabled ->
+        () -> this.applyMainMenuPlayerVisibility(menuPlayerPosition != MenuPlayerPosition.DISABLED)));
+
+    this.addon.configuration().debugForceMashupLive().addChangeListener(enabled ->
         this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
           this.lastBannerMode = -1;
           if (Boolean.TRUE.equals(enabled) && this.debugForceMashupLive()) {
@@ -67,15 +64,13 @@ public class ActivityListener implements Updatable {
     if (!isMenuPlayerHost(event.getIdentifier())) return;
     this.mainMenuActivity = event.activity();
     this.detachMenuPlayerWidgets();
-    if (!this.addon.configuration().showMainMenuPlayer().get()) return;
+    if (this.addon.configuration().menuPlayerPosition().get() == MenuPlayerPosition.DISABLED) return;
     this.addRadioController(event.activity());
   }
 
   @Subscribe
   public void onGameTick(GameTickEvent event) {
-    if (event.phase() != Phase.PRE || this.songContainer == null) {
-      return;
-    }
+    if (event.phase() != Phase.PRE || this.songContainer == null) return;
 
     CurrentSong song = this.addon.currentSongService().getCurrentSong();
     if (song != null) {
@@ -137,14 +132,12 @@ public class ActivityListener implements Updatable {
       new ShowStatus(true, true, "Debug-DJ", 0L, 0L, "20:00", "22:00");
 
   private boolean debugForceMashupLive() {
-    return this.addon.configuration().menuPlayer().debugForceMashupLive().get()
-        && AudioStreamDebug.isUuidAllowed(this.addon.labyAPI().getUniqueId());
+    return this.addon.configuration().debugForceMashupLive().get()
+        && this.addon.isUuidAllowed(this.addon.labyAPI().getUniqueId());
   }
 
   private void applyMainMenuPlayerVisibility(boolean enabled) {
-    if (this.mainMenuActivity == null) {
-      return;
-    }
+    if (this.mainMenuActivity == null) return;
     if (enabled) {
       this.rebuildMenuPlayer();
       return;
@@ -155,18 +148,15 @@ public class ActivityListener implements Updatable {
   }
 
   private void rebuildMenuPlayer() {
-    if (this.mainMenuActivity == null || !this.addon.configuration().showMainMenuPlayer().get()) {
-      return;
-    }
+    if (this.mainMenuActivity == null ||
+        this.addon.configuration().menuPlayerPosition().get() == MenuPlayerPosition.DISABLED) return;
     this.removeMenuPlayerFromDocument();
     this.detachMenuPlayerWidgets();
     this.addRadioController(this.mainMenuActivity);
   }
 
   private void removeMenuPlayerFromDocument() {
-    if (this.mainMenuActivity == null) {
-      return;
-    }
+    if (this.mainMenuActivity == null) return;
     Document document = this.mainMenuActivity.document();
     document.removeChild("song-container");
     document.removeChild("player-restore");
@@ -434,7 +424,7 @@ public class ActivityListener implements Updatable {
   }
 
   private boolean hasRotatingLiveLine(CurrentSong song) {
-    if (song != null && LiveStatusLine.hasLiveBadges(song) && song.isOnAir() && song.isTwitch()) {
+    if (LiveStatusLine.hasLiveBadges(song) && song.isOnAir() && song.isTwitch()) {
       return true;
     }
     return this.isListeningToMashup()
@@ -448,7 +438,7 @@ public class ActivityListener implements Updatable {
 
     boolean isPlaying = this.addon.radioManager().isPlaying();
     RadioStream currentStream = this.addon.radioManager().getCurrentStream();
-    NowPlayingConnectionState state = this.addon.currentSongService().getConnectionState();
+    AzuraCastNowPlayingService.NowPlayingConnectionState state = this.addon.currentSongService().getConnectionState();
 
     this.streamWidget.setVisible(true);
     this.trackWidget.setVisible(true);
@@ -461,7 +451,7 @@ public class ActivityListener implements Updatable {
       this.refreshLiveLine(null);
       if (isPlaying && currentStream != null) {
         this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(NamedTextColor.WHITE));
-        if (state == NowPlayingConnectionState.RECONNECTING) {
+        if (state == AzuraCastNowPlayingService.NowPlayingConnectionState.RECONNECTING) {
           this.trackWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
               .color(NamedTextColor.DARK_GRAY));
           this.artistWidget.setComponent(Component.translatable("evilradio.widget.reconnectingHint")
@@ -728,12 +718,12 @@ public class ActivityListener implements Updatable {
   }
 
   private boolean isMenuPlayerLeft() {
-    MenuPlayerPosition position = this.addon.configuration().menuPlayer().position().get();
+    MenuPlayerPosition position = this.addon.configuration().menuPlayerPosition().get();
     return position != null && position.isLeft();
   }
 
   private void toggleMenuPlayerSide() {
-    this.addon.configuration().menuPlayer().position().set(
+    this.addon.configuration().menuPlayerPosition().set(
         this.isMenuPlayerLeft()
             ? MenuPlayerPosition.BOTTOM_RIGHT
             : MenuPlayerPosition.BOTTOM_LEFT);

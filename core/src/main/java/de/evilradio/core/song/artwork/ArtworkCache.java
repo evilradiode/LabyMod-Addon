@@ -34,12 +34,8 @@ public final class ArtworkCache {
   }
 
   public synchronized String put(String cacheKey, String artworkUrl) {
-    if (cacheKey == null || cacheKey.isBlank() || artworkUrl == null || artworkUrl.isBlank()) {
-      return null;
-    }
-    if (!(artworkUrl.startsWith("http://") || artworkUrl.startsWith("https://"))) {
-      return null;
-    }
+    if (cacheKey == null || cacheKey.isBlank() || artworkUrl == null || artworkUrl.isBlank()) return null;
+    if (!(artworkUrl.startsWith("http://") || artworkUrl.startsWith("https://"))) return null;
     urls.put(cacheKey, artworkUrl);
     return artworkUrl;
   }
@@ -56,15 +52,9 @@ public final class ArtworkCache {
    * Wendet Artwork nur an, wenn die Generation noch aktuell ist.
    */
   public void applyIfCurrent(long expectedGeneration, String artworkUrl, Consumer<String> applier) {
-    if (expectedGeneration != generation.get()) {
-      return;
-    }
-    if (artworkUrl == null || artworkUrl.isBlank()) {
-      return;
-    }
-    if (!(artworkUrl.startsWith("http://") || artworkUrl.startsWith("https://"))) {
-      return;
-    }
+    if (expectedGeneration != generation.get()) return;
+    if (artworkUrl == null || artworkUrl.isBlank()) return;
+    if (!(artworkUrl.startsWith("http://") || artworkUrl.startsWith("https://"))) return;
     applier.accept(artworkUrl);
   }
 

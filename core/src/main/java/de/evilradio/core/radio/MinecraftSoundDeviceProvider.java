@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.lang.reflect.Method;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import de.evilradio.core.EvilRadioAddon;
 import net.labymod.api.client.Minecraft;
 import net.labymod.api.client.options.MinecraftOptions;
 
@@ -13,9 +14,6 @@ public final class MinecraftSoundDeviceProvider {
 
   private static final Pattern OPTIONS_SOUND_DEVICE_PATTERN =
       Pattern.compile("^soundDevice:\"(.*)\"\\s*$");
-
-  private MinecraftSoundDeviceProvider() {
-  }
 
   public static String getSelectedSoundDevice(Minecraft minecraft) {
     if (minecraft == null) {
@@ -27,7 +25,7 @@ public final class MinecraftSoundDeviceProvider {
       return fromOptions;
     }
 
-    return readFromOptionsFile(resolveOptionsFile(minecraft));
+    return readFromOptionsFile(EvilRadioAddon.instance().labyAPI().labyModLoader().getGameDirectory().toFile());
   }
 
   private static String readFromMinecraftOptions(MinecraftOptions options) {
@@ -45,18 +43,6 @@ public final class MinecraftSoundDeviceProvider {
       Object value = optionInstance.getClass().getMethod("get").invoke(optionInstance);
       if (value instanceof String soundDevice && !soundDevice.isBlank()) {
         return soundDevice;
-      }
-    } catch (ReflectiveOperationException ignored) {
-    }
-
-    return null;
-  }
-
-  private static File resolveOptionsFile(Minecraft minecraft) {
-    try {
-      Object gameDirectory = minecraft.getClass().getField("gameDirectory").get(minecraft);
-      if (gameDirectory instanceof File directory) {
-        return new File(directory, "options.txt");
       }
     } catch (ReflectiveOperationException ignored) {
     }

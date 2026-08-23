@@ -5,8 +5,8 @@ import de.evilradio.core.EvilTextures;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
-import de.evilradio.core.song.NowPlayingConnectionState;
 import de.evilradio.core.song.artwork.ArtworkCache;
+import de.evilradio.core.song.azuracast.AzuraCastNowPlayingService;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
@@ -192,7 +192,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     boolean isPlaying = this.addon.radioManager().isPlaying();
     RadioStream currentStream = this.addon.radioManager().getCurrentStream();
-    NowPlayingConnectionState state = this.addon.currentSongService().getConnectionState();
+    AzuraCastNowPlayingService.NowPlayingConnectionState state = this.addon.currentSongService().getConnectionState();
 
     // Alle 4 Zeilen immer sichtbar halten
     this.streamWidget.setVisible(true);
@@ -206,7 +206,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.lastLivePrefix = Component.empty();
       if (isPlaying && currentStream != null) {
         this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(this.stationTextColor()));
-        if (state == NowPlayingConnectionState.RECONNECTING) {
+        if (state == AzuraCastNowPlayingService.NowPlayingConnectionState.RECONNECTING) {
           this.statusWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
               .color(NamedTextColor.DARK_GRAY));
           this.trackWidget.setComponent(Component.translatable("evilradio.widget.loadingSong"));

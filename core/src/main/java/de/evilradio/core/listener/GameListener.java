@@ -1,7 +1,6 @@
 package de.evilradio.core.listener;
 
 import de.evilradio.core.EvilRadioAddon;
-import de.evilradio.core.configuration.AutoStartSubSettings;
 import net.labymod.api.event.Subscribe;
 import net.labymod.api.event.client.network.server.ServerJoinEvent;
 import net.labymod.api.event.client.world.WorldEnterEvent;
@@ -27,11 +26,7 @@ public class GameListener {
     // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
     if (this.addon.isUserManuallyStopped()) return;
 
-    // Prüfe, ob Auto-Start aktiviert ist
-    if (!this.addon.configuration().autoStart().enabled().get()) return;
-
-    AutoStartSubSettings.AutoStartMode mode = this.addon.configuration().autoStart().mode().get();
-    if (mode != null && mode.shouldStartOnServerJoin()) {
+    if (this.addon.configuration().autoStartMode().get().shouldStartOnServerJoin()) {
       this.addon.startLastStreamWithDelay("server join");
     }
   }
@@ -43,18 +38,12 @@ public class GameListener {
    */
   @Subscribe
   public void onWorldEnter(WorldEnterEvent event) {
-    if (this.addon.radioManager() != null && this.addon.radioManager().isPlaying()) {
-      return;
-    }
+    if (this.addon.radioManager() != null && this.addon.radioManager().isPlaying()) return;
 
     // Prüfe, ob der Benutzer das Radio manuell gestoppt hat
     if (this.addon.isUserManuallyStopped()) return;
 
-    // Prüfe, ob Auto-Start aktiviert ist
-    if (!this.addon.configuration().autoStart().enabled().get()) return;
-
-    AutoStartSubSettings.AutoStartMode mode = this.addon.configuration().autoStart().mode().get();
-    if (mode != null && mode.shouldStartOnServerJoin()) {
+    if (this.addon.configuration().autoStartMode().get().shouldStartOnServerJoin()) {
       this.addon.startLastStreamWithDelay("world enter");
     }
   }
@@ -66,11 +55,7 @@ public class GameListener {
    */
   @Subscribe
   public void onWorldLeave(WorldLeaveEvent event) {
-    // Prüfe, ob Auto-Start aktiviert ist und auf "Beim Welt betreten" steht
-    if (!this.addon.configuration().autoStart().enabled().get()) return;
-
-    AutoStartSubSettings.AutoStartMode mode = this.addon.configuration().autoStart().mode().get();
-    if (mode != null && mode.shouldStartOnServerJoin()) {
+    if (this.addon.configuration().autoStartMode().get().shouldStartOnServerJoin()) {
       // Stoppe den Stream, wenn er läuft
       if (this.addon.radioManager() != null && this.addon.radioManager().isPlaying()) {
         this.addon.radioManager().stopStream();

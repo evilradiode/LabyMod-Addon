@@ -3,7 +3,7 @@ package de.evilradio.core.radio;
 import com.google.gson.JsonObject;
 import de.evilradio.core.EvilRadioAddon;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import net.labymod.api.util.io.web.request.Request;
@@ -124,7 +124,7 @@ public class RadioStreamService {
    */
   public List<RadioStream> streams() {
     synchronized (this.streams) {
-      return Collections.unmodifiableList(new ArrayList<>(this.streams));
+      return List.copyOf(this.streams);
     }
   }
 
@@ -170,12 +170,10 @@ public class RadioStreamService {
   }
 
   private void sortStreamsByUsageLocked() {
-    if (this.streams.isEmpty()) {
-      return;
-    }
+    if (this.streams.isEmpty()) return;
 
-    if (!this.addon.configuration().usageBasedSorting().get()) {
-      this.streams.sort((stream1, stream2) -> Integer.compare(stream1.getId(), stream2.getId()));
+    if (!this.addon.configuration().usageStatistics().enabled().get()) {
+      this.streams.sort(Comparator.comparingInt(RadioStream::getId));
       return;
     }
 

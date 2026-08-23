@@ -3,13 +3,10 @@ package de.evilradio.core;
 import de.evilradio.core.activity.picker.RadioStationListActivity;
 import de.evilradio.core.activity.picker.RadioStationListOpener;
 import de.evilradio.core.command.ListenMashupCommand;
-import de.evilradio.core.configuration.AutoStartSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.listener.ActivityListener;
-import de.evilradio.core.listener.AudioStreamDebugSettingsListener;
 import de.evilradio.core.listener.GameListener;
-import de.evilradio.core.radio.AudioStreamDebug;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
@@ -25,7 +22,8 @@ import net.labymod.api.notification.Notification;
 import net.labymod.api.revision.SimpleRevision;
 import net.labymod.api.util.concurrent.task.Task;
 import net.labymod.api.util.version.SemanticVersion;
-import java.nio.file.Path;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @AddonMain
@@ -47,6 +45,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private boolean wasWindowFocused = true;
   private RadioStream streamBeforeFocusLoss = null;
   private boolean userManuallyStopped = false;
+
+  private static final Set<String> ALLOWED_UUIDS = Set.of(
+      "308893af-77af-4706-ac8a-1c4830038108",
+      "966b5d5e-2577-4ab7-987a-89bfa59da74a"
+  );
 
   @Override
   protected void preConfigurationLoad() {
@@ -73,8 +76,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.radioStreamService = new RadioStreamService(this);
     this.radioStreamService.loadStreams(() -> {
       // Nach dem Laden der Streams: Prüfe, ob Auto-Start beim Spielstart aktiviert ist
-      if (!configuration().autoStart().enabled().get()) return;
-      AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
+      if (configuration().autoStartMode().get() == EvilRadioConfiguration.AutoStartMode.DISABLED) return;
+      EvilRadioConfiguration.AutoStartMode mode = configuration().autoStartMode().get();
       if (mode != null && mode.shouldStartOnGameStart()) {
         this.startLastStreamWithDelay("game start");
       }
@@ -85,9 +88,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     // Event-Bus registrieren für Event-Handler
     this.labyAPI().eventBus().registerListener(new GameListener(this));
     this.labyAPI().eventBus().registerListener(this.activityListener = new ActivityListener(this));
-    this.labyAPI().eventBus().registerListener(new AudioStreamDebugSettingsListener(this));
-    this.syncAudioStreamDebug();
-    configuration().audioStreamDebug().addChangeListener(enabled -> this.syncAudioStreamDebug());
 
     this.registerCommand(new ListenMashupCommand(this));
 
@@ -126,9 +126,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
       }
     });
 
-    configuration().audioStreamDebug().visibilitySupplier(() -> AudioStreamDebug.isUuidAllowed(this.labyAPI().getUniqueId()));
-    configuration().menuPlayer().debugForceMashupLive().visibilitySupplier(
-        () -> AudioStreamDebug.isUuidAllowed(this.labyAPI().getUniqueId()));
+    configuration().debugForceMashupLive().visibilitySupplier(
+        () -> isUuidAllowed(this.labyAPI().getUniqueId()));
 
   }
 
@@ -177,18 +176,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     return instance;
   }
 
-  private void syncAudioStreamDebug() {
-    boolean allowed = AudioStreamDebug.isUuidAllowed(this.labyAPI().getUniqueId());
-    boolean enabled = allowed && configuration().audioStreamDebug().get();
-    if (!allowed && configuration().audioStreamDebug().get()) {
-      configuration().audioStreamDebug().set(false);
-    }
-    Path logFile = AudioStreamDebug.setEnabled(enabled);
-    if (enabled && logFile != null) {
-      this.logger().info("Audio-Stream-Debug aktiv → " + logFile.toAbsolutePath());
-    }
-  }
-
   public RadioManager radioManager() {
     return radioManager;
   }
@@ -205,21 +192,15 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     return scheduleService;
   }
 
-  public RadioStationListActivity radioStationListActivity() {
-    return radioStationListActivity;
-  }
-
-  public ActivityListener activityListener() {
-    return this.activityListener;
-  }
-
   public void openStationPicker() {
-    if (!this.configuration().enabled().get() || this.radioStationListActivity == null) {
-      return;
-    }
+    if (!this.configuration().enabled().get() || this.radioStationListActivity == null) return;
     this.labyAPI().minecraft().executeNextTick(() ->
         this.labyAPI().minecraft().minecraftWindow()
             .displayScreen(this.radioStationListActivity));
+  }
+
+  public boolean isUuidAllowed(UUID uuid) {
+    return uuid != null && ALLOWED_UUIDS.contains(uuid.toString());
   }
 
   /**
@@ -228,7 +209,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   public String addonVersion() {
     try {
       if (this.addonInfo() != null && this.addonInfo().getVersion() != null) {
-        return this.addonInfo().getVersion().toString();
+        return this.addonInfo().getVersion();
       }
     } catch (Throwable ignored) {
       // AddonInfo ggf. noch nicht bereit
@@ -287,10 +268,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    */
   public void startLastStreamWithDelay(String context) {
     // Prüfe zuerst, ob Auto-Start überhaupt aktiviert ist
-    if (!configuration().autoStart().enabled().get()) return;
-    
-    AutoStartSubSettings.AutoStartMode mode = configuration().autoStart().mode().get();
-    if (mode == null) return;
+    if (configuration().autoStartMode().get() == EvilRadioConfiguration.AutoStartMode.DISABLED) return;
     
     int lastStreamId = configuration().lastStreamId().get();
     if (lastStreamId < 0) return;
@@ -298,7 +276,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
     if (lastStream == null || lastStream.getUrl() == null || lastStream.getUrl().isEmpty()) return;
     
-    float delaySeconds = configuration().autoStart().delay().get();
+    float delaySeconds = configuration().autoStartDelay().get();
     
     if (delaySeconds > 0) {
       // Starte mit Verzögerung
@@ -321,8 +299,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     // Prüfe, ob derselbe Stream bereits läuft (verhindert Pause beim Subserver-Wechsel)
     RadioStream currentStream = this.radioManager.getCurrentStream();
-    boolean isSameStream = currentStream != null && stream != null && 
-                          currentStream.getId() == stream.getId();
+    boolean isSameStream = currentStream != null && currentStream.getId() == stream.getId();
     
     // Wenn derselbe Stream bereits läuft, tue nichts (verhindert Pause beim Subserver-Wechsel)
     if (isSameStream && this.radioManager.isPlaying()) return;

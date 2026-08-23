@@ -34,26 +34,19 @@ public class RadioManager {
   }
 
   public void playStream(RadioStream stream) {
+    if(stream == null) return;
     boolean playbackActive = isPlaying();
 
-    boolean isSameStream = currentStream != null && stream != null
-        && currentStream.getId() == stream.getId();
+    boolean isSameStream = currentStream != null && currentStream.getId() == stream.getId();
 
-    if (isSameStream && playbackActive && currentStream.getUrl().equals(stream.getUrl())) {
-      return;
-    }
+    if (isSameStream && playbackActive && currentStream.getUrl().equals(stream.getUrl())) return;
 
-    if (addon != null) {
-      addon.setUserManuallyStopped(false);
-    }
+    addon.setUserManuallyStopped(false);
 
     if (isSameStream && playbackActive) {
       currentStream = stream;
       this.addon.radioStreamService().setLastSelectedStream(stream);
-
-      if (stream != null && addon != null) {
-        addon.configuration().lastStreamId().set(stream.getId());
-      }
+      addon.configuration().lastStreamId().set(stream.getId());
       return;
     }
 
@@ -61,17 +54,14 @@ public class RadioManager {
     stopStream(false);
     currentStream = stream;
     this.addon.radioStreamService().setLastSelectedStream(stream);
+    addon.configuration().lastStreamId().set(stream.getId());
 
-    if (stream != null && addon != null) {
-      addon.configuration().lastStreamId().set(stream.getId());
-    }
-
-    if (stream != null && addon != null && addon.configuration().usageBasedSorting().get()) {
+    if (addon.configuration().usageStatistics().enabled().get()) {
       addon.configuration().usageStatistics().incrementStreamUsage(stream.getId());
       addon.radioStreamService().refreshSortOrder();
     }
 
-    if (radioPlayer != null && stream != null) {
+    if (radioPlayer != null) {
       radioPlayer.setSharedContextSupplier(this::fetchSharedOpenAlContext);
       radioPlayer.setOutputDeviceName(
           MinecraftSoundDeviceProvider.getSelectedSoundDevice(addon.labyAPI().minecraft())

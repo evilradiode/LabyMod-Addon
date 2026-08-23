@@ -149,15 +149,15 @@
         },
         "stationColor": {
           "name": "Station color",
-          "description": "Text color of the station line. Use the reset button to restore the default color."
+          "description": "Text color of the station line."
         },
         "songColor": {
           "name": "Song color",
-          "description": "Text color of the song title. Use the reset button to restore the default color."
+          "description": "Text color of the song title."
         },
         "artistColor": {
           "name": "Artist color",
-          "description": "Text color of the artist. Use the reset button to restore the default color."
+          "description": "Text color of the artist."
         }
       }
     },
@@ -169,33 +169,34 @@
         "advanced": {
           "name": "Advanced"
         },
-        "other": {
-          "name": "Other"
+        "customization": {
+          "name": "Customization"
+        },
+        "notifications": {
+          "name": "Notifications"
+        },
+        "autoStartStop": {
+          "name": "Auto start/stop"
         }
       },
       "enabled": {
-        "name": "Enable Addon",
-        "description": "Enable or disable the Evil-Radio Addon"
+        "name": "Enable Addon"
       },
       "radioMenuKeybind": {
-        "name": "Radio Menu Keybind",
-        "description": "Key to open the radio menu"
+        "name": "Radio Menu Keybind"
       },
-      "showMainMenuPlayer": {
-        "name": "Radio player in menus",
+      "menuPlayerPosition": {
+        "name": "Position of the menu player",
         "description": "Show the radio player in the LabyMod main menu and the server list.",
-        "position": {
-          "name": "Position",
-          "description": "Corner where the player is placed.",
-          "type": {
-            "bottomRight": "Bottom right",
-            "bottomLeft": "Bottom left"
-          }
-        },
-        "debugForceMashupLive": {
-          "name": "Preview live banner",
-          "description": "Shows the Mashup live banner on the menu player, even if no show is on air."
+        "type": {
+          "disabled": "Disabled",
+          "bottomRight": "Bottom right",
+          "bottomLeft": "Bottom left"
         }
+      },
+      "debugForceMashupLive": {
+        "name": "Preview live banner",
+        "description": "Shows the Mashup live banner on the menu player, even if no show is on air."
       },
       "stationPicker": {
         "name": "Station menu",
@@ -249,25 +250,18 @@
         "name": "Volume",
         "description": "The volume of the radio stream (0-100%)"
       },
-      "autoStart": {
-        "name": "Auto-Start Settings",
-        "description": "Configure automatic start of the last stream",
-        "enabled": {
-          "name": "Enable Auto-Start",
-          "description": "Enable automatic start of the last played stream"
-        },
-        "mode": {
-          "name": "Auto-Start Mode",
-          "description": "Choose when the stream should automatically start",
-          "type": {
-            "onGameStart": "On Game Start",
-            "onServerJoin": "On Server/Singleplayer Join"
-          }
-        },
-        "delay": {
-          "name": "Auto-Start Delay",
-          "description": "Delay in seconds before automatically starting the stream (0-10 seconds)"
+      "autoStartMode": {
+        "name": "Auto-Start Mode",
+        "description": "Choose when the stream should automatically start",
+        "type": {
+          "disabled": "Disabled",
+          "onGameStart": "On Game Start",
+          "onServerJoin": "On Server/Singleplayer Join"
         }
+      },
+      "autoStartDelay": {
+        "name": "Auto-Start Delay",
+        "description": "Delay in seconds before automatically starting the stream (0-10 seconds)"
       },
       "usageStatistics": {
         "name": "Usage-based Sorting",
@@ -281,10 +275,6 @@
           "text": "Reset",
           "description": "Resets the usage statistics of the streams"
         }
-      },
-      "audioStreamDebug": {
-        "name": "Audio Stream Debug",
-        "description": "Writes detailed audio debug messages to logs/evilradio/audio-debug.log (dropouts, underruns, reconnects)."
       },
       "reloadStreams": {
         "name": "Reload Streams (only if you have problems)",
@@ -301,7 +291,6 @@
       "listenAlreadyPlaying": "Mashup is already playing.",
       "listenUnavailable": "Mashup station is currently unavailable.",
       "listenDisabled": "Evil-Radio is disabled.",
-      "twitchUrl": "https://www.twitch.tv/evilradiode",
       "twitchHover": "Open Twitch",
       "loading": "Loading schedule…",
       "empty": "No shows on this day",

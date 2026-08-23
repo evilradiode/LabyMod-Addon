@@ -146,10 +146,6 @@ public final class OpenAlAudioSession {
       OpenAlAudioSession session = newSession(minecraftContext, false, 0L, source, buffers, bindings);
       enqueueFreeBuffers(session, buffers);
       session.setVolumeUnlocked(volume);
-      AudioStreamDebug.info(
-          "OpenAL shared context geöffnet (context=" + minecraftContext
-              + ", source=" + source + ", buffers=" + BUFFER_COUNT
-              + ", volume=" + volume + ")");
       return session;
     } finally {
       restoreContext(bindings.alcMakeContextCurrent, previous, minecraftContext);
@@ -195,11 +191,6 @@ public final class OpenAlAudioSession {
       OpenAlAudioSession session = newSession(context, true, device, source, buffers, bindings);
       enqueueFreeBuffers(session, buffers);
       session.setVolumeUnlocked(volume);
-      AudioStreamDebug.info(
-          "OpenAL Gerät geöffnet (deviceName=" + (openDeviceName == null ? "default" : openDeviceName)
-              + ", device=" + device + ", context=" + context
-              + ", source=" + source + ", buffers=" + BUFFER_COUNT
-              + ", volume=" + volume + ")");
       return session;
     } finally {
       restoreContext(bindings.alcMakeContextCurrent, previous, context);
@@ -260,28 +251,7 @@ public final class OpenAlAudioSession {
     withContext(() -> {
       alBufferData.invoke(null, buffer, format, samples, sampleRate);
       alSourceQueueBuffers.invoke(null, source, buffer);
-      maybeHeartbeatUnlocked();
     });
-  }
-
-  private void maybeHeartbeatUnlocked() throws Exception {
-    if (!AudioStreamDebug.isEnabled()) {
-      return;
-    }
-    long now = System.currentTimeMillis();
-    if (lastHeartbeatMs != 0L && now - lastHeartbeatMs < 5000L) {
-      return;
-    }
-    lastHeartbeatMs = now;
-    int queued = (int) alGetSourcei.invoke(null, source, alBuffersQueued);
-    int state = (int) alGetSourcei.invoke(null, source, alSourceState);
-    AudioStreamDebug.info(
-        "Heartbeat queued=" + queued + "/" + BUFFER_COUNT
-            + ", free=" + freeBuffers.size()
-            + ", state=" + stateName(state)
-            + ", started=" + started
-            + ", volume=" + volume
-            + ", gain=" + volume);
   }
 
   private void makeContextCurrent() throws Exception {
@@ -361,25 +331,9 @@ public final class OpenAlAudioSession {
         lastSnap[0] = queued;
         lastSnap[1] = state;
         ensurePlayingUnlocked();
-        // Nur anomal: Source tot oder Queue fast leer (echter Underrun-Druck)
-        if (state != alPlaying || queued <= 2) {
-          AudioStreamDebug.infoThrottled(
-              "OpenAL Buffer-Mangel queued=" + queued
-                  + ", free=0, state=" + stateName(state)
-                  + ", started=" + started);
-        }
         return null;
       });
       if (buffer != null) {
-        if (waitStartedAt != 0L) {
-          long waitedMs = System.currentTimeMillis() - waitStartedAt;
-          // Normales Pacing bei voller Queue ≈ 20–50 ms – kein Problem.
-          if (waitedMs >= 100L || (lastSnap[1] != -1 && lastSnap[1] != alPlaying)) {
-            AudioStreamDebug.warn(
-                "OpenAL Buffer-Wait " + waitedMs + " ms (queued=" + lastSnap[0]
-                    + ", state=" + stateName(lastSnap[1]) + ")");
-          }
-        }
         return buffer;
       }
       if (waitStartedAt == 0L) {
@@ -392,13 +346,13 @@ public final class OpenAlAudioSession {
   }
 
   public void setVolume(float volume) throws Exception {
-    this.volume = Math.max(0.0f, Math.min(1.0f, volume));
+    this.volume = Math.clamp(volume, 0.0f, 1.0f);
     withContext(() -> setVolumeUnlocked(this.volume));
   }
 
   private void setVolumeUnlocked(float volume) throws Exception {
     // Erwartet bereits den gemappten Ausgangs-Gain aus RadioPlayer.toOutputGain().
-    this.volume = Math.max(0.0f, Math.min(1.0f, volume));
+    this.volume = Math.clamp(volume, 0.0f, 1.0f);
     alSourcef.invoke(null, source, alGain, this.volume);
     if (this.volume > 0.0f) {
       ensurePlayingUnlocked();
@@ -427,15 +381,6 @@ public final class OpenAlAudioSession {
 
     int state = (int) alGetSourcei.invoke(null, source, alSourceState);
     if (state != alPlaying) {
-      if (started) {
-        AudioStreamDebug.warn(
-            "OpenAL UNDERRUN Restart: state=" + stateName(state)
-                + " → PLAY, queued=" + queued + ", free=" + freeBuffers.size());
-      } else {
-        AudioStreamDebug.info(
-            "OpenAL Start: state=" + stateName(state)
-                + " → PLAY, queued=" + queued + ", free=" + freeBuffers.size());
-      }
       alSourcePlay.invoke(null, source);
       started = true;
     }
@@ -446,9 +391,6 @@ public final class OpenAlAudioSession {
   }
 
   public void close() {
-    AudioStreamDebug.info(
-        "OpenAL Session schließen (ownsContext=" + ownsContext
-            + ", device=" + device + ", source=" + source + ")");
     long previous = safeCurrentContext();
 
     try {

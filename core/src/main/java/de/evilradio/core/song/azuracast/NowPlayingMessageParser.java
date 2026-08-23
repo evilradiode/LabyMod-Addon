@@ -51,7 +51,7 @@ public final class NowPlayingMessageParser {
     if (publications == null || publications.isEmpty()) {
       return Optional.empty();
     }
-    ParsedPublication latest = publications.get(0);
+    ParsedPublication latest = publications.getFirst();
     for (int i = 1; i < publications.size(); i++) {
       if (isNewerPublication(publications.get(i), latest)) {
         latest = publications.get(i);
