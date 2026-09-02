@@ -194,17 +194,16 @@
     .mashup-live-grussbox {
       width: 50;
       height: 14;
-      padding: 0;
-      font-size: 0.52;
-      text-align: center;
+      padding: 0 4 0 3;
       background-color: rgba(180, 30, 30, 0.55);
       border: 1;
       border-color: rgba(255, 90, 90, 0.55);
       interactable: true;
-    }
 
-    .mashup-live-grussbox .button-text {
-      padding: 0;
+      Component {
+        font-size: 0.8;
+      }
+
     }
 
     .mashup-live-grussbox.alone {
@@ -212,23 +211,21 @@
     }
 
     .mashup-live-grussbox:hover {
-      background-color: rgba(220, 50, 50, 0.75);
+      background-color: rgba(220, 50, 50, 1.0);
     }
 
     .mashup-live-twitch {
       width: 50;
       height: 14;
-      padding: 0;
-      font-size: 0.52;
-      text-align: center;
-      background-color: rgba(100, 50, 180, 0.4);
+      background-color: rgba(100, 50, 180, 1.0);
       border: 1;
       border-color: rgba(145, 70, 255, 0.55);
       interactable: true;
-    }
 
-    .mashup-live-twitch .button-text {
-      padding: 0;
+      Component {
+        font-size: 0.8;
+      }
+
     }
 
     .mashup-live-twitch.alone {
