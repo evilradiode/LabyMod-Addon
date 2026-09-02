@@ -9,6 +9,7 @@ import de.evilradio.core.activity.picker.widget.ScheduleShowRowWidget;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.configuration.StationPickerSubSettings;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
+import de.evilradio.core.radio.AudioEqualizer;
 import de.evilradio.core.radio.AudioSpectrumAnalyzer;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.schedule.ScheduleDay;
@@ -44,6 +45,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.ScrollWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.HorizontalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
@@ -95,7 +97,6 @@ public class RadioStationListActivity extends SimpleActivity {
   private VerticalListWidget<Widget> panelWidget;
   private DivWidget nowPlayingStrip;
   private ScrollWidget stationScroll;
-  private Widget stationsFooter;
   private HorizontalListWidget scheduleDayChips;
   private ScrollWidget scheduleScroll;
   private ButtonWidget stationsTabButton;
@@ -232,7 +233,6 @@ public class RadioStationListActivity extends SimpleActivity {
     // Reset tab-spezifische Referenzen
     this.nowPlayingStrip = null;
     this.stationScroll = null;
-    this.stationsFooter = null;
     this.volumeSlider = null;
     this.playPauseButton = null;
     this.equalizerStyleButton = null;
@@ -361,17 +361,49 @@ public class RadioStationListActivity extends SimpleActivity {
         this::togglePlayPause
     ).addId("picker-play-pause");
     coverStrip.addChild(this.playPauseButton);
+
+    HorizontalListWidget eqVolumeContainer = new HorizontalListWidget().addId("picker-audio-eq-volume-container");
+
+    VerticalListWidget<Widget> audioEqualizerPresetDropdownContainer = new VerticalListWidget<>().addId("picker-audio-eq-preset-container");
+
+    ComponentWidget audioEqualizerTitle = ComponentWidget.i18n("evilradio.settings.audioEqualizer.name").addId("picker-audio-eq-preset-title");
+    audioEqualizerPresetDropdownContainer.addChild(audioEqualizerTitle);
+
+    HorizontalListWidget eqSettingsDropdownContainer = new HorizontalListWidget().addId("picker-audio-eq-settings-container");
+
+    ButtonWidget eqSettingsWidget = ButtonWidget.icon(SpriteCommon.SETTINGS).addId("picker-audio-eq-settings");
+    eqSettingsWidget.setPressable(() -> {
+      this.addon.labyAPI().coreSettingRegistry().findSetting((CharSequence) (this.addon.labyAPI().getNamespace(this.addon))).ifPresent(setting -> {
+        this.addon.labyAPI().showSetting(setting);
+      });
+    });
+
+    eqSettingsDropdownContainer.addEntry(eqSettingsWidget);
+
+    DropdownWidget<AudioEqualizer.EqualizerPreset> audioEqualizerPresetDropdown = new DropdownWidget<>().addId("picker-audio-eq-preset");
+    audioEqualizerPresetDropdown.addAll(AudioEqualizer.EqualizerPreset.values());
+    audioEqualizerPresetDropdown.setSelected(this.addon.configuration().audioEqualizer().preset().get());
+    audioEqualizerPresetDropdown.setTranslationKeyPrefix("evilradio.settings.audioEqualizer.preset.type");
+    audioEqualizerPresetDropdown.setChangeListener(equalizerPreset -> {
+      this.addon.configuration().audioEqualizer().preset().set(equalizerPreset);
+      this.addon.applyAudioEqualizerConfiguration();
+    });
+    eqSettingsDropdownContainer.addEntry(audioEqualizerPresetDropdown);
+
+    audioEqualizerPresetDropdownContainer.addChild(eqSettingsDropdownContainer);
+
+    eqVolumeContainer.addEntry(audioEqualizerPresetDropdownContainer);
+
     this.syncEqualizerStyleButton();
 
-    // Test: Lautstärke unter EQ/Play statt im Footer (spart Fensterhöhe)
-    float volume = this.addon.configuration().volume().get();
     this.volumeSlider = new SliderWidget(1.0F, this::onVolumeSliderChanged)
         .range(0.0F, 100.0F)
         .withFormatter(value -> Component.text(Math.round(value) + "%"))
         .addId("picker-volume-slider");
-    this.volumeSlider.setValue(volume, false);
-    coverStrip.addChild(this.volumeSlider);
-    this.stationsFooter = null;
+    this.volumeSlider.setValue(this.addon.configuration().volume().get(), false);
+    eqVolumeContainer.addEntry(this.volumeSlider);
+
+    coverStrip.addChild(eqVolumeContainer);
     panel.addChild(coverStrip);
 
     VerticalListWidget<RadioStationRowWidget> list =
@@ -968,14 +1000,10 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void syncEqualizerStyleButton() {
-    if (this.equalizerStyleButton == null) {
-      return;
-    }
+    if (this.equalizerStyleButton == null) return;
     boolean featureEnabled = this.isEqualizerFeatureEnabled();
     this.equalizerStyleButton.setVisible(featureEnabled);
-    if (!featureEnabled) {
-      return;
-    }
+    if (!featureEnabled) return;
     EvilRadioConfiguration.EqualizerStyle style = this.addon.configuration().equalizerStyle().get();
     if (style.isEnabled()) {
       this.equalizerStyleButton.removeId("off");
@@ -985,9 +1013,7 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void applyEqualizerStyle(EvilRadioConfiguration.EqualizerStyle style) {
-    if (this.equalizerWidget == null || style == null) {
-      return;
-    }
+    if (this.equalizerWidget == null || style == null) return;
     if (style == this.appliedEqualizerStyle) {
       return;
     }
@@ -1011,9 +1037,7 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void layoutEqualizerBars() {
-    if (this.equalizerWidget == null || this.equalizerBars.isEmpty()) {
-      return;
-    }
+    if (this.equalizerWidget == null || this.equalizerBars.isEmpty()) return;
     float width = this.equalizerWidget.bounds().getWidth();
     if (width <= 1.0F) {
       // Bounds oft erst nach erstem Layout verfügbar (nach Cover bis vor EQ/Play)
@@ -1034,9 +1058,7 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void refreshEqualizerBars() {
-    if (this.equalizerBars.isEmpty() || this.equalizerWidget == null) {
-      return;
-    }
+    if (this.equalizerBars.isEmpty() || this.equalizerWidget == null) return;
 
     this.layoutEqualizerBars();
 
@@ -1141,23 +1163,17 @@ public class RadioStationListActivity extends SimpleActivity {
         return live;
       }
     }
-    if (shortcode == null) {
-      return null;
-    }
+    if (shortcode == null) return null;
     return this.songByShortcode.get(shortcode);
   }
 
   private @Nullable String shortcodeOf(@Nullable RadioStream stream) {
-    if (stream == null) {
-      return null;
-    }
+    if (stream == null) return null;
     return normalizeShortcode(stream.getAzuraCastShortcode());
   }
 
   private static @Nullable String normalizeShortcode(@Nullable String shortcode) {
-    if (shortcode == null || shortcode.isBlank()) {
-      return null;
-    }
+    if (shortcode == null || shortcode.isBlank()) return null;
     return shortcode.trim().toLowerCase(Locale.ROOT);
   }
 
@@ -1449,13 +1465,9 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void applyMashupShowTimingToRows() {
-    if (this.mashupShowStatus == null) {
-      return;
-    }
+    if (this.mashupShowStatus == null) return;
     for (RadioStationRowWidget row : this.rows) {
-      if (!StationPickerController.isMashup(row.getStream())) {
-        continue;
-      }
+      if (!StationPickerController.isMashup(row.getStream())) continue;
       String key = this.shortcodeOf(row.getStream());
       CurrentSong song = key != null ? this.songByShortcode.get(key) : null;
       if (song == null || !song.isValid()) {

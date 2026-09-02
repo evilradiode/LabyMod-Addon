@@ -3,6 +3,7 @@ package de.evilradio.core;
 import de.evilradio.core.activity.picker.RadioStationListActivity;
 import de.evilradio.core.activity.picker.RadioStationListOpener;
 import de.evilradio.core.command.ListenMashupCommand;
+import de.evilradio.core.configuration.AudioEqualizerSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.listener.ActivityListener;
@@ -104,6 +105,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     // Setze initiales Volume aus der Konfiguration
     if (this.radioManager != null) {
       this.radioManager.setVolume(configuration().volume().get() / 100.0f);
+      this.applyAudioEqualizerConfiguration();
     }
     
     // Registriere Listener für Volume-Änderungen
@@ -112,6 +114,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
         this.radioManager.setVolume(volume / 100.0f);
       }
     });
+
+    this.setupAudioEqualizerListeners();
     
     // Stoppe den Stream, wenn das Addon deaktiviert wird
     configuration().enabled().addChangeListener((enabled) -> {
@@ -322,6 +326,23 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    */
   public boolean isUserManuallyStopped() {
     return this.userManuallyStopped;
+  }
+
+  public void applyAudioEqualizerConfiguration() {
+    if (this.radioManager == null) return;
+    this.radioManager.applyEqualizerGains(configuration().audioEqualizer().resolveBandGainsDb());
+  }
+
+  private void setupAudioEqualizerListeners() {
+    AudioEqualizerSubSettings equalizer = configuration().audioEqualizer();
+    Runnable apply = this::applyAudioEqualizerConfiguration;
+
+    equalizer.preset().addChangeListener(preset -> apply.run());
+    equalizer.customSubBass().addChangeListener(gain -> apply.run());
+    equalizer.customBass().addChangeListener(gain -> apply.run());
+    equalizer.customMid().addChangeListener(gain -> apply.run());
+    equalizer.customPresence().addChangeListener(gain -> apply.run());
+    equalizer.customTreble().addChangeListener(gain -> apply.run());
   }
   
 }

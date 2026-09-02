@@ -113,6 +113,12 @@ public class RadioManager {
     }
   }
 
+  public void applyEqualizerGains(float[] gainsDb) {
+    if (radioPlayer != null) {
+      radioPlayer.setEqualizerGainsDb(gainsDb);
+    }
+  }
+
   public float getVolume() {
     return radioPlayer != null ? radioPlayer.getVolume() : 0.5f;
   }

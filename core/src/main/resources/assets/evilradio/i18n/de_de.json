@@ -231,6 +231,45 @@
           "description": "Textfarbe für die Playtime in der Liste."
         }
       },
+      "audioEqualizer": {
+        "name": "Audio-Equalizer",
+        "description": "Klangprofil für den Radio-Stream.",
+        "preset": {
+          "name": "Equalizer-Preset",
+          "description": "Vordefiniertes Klangprofil oder eigene Bänder.",
+          "type": {
+            "normal": "Normal",
+            "bassBoost": "Bass Boost",
+            "trebleBoost": "Höhen Boost",
+            "vocal": "Vocal",
+            "rock": "Rock",
+            "pop": "Pop",
+            "electronic": "Electronic",
+            "soft": "Soft",
+            "custom": "Benutzerdefiniert"
+          }
+        },
+        "customSubBass": {
+          "name": "Tiefbass (60 Hz)",
+          "description": "Anpassung des tiefsten Bassbereichs."
+        },
+        "customBass": {
+          "name": "Bass (250 Hz)",
+          "description": "Anpassung des Bassbereichs."
+        },
+        "customMid": {
+          "name": "Mitten (1 kHz)",
+          "description": "Anpassung des Mittelbereichs."
+        },
+        "customPresence": {
+          "name": "Präsenz (4 kHz)",
+          "description": "Anpassung der Sprach- und Gitarrenpräsenz."
+        },
+        "customTreble": {
+          "name": "Höhen (12 kHz)",
+          "description": "Anpassung der Höhen."
+        }
+      },
       "showSongChangeNotification": {
         "name": "Song Änderung Benachrichtigung",
         "description": "Bekomme eine Benachrichtigung beim wechseln des Songs"

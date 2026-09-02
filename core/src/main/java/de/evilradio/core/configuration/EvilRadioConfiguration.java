@@ -34,6 +34,10 @@ public class EvilRadioConfiguration extends AddonConfig {
   @SliderSetting(min = 0, max = 100, steps = 2f)
   private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
 
+  @SpriteSlot(x = 7)
+  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  private final AudioEqualizerSubSettings audioEqualizer = new AudioEqualizerSubSettings();
+
   @SettingSection("customization")
 
   @SpriteSlot(x = 3)
@@ -106,6 +110,10 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<Float> volume() {
     return this.volume;
+  }
+
+  public AudioEqualizerSubSettings audioEqualizer() {
+    return this.audioEqualizer;
   }
 
   public ConfigProperty<MenuPlayerPosition> menuPlayerPosition() {

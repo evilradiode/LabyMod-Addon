@@ -33,7 +33,7 @@ public class RadioPlayer {
   /**
    * Radio-Streams sind oft heiß gemastert – linearer Gain macht nur die unteren
    * paar Prozent des Sliders brauchbar. Max-Gain dämpft die Spitze, Exponent
-   * spreizt den leisen Bereich über die Skala (50 % ≈ angenehm, 100 % laut).
+   * spreizt den leisen Bereich über die Skala (50 % ≈ angenehm, 100 % laut).
    */
   private static final float VOLUME_MAX_GAIN = 0.25f;
   private static final float VOLUME_CURVE_EXPONENT = 2.2f;
@@ -53,7 +53,7 @@ public class RadioPlayer {
   private volatile String outputDeviceName;
   private volatile LongSupplier sharedContextSupplier;
   private final AudioSpectrumAnalyzer spectrum = new AudioSpectrumAnalyzer();
-  private long lastWriteDoneMs;
+  private final AudioEqualizer equalizer = new AudioEqualizer();
 
   public RadioPlayer() {
     this.executorService = Executors.newSingleThreadExecutor(r -> {
@@ -88,7 +88,6 @@ public class RadioPlayer {
 
     currentStreamUrl = streamUrl;
     shouldStop = false;
-    this.lastWriteDoneMs = 0L;
 
     playbackTask = executorService.submit(() -> runPlayback(streamUrl, epoch));
     // Sofort true, damit UI (Play/Pause) nicht auf HTTP-Connect / ersten Frame wartet.
@@ -120,6 +119,8 @@ public class RadioPlayer {
       int channels = header.mode() == Header.SINGLE_CHANNEL ? 1 : 2;
       this.spectrum.configure(sampleRate, channels);
       this.spectrum.reset();
+      this.equalizer.configure(sampleRate, channels);
+      this.equalizer.reset();
 
       AudioFormat audioFormat = new AudioFormat(
           AudioFormat.Encoding.PCM_SIGNED,
@@ -262,7 +263,6 @@ public class RadioPlayer {
               throw new IOException("Reconnect without a valid header");
             }
             consecutiveFailures = 0;
-            this.lastWriteDoneMs = 0L;
           } catch (Exception reconnectError) {
             LOGGING.warn(
                 "Reconnect failed: " + reconnectError.getMessage());
@@ -343,6 +343,7 @@ public class RadioPlayer {
     isPlaying = false;
     currentStreamUrl = null;
     this.spectrum.reset();
+    this.equalizer.reset();
 
     // Streams schließen, damit blockierende Reads/OpenAL abbrechen
     closeNetworkStream();
@@ -450,6 +451,10 @@ public class RadioPlayer {
     return this.spectrum;
   }
 
+  public void setEqualizerGainsDb(float[] gainsDb) {
+    this.equalizer.setGainsDb(gainsDb);
+  }
+
   private boolean isOutputActive() {
     if (openAlSession != null) {
       return true;
@@ -458,21 +463,20 @@ public class RadioPlayer {
   }
 
   private void writeAudioSafe(byte[] buffer, int length) {
-    // Spektrum immer aus Roh-PCM (unabhängig von der Lautstärke)
+    // Spektrum aus Roh-PCM (unabhängig von EQ und Lautstärke)
     this.spectrum.feedPcm(buffer, length);
+    this.equalizer.process(buffer, length);
 
     try {
       if (openAlSession != null) {
         openAlSession.queuePcm(buffer, length);
         openAlSession.startIfNeeded();
-        this.lastWriteDoneMs = System.currentTimeMillis();
         return;
       }
 
       if (audioLine != null && audioLine.isOpen()) {
         // Immer schreiben – Lautstärke über MASTER_GAIN (auch bei 0 = Stille, Pacing bleibt)
         audioLine.write(buffer, 0, length);
-        this.lastWriteDoneMs = System.currentTimeMillis();
       }
     } catch (InterruptedException interrupted) {
       Thread.currentThread().interrupt();

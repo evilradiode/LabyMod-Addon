@@ -100,7 +100,7 @@
 
 .picker-now-playing {
   width: 100%;
-  height: 70;
+  height: 85;
   background-color: rgba(255, 255, 255, 0.06);
   border-radius: 8;
   border-thickness: 1;
@@ -111,8 +111,7 @@
 .picker-eq {
   left: 34;
   width: 254;
-  top: 2;
-  bottom: 18;
+  bottom: 33;
   opacity: 0.45;
   interactable: false;
 }
@@ -219,7 +218,7 @@
 
 .picker-cover-progress-track {
   left: 34;
-  bottom: 13;
+  bottom: 28;
   width: 215;
   height: 2;
   border-radius: 1;
@@ -244,7 +243,7 @@
 /* Zeit auf Höhe der Progressbar */
 .picker-cover-time {
   right: 24;
-  bottom: 10;
+  bottom: 25;
   width: fit-content;
   height: fit-content;
   font-size: 0.48;
@@ -317,13 +316,47 @@
   background-color: rgba(255, 255, 255, 0.18);
 }
 
+.picker-audio-eq-volume-container {
+  left: 0;
+  bottom: 0;
+  right: 0;
+  height: fit-content;
+  layout: fill;
+}
+
+.picker-audio-eq-preset-container {
+  top: 0;
+  height: fit-content;
+  width: fit-content;
+}
+
+.picker-audio-eq-preset-title {
+  top: 0;
+  left: 0;
+  font-size: 0.6;
+}
+
+.picker-audio-eq-settings-container {
+  top: 0;
+  height: fit-content;
+  space-between-entries: 2;
+}
+
+.picker-audio-eq-settings {
+  width: 16;
+  height: 16;
+}
+
+.picker-audio-eq-preset {
+  top: 0;
+  left: 0;
+  height: 16;
+}
+
 /* Gleiche Breite/Position wie .picker-cover-texts */
 .picker-volume-slider {
-  left: 33;
-  bottom: -2;
-  right: 24;
-  height: 12;
-  font-size: 0.45;
+  height: 16;
+  margin: 8 2 0 -18;
 }
 
 .picker-now-playing.no-eq .picker-volume-slider {

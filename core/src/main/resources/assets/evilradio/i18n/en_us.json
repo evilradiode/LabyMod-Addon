@@ -234,6 +234,45 @@
           "description": "Text color for playtime in the list."
         }
       },
+      "audioEqualizer": {
+        "name": "Audio Equalizer",
+        "description": "Sound profile for the radio stream.",
+        "preset": {
+          "name": "Equalizer Presets",
+          "description": "Predefined sound profile or own bands.",
+          "type": {
+            "normal": "Normal",
+            "bassBoost": "Bass Boost",
+            "trebleBoost": "Treble Boost",
+            "vocal": "Vocal",
+            "rock": "Rock",
+            "pop": "Pop",
+            "electronic": "Electronic",
+            "soft": "Soft",
+            "custom": "Custom"
+          }
+        },
+        "customSubBass": {
+          "name": "Low bass (60 Hz)",
+          "description": "Adjustment of the lowest bass range."
+        },
+        "customBass": {
+          "name": "Bass (250 Hz)",
+          "description": "Adjustment of the bass range."
+        },
+        "customMid": {
+          "name": "Mids (1 kHz)",
+          "description": "Adjustment of the middle range."
+        },
+        "customPresence": {
+          "name": "Presence (4 kHz)",
+          "description": "Adjustment of the voice and guitar presence."
+        },
+        "customTreble": {
+          "name": "Treble (12 kHz)",
+          "description": "Adjustment of the treble range."
+        }
+      },
       "showSongChangeNotification": {
         "name": "Song Change Notification",
         "description": "Get a notification when the song changes"
