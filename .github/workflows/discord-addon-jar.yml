@@ -100,18 +100,32 @@ jobs:
           RUN_URL: ${{ steps.jar.outputs.run_url }}
           REPO: ${{ github.repository }}
           SERVER_URL: ${{ github.server_url }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
 
           python3 - <<'PY'
-          import json, os
-          short = os.environ["COMMIT_SHA"][:7]
+          import json, os, urllib.request
+          sha = os.environ["COMMIT_SHA"]
+          short = sha[:7]
           size_bytes = os.path.getsize(os.environ["JAR_PATH"])
           too_large = size_bytes > 10 * 1024 * 1024
+          api = f"{os.environ['GITHUB_API_URL']}/repos/{os.environ['REPO']}/commits/{sha}"
+          req = urllib.request.Request(api, headers={
+            "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "evil-radio-ci",
+          })
+          with urllib.request.urlopen(req) as resp:
+            commit_data = json.load(resp)
+          commit_message = commit_data["commit"]["message"].splitlines()[0]
           description = (
             f"**Branch:** `{os.environ['BRANCH']}`\n"
-            f"**Commit:** [`{short}`]({os.environ['SERVER_URL']}/{os.environ['REPO']}/commit/{os.environ['COMMIT_SHA']})\n"
+            f"**Commit:** [`{short}`]({os.environ['SERVER_URL']}/{os.environ['REPO']}/commit/{sha})\n"
+            f"**Nachricht:** {commit_message}\n"
             f"**Größe:** {os.environ['JAR_SIZE']}"
           )
           if too_large:
@@ -122,8 +136,7 @@ jobs:
           else:
             description += (
               "\n"
-              f"**Build:** [GitHub Actions]({os.environ['RUN_URL']})\n"
-              "JAR ist als Anhang angehängt."
+              f"**Build:** [GitHub Actions]({os.environ['RUN_URL']})"
             )
           payload = {
             "username": "Evil-Radio CI",
