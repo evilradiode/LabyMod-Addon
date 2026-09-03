@@ -77,6 +77,10 @@ RadioStationRow .row-song {
   max-lines: 1;
   overflow-strategy: clip;
   text-shadow: 1 1 2 rgba(0, 0, 0, 0.75);
+  scroll-text: true;
+  scroll-mode: loop;
+  scroll-speed: 10.0;
+  scroll-gap: 25.0;
 }
 
 RadioStationRow .row-artist {
@@ -88,6 +92,10 @@ RadioStationRow .row-artist {
   max-lines: 1;
   overflow-strategy: clip;
   text-shadow: 1 1 2 rgba(0, 0, 0, 0.75);
+  scroll-text: true;
+  scroll-mode: loop;
+  scroll-speed: 10.0;
+  scroll-gap: 25.0;
 }
 
 RadioStationRow .row-progress-track {
