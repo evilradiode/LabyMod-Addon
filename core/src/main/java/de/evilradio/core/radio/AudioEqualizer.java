@@ -31,9 +31,7 @@ public final class AudioEqualizer {
   }
 
   public void setGainsDb(float[] gainsDb) {
-    if (gainsDb == null || gainsDb.length < EqualizerPreset.BAND_COUNT) {
-      return;
-    }
+    if (gainsDb == null || gainsDb.length < EqualizerPreset.BAND_COUNT) return;
     boolean flat = true;
     for (int i = 0; i < EqualizerPreset.BAND_COUNT; i++) {
       float gain = gainsDb[i];
@@ -54,9 +52,7 @@ public final class AudioEqualizer {
   }
 
   public void process(byte[] pcm, int length) {
-    if (this.bypass || pcm == null || length < 2) {
-      return;
-    }
+    if (this.bypass || pcm == null || length < 2) return;
 
     int ch = this.channels;
     int frameBytes = ch * 2;
