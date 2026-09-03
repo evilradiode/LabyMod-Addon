@@ -217,7 +217,7 @@
 .picker-cover-progress-track {
   left: 34;
   bottom: 28;
-  width: 205;
+  width: 200;
   height: 2;
   border: 1;
   background-color: rgba(255, 255, 255, 0.14);
