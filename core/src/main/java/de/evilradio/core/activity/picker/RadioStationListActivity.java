@@ -12,8 +12,7 @@ import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.AudioEqualizer;
 import de.evilradio.core.radio.AudioSpectrumAnalyzer;
 import de.evilradio.core.radio.RadioStream;
-import de.evilradio.core.schedule.ScheduleDay;
-import de.evilradio.core.schedule.ScheduleShow;
+import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSong;
 import de.evilradio.core.song.CurrentSongService;
 import de.evilradio.core.song.azuracast.PickerNowPlayingSession;
@@ -449,7 +448,7 @@ public class RadioStationListActivity extends SimpleActivity {
       mashupLive = true;
     }
 
-    List<ScheduleDay> days = this.addon.scheduleService().days();
+    List<ScheduleService.ScheduleDay> days = this.addon.scheduleService().days();
     if (this.selectedScheduleDayIndex >= days.size()) {
       this.selectedScheduleDayIndex = 0;
     }
@@ -459,7 +458,7 @@ public class RadioStationListActivity extends SimpleActivity {
 
     int dayCount = days.size();
     for (int i = 0; i < dayCount; i++) {
-      ScheduleDay day = days.get(i);
+      ScheduleService.ScheduleDay day = days.get(i);
       final int dayIndex = i;
       ButtonWidget chip = ButtonWidget.text(
               this.dayChipLabel(day),
@@ -481,8 +480,8 @@ public class RadioStationListActivity extends SimpleActivity {
           .addId("schedule-empty"));
       scheduleList.addChild(loadingBox);
     } else {
-      ScheduleDay selected = days.get(this.selectedScheduleDayIndex);
-      List<ScheduleShow> shows = selected.getShows();
+      ScheduleService.ScheduleDay selected = days.get(this.selectedScheduleDayIndex);
+      List<ScheduleService.ScheduleShow> shows = selected.shows();
       scheduleList.addChild(ComponentWidget.component(
               Component.text(this.dayHeaderLabel(selected)).color(NamedTextColor.WHITE))
           .addId("schedule-day-header"));
@@ -493,7 +492,7 @@ public class RadioStationListActivity extends SimpleActivity {
             .addId("schedule-empty"));
         scheduleList.addChild(emptyBox);
       } else {
-        for (ScheduleShow show : shows) {
+        for (ScheduleService.ScheduleShow show : shows) {
           scheduleList.addChild(new ScheduleShowRowWidget(show, mashupLive));
         }
       }
@@ -544,7 +543,7 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private void selectScheduleDay(int dayIndex) {
-    List<ScheduleDay> days = this.addon.scheduleService().days();
+    List<ScheduleService.ScheduleDay> days = this.addon.scheduleService().days();
     if (dayIndex < 0 || dayIndex >= days.size() || dayIndex == this.selectedScheduleDayIndex) {
       return;
     }
@@ -552,9 +551,9 @@ public class RadioStationListActivity extends SimpleActivity {
     this.reload();
   }
 
-  private String dayChipLabel(ScheduleDay day) {
-    LocalDate date = this.parseScheduleDate(day.getDate());
-    String weekdayApi = day.getWeekday() == null ? "" : day.getWeekday().trim();
+  private String dayChipLabel(ScheduleService.ScheduleDay day) {
+    LocalDate date = this.parseScheduleDate(day.date());
+    String weekdayApi = day.weekday() == null ? "" : day.weekday().trim();
     if (date == null) {
       String weekday = weekdayApi.isEmpty() ? "?" : weekdayApi;
       return weekday.length() <= 5 ? weekday : weekday.substring(0, 5);
@@ -581,11 +580,11 @@ public class RadioStationListActivity extends SimpleActivity {
     };
   }
 
-  private String dayHeaderLabel(ScheduleDay day) {
-    LocalDate date = this.parseScheduleDate(day.getDate());
-    String weekday = day.getWeekday() == null ? "" : day.getWeekday().trim();
+  private String dayHeaderLabel(ScheduleService.ScheduleDay day) {
+    LocalDate date = this.parseScheduleDate(day.date());
+    String weekday = day.weekday() == null ? "" : day.weekday().trim();
     if (date == null) {
-      return weekday.isEmpty() ? day.getDate() : weekday;
+      return weekday.isEmpty() ? day.date() : weekday;
     }
     String formatted = this.headerDayLabel(date) + " - " + date.format(CHIP_DAY_FORMAT);
     if (weekday.equalsIgnoreCase("Heute") || weekday.equalsIgnoreCase("Today")) {

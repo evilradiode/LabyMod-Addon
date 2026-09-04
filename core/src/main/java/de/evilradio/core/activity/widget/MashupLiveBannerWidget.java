@@ -1,6 +1,6 @@
 package de.evilradio.core.activity.widget;
 
-import de.evilradio.core.schedule.ScheduleShow;
+import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSongService.ShowStatus;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
@@ -26,7 +26,7 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
   private boolean showWishBox;
   private boolean showTwitch;
   private ShowStatus showStatus;
-  private ScheduleShow upcomingShow;
+  private ScheduleService.ScheduleShow upcomingShow;
   private Runnable playMashup;
   private Runnable openWishBox;
   private Runnable openTwitch;
@@ -49,7 +49,7 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
       boolean showWishBox,
       boolean showTwitch,
       ShowStatus showStatus,
-      ScheduleShow upcomingShow) {
+      ScheduleService.ScheduleShow upcomingShow) {
     boolean structureChanged = mode != this.mode
         || showWishBox != this.showWishBox
         || showTwitch != this.showTwitch
@@ -175,14 +175,14 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
 
   private void refreshUpcomingText() {
     if (this.titleWidget == null || this.detailWidget == null || this.upcomingShow == null) return;
-    String time = this.upcomingShow.getStartTime() == null ? "" : this.upcomingShow.getStartTime();
+    String time = this.upcomingShow.startTime() == null ? "" : this.upcomingShow.startTime();
     this.titleWidget.setComponent(
         Component.translatable("evilradio.widget.mashupUpcomingTitle", Component.text(time))
             .color(NamedTextColor.WHITE));
-    String showName = this.upcomingShow.getShowName() == null || this.upcomingShow.getShowName().isBlank()
+    String showName = this.upcomingShow.showName() == null || this.upcomingShow.showName().isBlank()
         ? "Mashup"
-        : this.upcomingShow.getShowName().trim();
-    String moderator = this.upcomingShow.getModerator();
+        : this.upcomingShow.showName().trim();
+    String moderator = this.upcomingShow.moderator();
     if (moderator != null && !moderator.isBlank()) {
       this.detailWidget.setComponent(
           Component.text(showName).color(NamedTextColor.WHITE)
@@ -196,12 +196,12 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
     }
   }
 
-  private static boolean sameUpcoming(ScheduleShow left, ScheduleShow right) {
+  private static boolean sameUpcoming(ScheduleService.ScheduleShow left, ScheduleService.ScheduleShow right) {
     if (left == right) return true;
     if (left == null || right == null) return false;
-    return java.util.Objects.equals(left.getDate(), right.getDate())
-        && java.util.Objects.equals(left.getStartTime(), right.getStartTime())
-        && java.util.Objects.equals(left.getShowName(), right.getShowName())
-        && java.util.Objects.equals(left.getModerator(), right.getModerator());
+    return java.util.Objects.equals(left.date(), right.date())
+        && java.util.Objects.equals(left.startTime(), right.startTime())
+        && java.util.Objects.equals(left.showName(), right.showName())
+        && java.util.Objects.equals(left.moderator(), right.moderator());
   }
 }

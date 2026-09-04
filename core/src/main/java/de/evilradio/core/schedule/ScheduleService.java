@@ -92,13 +92,13 @@ public class ScheduleService {
     ScheduleShow todayOnAir = null;
     ScheduleShow anyOnAir = null;
     for (ScheduleShow show : this.cachedShows) {
-      if (!show.isOnAir()) {
+      if (!show.onAir()) {
         continue;
       }
       if (anyOnAir == null) {
         anyOnAir = show;
       }
-      LocalDate showDate = this.parseDate(show.getDate());
+      LocalDate showDate = this.parseDate(show.date());
       if (showDate != null && showDate.equals(today)) {
         todayOnAir = show;
         break;
@@ -122,17 +122,17 @@ public class ScheduleService {
     ScheduleShow next = null;
     LocalTime nextStart = null;
     for (ScheduleShow show : this.cachedShows) {
-      LocalDate showDate = this.parseDate(show.getDate());
+      LocalDate showDate = this.parseDate(show.date());
       if (showDate == null || !showDate.equals(today)) {
         continue;
       }
-      if (show.isOnAir()) {
+      if (show.onAir()) {
         continue;
       }
-      if (this.isShowCancelled(show.getStartTime(), show.getEndTime())) {
+      if (this.isShowCancelled(show.startTime(), show.endTime())) {
         continue;
       }
-      LocalTime start = this.parseTime(show.getStartTime());
+      LocalTime start = this.parseTime(show.startTime());
       if (start == null || !start.isAfter(now)) {
         continue;
       }
@@ -146,15 +146,15 @@ public class ScheduleService {
 
   private @Nullable ScheduleShow showAt(LocalDate date, LocalTime time) {
     for (ScheduleShow show : this.cachedShows) {
-      LocalDate showDate = this.parseDate(show.getDate());
+      LocalDate showDate = this.parseDate(show.date());
       if (showDate == null || !showDate.equals(date)) {
         continue;
       }
-      LocalTime start = this.parseTime(show.getStartTime());
+      LocalTime start = this.parseTime(show.startTime());
       if (start == null) {
         continue;
       }
-      LocalTime end = this.parseTime(show.getEndTime());
+      LocalTime end = this.parseTime(show.endTime());
       if (end == null) {
         if (!time.isBefore(start)) {
           return show;
@@ -177,7 +177,7 @@ public class ScheduleService {
       return null;
     }
     for (ScheduleDay day : this.cachedDays) {
-      if (date.equals(day.getDate())) {
+      if (date.equals(day.date())) {
         return day;
       }
     }
@@ -263,7 +263,7 @@ public class ScheduleService {
     List<ScheduleDay> days = this.parseAllDays(scheduleArray);
     List<ScheduleShow> shows = new ArrayList<>();
     for (ScheduleDay day : days) {
-      shows.addAll(day.getShows());
+      shows.addAll(day.shows());
     }
     this.cachedDays = days;
     this.cachedShows = shows;
@@ -274,7 +274,7 @@ public class ScheduleService {
       if (!this.shouldSendNotification(show)) {
         continue;
       }
-      String showKey = show.getDate() + "_" + show.getStartTime();
+      String showKey = show.date() + "_" + show.startTime();
       if (!showKey.equals(this.lastNotifiedShowKey)) {
         this.lastNotifiedShowKey = showKey;
         this.sendLiveNotification(show);
@@ -464,8 +464,8 @@ public class ScheduleService {
     LocalDate today = LocalDate.now();
     LocalTime now = LocalTime.now();
 
-    LocalDate showDate = this.parseDate(show.getDate());
-    LocalTime startTime = this.parseTime(show.getStartTime());
+    LocalDate showDate = this.parseDate(show.date());
+    LocalTime startTime = this.parseTime(show.startTime());
     if (showDate == null || startTime == null || !showDate.equals(today)) {
       return false;
     }
@@ -481,12 +481,12 @@ public class ScheduleService {
     }
 
     this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
-      String moderator = show.getModerator() == null || show.getModerator().isBlank()
+      String moderator = show.moderator() == null || show.moderator().isBlank()
           ? "EvilRadio"
-          : show.getModerator().trim();
-      String showName = show.getShowName() == null || show.getShowName().isBlank()
+          : show.moderator().trim();
+      String showName = show.showName() == null || show.showName().isBlank()
           ? "Live"
-          : show.getShowName().trim();
+          : show.showName().trim();
       String timeLabel = formatScheduleTimeLabel(show);
 
       Component prefix = Component.text("[Evil-Radio] ")
@@ -516,7 +516,7 @@ public class ScheduleService {
           .append(Component.space())
           .append(listenButton);
 
-      if (show.isTwitch()) {
+      if (show.twitch()) {
         message = message.append(Component.space())
             .append(Component.translatable("evilradio.schedule.twitchUrl")
                 .color(TextColor.color(145, 70, 255))
@@ -531,17 +531,17 @@ public class ScheduleService {
 
     this.logging.info(
         "Live-Benachrichtigung gesendet für Sendung: "
-            + show.getShowName()
+            + show.showName()
             + " / "
-            + show.getModerator()
+            + show.moderator()
             + " um "
-            + show.getStartTime()
-            + (show.isTwitch() ? " (mit Twitch-Link)" : ""));
+            + show.startTime()
+            + (show.twitch() ? " (mit Twitch-Link)" : ""));
   }
 
   private static String formatScheduleTimeLabel(ScheduleShow show) {
-    String start = show.getStartTime();
-    String end = show.getEndTime();
+    String start = show.startTime();
+    String end = show.endTime();
     if (end == null || end.isBlank()) {
       return start + " Uhr";
     }
@@ -599,4 +599,36 @@ public class ScheduleService {
   public void resetNotification() {
     this.lastNotifiedShowKey = null;
   }
+
+  public record ScheduleDay(String date, String weekday, List<ScheduleShow> shows) {
+
+    public ScheduleDay(String date, String weekday, List<ScheduleShow> shows) {
+      this.date = date;
+      this.weekday = weekday;
+      this.shows = List.copyOf(shows);
+    }
+
+    public boolean isEmpty() {
+        return this.shows.isEmpty();
+      }
+
+    public List<ScheduleShow> showsOrEmpty() {
+      return this.shows.isEmpty() ? Collections.emptyList() : this.shows;
+    }
+
+  }
+
+  public record ScheduleShow(String date, String weekday, String startTime,
+                             @Nullable String endTime, String showName, String moderator,
+                             @Nullable String showPictureUrl, @Nullable String profilePictureUrl,
+                             boolean onAir, boolean grussbox, boolean event, boolean twitch) {
+
+    public String getTimeLabel() {
+      if (this.endTime == null || this.endTime.isBlank()) {
+        return this.startTime;
+      }
+      return this.startTime + " - " + this.endTime;
+    }
+  }
+
 }

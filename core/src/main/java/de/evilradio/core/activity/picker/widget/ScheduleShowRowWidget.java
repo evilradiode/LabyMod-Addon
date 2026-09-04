@@ -2,7 +2,7 @@ package de.evilradio.core.activity.picker.widget;
 
 import de.evilradio.core.EvilConstants;
 import de.evilradio.core.EvilTextures;
-import de.evilradio.core.schedule.ScheduleShow;
+import de.evilradio.core.schedule.ScheduleService;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.component.format.TextColor;
@@ -25,15 +25,15 @@ public class ScheduleShowRowWidget extends DivWidget {
   private static final TextColor TIME_ORANGE = TextColor.color(230, 126, 34);
   private static final TextColor TWITCH_PURPLE = TextColor.color(145, 70, 255);
 
-  private final ScheduleShow show;
+  private final ScheduleService.ScheduleShow show;
   private final boolean mashupLive;
 
-  public ScheduleShowRowWidget(ScheduleShow show, boolean mashupLive) {
+  public ScheduleShowRowWidget(ScheduleService.ScheduleShow show, boolean mashupLive) {
     this.show = show;
     this.mashupLive = mashupLive;
   }
 
-  public ScheduleShow getShow() {
+  public ScheduleService.ScheduleShow getShow() {
     return this.show;
   }
 
@@ -48,14 +48,14 @@ public class ScheduleShowRowWidget extends DivWidget {
     metaStack.addChild(ComponentWidget.component(
             Component.text(this.show.getTimeLabel()).color(TIME_ORANGE))
         .addId("schedule-time"));
-    metaStack.addChild(new IconWidget(this.iconFromUrl(this.show.getProfilePictureUrl()))
+    metaStack.addChild(new IconWidget(this.iconFromUrl(this.show.profilePictureUrl()))
         .addId("schedule-avatar"));
     metaStack.addChild(ComponentWidget.component(
-            Component.text(this.show.getModerator()).color(NamedTextColor.GRAY))
+            Component.text(this.show.moderator()).color(NamedTextColor.GRAY))
         .addId("schedule-moderator"));
 
-    boolean showGrussbox = this.mashupLive && this.show.isGrussbox();
-    boolean showTwitch = this.show.isTwitch();
+    boolean showGrussbox = this.mashupLive && this.show.grussbox();
+    boolean showTwitch = this.show.twitch();
     if (showGrussbox || showTwitch) {
       metaStack.addId("with-badges");
       if (showGrussbox) {
@@ -81,17 +81,17 @@ public class ScheduleShowRowWidget extends DivWidget {
     // Rechts: Titel (+ ON AIR), darunter Banner
     DivWidget main = new DivWidget().addId("schedule-main");
     main.addChild(ComponentWidget.component(
-            Component.text(this.show.getShowName()).color(NamedTextColor.WHITE))
+            Component.text(this.show.showName()).color(NamedTextColor.WHITE))
         .addId("schedule-title"));
 
-    if (this.show.isOnAir()) {
+    if (this.show.onAir()) {
       main.addChild(ComponentWidget.component(
               Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED))
           .addId("schedule-on-air"));
       this.addId("on-air");
     }
 
-    String bannerUrl = this.show.getShowPictureUrl();
+    String bannerUrl = this.show.showPictureUrl();
     if (bannerUrl != null && !bannerUrl.isBlank()) {
       IconWidget banner = new IconWidget(Icon.url(bannerUrl)).addId("schedule-banner");
       banner.objectFit().set(ObjectFitType.CONTAIN);

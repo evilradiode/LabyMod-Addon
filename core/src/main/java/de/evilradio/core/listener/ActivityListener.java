@@ -11,7 +11,7 @@ import de.evilradio.core.configuration.EvilRadioConfiguration.MenuPlayerPosition
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.hudwidget.widget.LiveStatusLine;
 import de.evilradio.core.radio.RadioStream;
-import de.evilradio.core.schedule.ScheduleShow;
+import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSong;
 import de.evilradio.core.song.CurrentSongService.ShowStatus;
 import java.util.List;
@@ -691,21 +691,21 @@ public class ActivityListener implements Updatable {
   private boolean showTwitchButton() {
     if (this.debugForceMashupLive()) return true;
     if (this.mashupShowStatus != null && this.mashupShowStatus.twitch()) return true;
-    ScheduleShow liveShow = this.addon.scheduleService().currentOnAirShow();
-    return liveShow != null && liveShow.isTwitch();
+    ScheduleService.ScheduleShow liveShow = this.addon.scheduleService().currentOnAirShow();
+    return liveShow != null && liveShow.twitch();
   }
 
   private boolean showWishBoxButton() {
     if (this.debugForceMashupLive()) return true;
-    ScheduleShow liveShow = this.addon.scheduleService().currentOnAirShow();
-    return liveShow != null && liveShow.isGrussbox();
+    ScheduleService.ScheduleShow liveShow = this.addon.scheduleService().currentOnAirShow();
+    return liveShow != null && liveShow.grussbox();
   }
 
   private static void openUrl(String url) {
     OperatingSystem.getPlatform().openUrl(url);
   }
 
-  private ScheduleShow upcomingShow() {
+  private ScheduleService.ScheduleShow upcomingShow() {
     if (this.debugForceMashupLive()) return null;
     return this.addon.scheduleService().nextUpcomingShowToday();
   }
