@@ -58,7 +58,6 @@ public final class OpenAlAudioSession {
   private float volume = 0.25f;
   private boolean started;
   private final Queue<Integer> freeBuffers = new ArrayDeque<>();
-  private long lastHeartbeatMs;
 
   private OpenAlAudioSession(
       long sharedContext,
