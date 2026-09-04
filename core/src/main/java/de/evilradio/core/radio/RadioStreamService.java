@@ -66,13 +66,6 @@ public class RadioStreamService {
                     iconWithLogo
                 );
                 radioStream.initialize();
-                logging.info(
-                    "Stream id=" + radioStream.getId()
-                        + " display=" + radioStream.getDisplayName()
-                        + " iconUrl=" + iconUrl
-                        + " iconWithLogo=" + iconWithLogo
-                        + " resolved=" + radioStream.resolvedIconUrl()
-                );
                 loaded.add(radioStream);
               }
             });
