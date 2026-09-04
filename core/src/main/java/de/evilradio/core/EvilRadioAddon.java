@@ -1,7 +1,6 @@
 package de.evilradio.core;
 
 import de.evilradio.core.activity.picker.RadioStationListActivity;
-import de.evilradio.core.activity.picker.RadioStationListOpener;
 import de.evilradio.core.command.ListenMashupCommand;
 import de.evilradio.core.configuration.AudioEqualizerSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
@@ -91,8 +90,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     this.labyAPI().eventBus().registerListener(this.activityListener = new ActivityListener(this));
 
     this.registerCommand(new ListenMashupCommand(this));
-
-    this.labyAPI().eventBus().registerListener(new RadioStationListOpener(this));
 
     this.labyAPI().hudWidgetRegistry().categoryRegistry().register(HUD_WIDGET_CATEGORY);
     this.labyAPI().hudWidgetRegistry().register(this.currentSongHudWidget = new CurrentSongHudWidget(this));

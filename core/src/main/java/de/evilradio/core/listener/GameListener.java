@@ -1,7 +1,13 @@
 package de.evilradio.core.listener;
 
 import de.evilradio.core.EvilRadioAddon;
+import de.evilradio.core.activity.picker.RadioStationListActivity;
+import net.labymod.api.Laby;
+import net.labymod.api.client.gui.screen.LabyScreen;
+import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.event.Subscribe;
+import net.labymod.api.event.client.input.KeyEvent;
+import net.labymod.api.event.client.input.KeyEvent.State;
 import net.labymod.api.event.client.network.server.ServerJoinEvent;
 import net.labymod.api.event.client.world.WorldEnterEvent;
 import net.labymod.api.event.client.world.WorldLeaveEvent;
@@ -12,6 +18,27 @@ public class GameListener {
 
   public GameListener(EvilRadioAddon addon) {
     this.addon = addon;
+  }
+
+  @Subscribe
+  public void onKey(KeyEvent event) {
+    if (event.state() != State.PRESS) return;
+    if (!this.addon.configuration().enabled().get()) return;
+
+    Key openKey = this.addon.configuration().radioMenuKeybind().get();
+    if (event.key() != openKey) return;
+
+    LabyScreen current = Laby.labyAPI().minecraft().minecraftWindow().currentLabyScreen();
+    if (current instanceof RadioStationListActivity) {
+      ((RadioStationListActivity) current).displayPreviousScreen();
+      event.setCancelled(true);
+      return;
+    }
+
+    if (!Laby.labyAPI().minecraft().isMouseLocked()) return;
+
+    this.addon.openStationPicker();
+    event.setCancelled(true);
   }
 
   /**
