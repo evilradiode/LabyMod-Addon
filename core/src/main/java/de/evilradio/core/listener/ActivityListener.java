@@ -123,7 +123,6 @@ public class ActivityListener implements Updatable {
   private boolean lastRenderedHadDuration;
   private ShowStatus mashupShowStatus;
   private Task mashupLiveTask;
-  private boolean menuPlayerMinimized;
   private int lastBannerMode;
   private boolean menuRelayoutScheduled;
   private boolean menuPlayerAttached;
@@ -200,13 +199,13 @@ public class ActivityListener implements Updatable {
     this.lastRenderedElapsed = -1L;
     this.lastRenderedProgressPercent = -1;
     this.lastRenderedHadDuration = false;
-    if (this.menuPlayerMinimized) {
+    if (this.addon.configuration().menuPlayerMinimized().get()) {
       this.restoreWidget = new IconWidget(EvilTextures.LOGO).addId("player-restore");
       this.applyMenuPlayerPosition(this.restoreWidget);
       this.restoreWidget.setHoverComponent(
           Component.translatable("evilradio.widget.restorePlayer").color(NamedTextColor.GRAY));
       this.restoreWidget.setPressable(() -> {
-        this.menuPlayerMinimized = false;
+        this.addon.configuration().menuPlayerMinimized().set(false);
         this.rebuildMenuPlayer();
       });
       document.addChildInitialized(this.restoreWidget);
@@ -238,7 +237,7 @@ public class ActivityListener implements Updatable {
     chrome.addEntry(moveButton);
 
     ButtonWidget closeButton = ButtonWidget.icon(EvilTextures.SpriteCommon.X, () -> {
-      this.menuPlayerMinimized = true;
+      this.addon.configuration().menuPlayerMinimized().set(true);
       this.rebuildMenuPlayer();
     }).addId("player-close");
     closeButton.setHoverComponent(

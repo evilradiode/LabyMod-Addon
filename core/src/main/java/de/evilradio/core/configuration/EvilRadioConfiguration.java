@@ -46,6 +46,9 @@ public class EvilRadioConfiguration extends AddonConfig {
   @DropdownEntryTranslationPrefix("evilradio.settings.menuPlayerPosition.type")
   private final ConfigProperty<MenuPlayerPosition> menuPlayerPosition = new ConfigProperty<>(MenuPlayerPosition.BOTTOM_RIGHT);
 
+  @Exclude
+  private final ConfigProperty<Boolean> menuPlayerMinimized = new ConfigProperty<>(false);
+
   @SpriteSlot(x = 4)
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
   private final StationPickerSubSettings stationPicker = new StationPickerSubSettings();
@@ -118,6 +121,10 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<MenuPlayerPosition> menuPlayerPosition() {
     return menuPlayerPosition;
+  }
+
+  public ConfigProperty<Boolean> menuPlayerMinimized() {
+    return menuPlayerMinimized;
   }
 
   public StationPickerSubSettings stationPicker() {
