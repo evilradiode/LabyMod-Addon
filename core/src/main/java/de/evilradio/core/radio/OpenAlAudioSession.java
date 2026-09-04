@@ -506,102 +506,42 @@ public final class OpenAlAudioSession {
     }
   }
 
-  private static final class OpenAlBindings {
-    private final int alFormatMono16;
-    private final int alFormatStereo16;
-    private final int alBuffersProcessed;
-    private final int alBuffersQueued;
-    private final int alSourceState;
-    private final int alPlaying;
-    private final int alGain;
-    private final Method alGenSources;
-    private final Method alGenBuffers;
-    private final Method alGetSourcei;
-    private final Method alSourceUnqueueBuffers;
-    private final Method alBufferData;
-    private final Method alSourceQueueBuffers;
-    private final Method alSourcePlay;
-    private final Method alSourceStop;
-    private final Method alSourcef;
-    private final Method alDeleteSources;
-    private final Method alDeleteBuffers;
-    private final Method alcDestroyContext;
-    private final Method alcCloseDevice;
-    private final Method alcMakeContextCurrent;
-
-    private OpenAlBindings(
-        int alFormatMono16,
-        int alFormatStereo16,
-        int alBuffersProcessed,
-        int alBuffersQueued,
-        int alSourceState,
-        int alPlaying,
-        int alGain,
-        Method alGenSources,
-        Method alGenBuffers,
-        Method alGetSourcei,
-        Method alSourceUnqueueBuffers,
-        Method alBufferData,
-        Method alSourceQueueBuffers,
-        Method alSourcePlay,
-        Method alSourceStop,
-        Method alSourcef,
-        Method alDeleteSources,
-        Method alDeleteBuffers,
-        Method alcDestroyContext,
-        Method alcCloseDevice,
-        Method alcMakeContextCurrent
-    ) {
-      this.alFormatMono16 = alFormatMono16;
-      this.alFormatStereo16 = alFormatStereo16;
-      this.alBuffersProcessed = alBuffersProcessed;
-      this.alBuffersQueued = alBuffersQueued;
-      this.alSourceState = alSourceState;
-      this.alPlaying = alPlaying;
-      this.alGain = alGain;
-      this.alGenSources = alGenSources;
-      this.alGenBuffers = alGenBuffers;
-      this.alGetSourcei = alGetSourcei;
-      this.alSourceUnqueueBuffers = alSourceUnqueueBuffers;
-      this.alBufferData = alBufferData;
-      this.alSourceQueueBuffers = alSourceQueueBuffers;
-      this.alSourcePlay = alSourcePlay;
-      this.alSourceStop = alSourceStop;
-      this.alSourcef = alSourcef;
-      this.alDeleteSources = alDeleteSources;
-      this.alDeleteBuffers = alDeleteBuffers;
-      this.alcDestroyContext = alcDestroyContext;
-      this.alcCloseDevice = alcCloseDevice;
-      this.alcMakeContextCurrent = alcMakeContextCurrent;
-    }
+  private record OpenAlBindings(int alFormatMono16, int alFormatStereo16, int alBuffersProcessed,
+                                int alBuffersQueued, int alSourceState, int alPlaying, int alGain,
+                                Method alGenSources, Method alGenBuffers, Method alGetSourcei,
+                                Method alSourceUnqueueBuffers, Method alBufferData,
+                                Method alSourceQueueBuffers, Method alSourcePlay,
+                                Method alSourceStop, Method alSourcef, Method alDeleteSources,
+                                Method alDeleteBuffers, Method alcDestroyContext,
+                                Method alcCloseDevice, Method alcMakeContextCurrent) {
 
     private static OpenAlBindings load() throws Exception {
-      Class<?> alc10 = Class.forName("org.lwjgl.openal.ALC10");
-      Class<?> al10 = Class.forName("org.lwjgl.openal.AL10");
+        Class<?> alc10 = Class.forName("org.lwjgl.openal.ALC10");
+        Class<?> al10 = Class.forName("org.lwjgl.openal.AL10");
 
-      return new OpenAlBindings(
-          getIntConstant(al10, "AL_FORMAT_MONO16"),
-          getIntConstant(al10, "AL_FORMAT_STEREO16"),
-          getIntConstant(al10, "AL_BUFFERS_PROCESSED"),
-          getIntConstant(al10, "AL_BUFFERS_QUEUED"),
-          getIntConstant(al10, "AL_SOURCE_STATE"),
-          getIntConstant(al10, "AL_PLAYING"),
-          getIntConstant(al10, "AL_GAIN"),
-          al10.getMethod("alGenSources"),
-          al10.getMethod("alGenBuffers"),
-          al10.getMethod("alGetSourcei", int.class, int.class),
-          al10.getMethod("alSourceUnqueueBuffers", int.class),
-          al10.getMethod("alBufferData", int.class, int.class, short[].class, int.class),
-          al10.getMethod("alSourceQueueBuffers", int.class, int.class),
-          al10.getMethod("alSourcePlay", int.class),
-          al10.getMethod("alSourceStop", int.class),
-          al10.getMethod("alSourcef", int.class, int.class, float.class),
-          al10.getMethod("alDeleteSources", int.class),
-          al10.getMethod("alDeleteBuffers", int.class),
-          alc10.getMethod("alcDestroyContext", long.class),
-          alc10.getMethod("alcCloseDevice", long.class),
-          alc10.getMethod("alcMakeContextCurrent", long.class)
-      );
+        return new OpenAlBindings(
+            getIntConstant(al10, "AL_FORMAT_MONO16"),
+            getIntConstant(al10, "AL_FORMAT_STEREO16"),
+            getIntConstant(al10, "AL_BUFFERS_PROCESSED"),
+            getIntConstant(al10, "AL_BUFFERS_QUEUED"),
+            getIntConstant(al10, "AL_SOURCE_STATE"),
+            getIntConstant(al10, "AL_PLAYING"),
+            getIntConstant(al10, "AL_GAIN"),
+            al10.getMethod("alGenSources"),
+            al10.getMethod("alGenBuffers"),
+            al10.getMethod("alGetSourcei", int.class, int.class),
+            al10.getMethod("alSourceUnqueueBuffers", int.class),
+            al10.getMethod("alBufferData", int.class, int.class, short[].class, int.class),
+            al10.getMethod("alSourceQueueBuffers", int.class, int.class),
+            al10.getMethod("alSourcePlay", int.class),
+            al10.getMethod("alSourceStop", int.class),
+            al10.getMethod("alSourcef", int.class, int.class, float.class),
+            al10.getMethod("alDeleteSources", int.class),
+            al10.getMethod("alDeleteBuffers", int.class),
+            alc10.getMethod("alcDestroyContext", long.class),
+            alc10.getMethod("alcCloseDevice", long.class),
+            alc10.getMethod("alcMakeContextCurrent", long.class)
+        );
+      }
     }
-  }
 }

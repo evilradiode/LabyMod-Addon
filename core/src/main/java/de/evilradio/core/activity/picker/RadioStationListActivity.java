@@ -88,7 +88,6 @@ public class RadioStationListActivity extends SimpleActivity {
   private final List<RadioStationRowWidget> rows = new ArrayList<>();
   private final List<RadioStream> displayStreams = new ArrayList<>();
   private final Map<String, CurrentSong> songByShortcode = new ConcurrentHashMap<>();
-  private final List<ButtonWidget> scheduleDayChipButtons = new ArrayList<>();
 
   private PickerTab activeTab = PickerTab.STATIONS;
   private int selectedScheduleDayIndex;
@@ -98,8 +97,6 @@ public class RadioStationListActivity extends SimpleActivity {
   private ScrollWidget stationScroll;
   private HorizontalListWidget scheduleDayChips;
   private ScrollWidget scheduleScroll;
-  private ButtonWidget stationsTabButton;
-  private ButtonWidget scheduleTabButton;
   private SliderWidget volumeSlider;
   private ButtonWidget playPauseButton;
   private ButtonWidget equalizerStyleButton;
@@ -162,7 +159,6 @@ public class RadioStationListActivity extends SimpleActivity {
     super.initialize(parent);
     this.document.getChildren().clear();
     this.rows.clear();
-    this.scheduleDayChipButtons.clear();
     this.equalizerBars.clear();
     this.equalizerPeaks.clear();
     this.appliedEqualizerStyle = null;
@@ -209,24 +205,24 @@ public class RadioStationListActivity extends SimpleActivity {
     panel.addChild(header);
 
     HorizontalListWidget tabs = new HorizontalListWidget().addId("picker-tabs");
-    this.stationsTabButton = ButtonWidget.text("Sender", () -> this.switchTab(PickerTab.STATIONS))
+    ButtonWidget stationsTabButton = ButtonWidget.text("Sender", () -> this.switchTab(PickerTab.STATIONS))
         .addId("picker-tab")
         .addId("picker-tab-stations");
-    this.scheduleTabButton = ButtonWidget.text("Sendeplan", () -> this.switchTab(PickerTab.SCHEDULE))
+    ButtonWidget scheduleTabButton = ButtonWidget.text("Sendeplan", () -> this.switchTab(PickerTab.SCHEDULE))
         .addId("picker-tab")
         .addId("picker-tab-schedule");
-    this.stationsTabButton.updateComponent(
+    stationsTabButton.updateComponent(
         Component.translatable("evilradio.picker.tab.stations"));
-    this.scheduleTabButton.updateComponent(
+    scheduleTabButton.updateComponent(
         Component.translatable("evilradio.picker.tab.schedule"));
     if (this.activeTab == PickerTab.STATIONS) {
-      this.stationsTabButton.addId("active");
+      stationsTabButton.addId("active");
     } else {
-      this.scheduleTabButton.addId("active");
+      scheduleTabButton.addId("active");
     }
 
-    tabs.addEntry(this.stationsTabButton);
-    tabs.addEntry(this.scheduleTabButton);
+    tabs.addEntry(stationsTabButton);
+    tabs.addEntry(scheduleTabButton);
     panel.addChild(tabs);
 
     // Reset tab-spezifische Referenzen
@@ -453,7 +449,6 @@ public class RadioStationListActivity extends SimpleActivity {
       this.selectedScheduleDayIndex = 0;
     }
 
-    this.scheduleDayChipButtons.clear();
     this.scheduleDayChips = new HorizontalListWidget().addId("schedule-day-chips");
 
     int dayCount = days.size();
@@ -468,7 +463,6 @@ public class RadioStationListActivity extends SimpleActivity {
         chip.addId("active");
       }
       this.scheduleDayChips.addEntry(chip);
-      this.scheduleDayChipButtons.add(chip);
     }
     panel.addChild(this.scheduleDayChips);
 
@@ -1312,8 +1306,7 @@ public class RadioStationListActivity extends SimpleActivity {
       this.syncControls();
       return true;
     }
-    if (this.stationScroll != null
-        && this.isMouseOver(this.stationScroll, mouse)
+    if (this.isMouseOver(this.stationScroll, mouse)
         && this.stationScroll.mouseScrolled(mouse, scrollDelta)) {
       return true;
     }

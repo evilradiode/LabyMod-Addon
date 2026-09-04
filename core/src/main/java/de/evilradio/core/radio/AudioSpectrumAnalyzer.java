@@ -1,5 +1,7 @@
 package de.evilradio.core.radio;
 
+import java.util.Arrays;
+
 /**
  * Leichtgewichtiger Spektrum-Analyzer für PCM-16LE.
  * Baut Band-Pegel aus einer 1024-Punkt-FFT mit logarithmischer Band-Zuordnung.
@@ -74,9 +76,7 @@ public final class AudioSpectrumAnalyzer {
     }
     synchronized (this) {
       if (this.filled <= 0) {
-        for (int i = 0; i < out.length; i++) {
-          out[i] = 0.0F;
-        }
+        Arrays.fill(out, 0.0F);
         return;
       }
       int available = Math.min(this.filled, FFT_SIZE);
@@ -84,7 +84,7 @@ public final class AudioSpectrumAnalyzer {
         float t = out.length == 1 ? 0.0F : i / (float) (out.length - 1);
         int index = Math.round(t * (available - 1));
         int ringIndex = (this.writeIndex - available + index + FFT_SIZE) % FFT_SIZE;
-        out[i] = Math.max(-1.0F, Math.min(1.0F, this.ring[ringIndex]));
+        out[i] = Math.clamp(this.ring[ringIndex], -1.0F, 1.0F);
       }
     }
   }
@@ -156,7 +156,7 @@ public final class AudioSpectrumAnalyzer {
       // dB-Fenster: typische Musik landet in der Mitte, nur Peaks gehen hoch
       float db = 20.0F * (float) Math.log10(Math.max(peak, 1.0E-7F));
       float level = (db - DB_FLOOR) / -DB_FLOOR;
-      level = Math.min(1.0F, Math.max(0.0F, level));
+      level = Math.clamp(level, 0.0F, 1.0F);
       level = (float) Math.pow(level, DISPLAY_GAMMA) * DISPLAY_GAIN;
       // Höhen anheben – Radio-Streams sind oben oft leise
       float t = band / (float) (BAND_COUNT - 1);

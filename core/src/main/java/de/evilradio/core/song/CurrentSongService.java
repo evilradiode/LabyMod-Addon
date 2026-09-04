@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import de.evilradio.core.EvilConstants;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
@@ -16,7 +17,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -40,9 +40,6 @@ import net.labymod.api.util.logging.Logging;
 
 public class CurrentSongService {
 
-  private final String API_BASE_URL = "https://api.evil-radio.de/?radioInfo=";
-  private static final String AZURACAST_NOWPLAYING_URL =
-      "https://broadcast.evil-radio.de/api/nowplaying";
   /** Mindestabstand zwischen radioInfo-Calls (Song-Spam / Reconnects). */
   private static final long SHOW_STATUS_MIN_INTERVAL_MS = 5_000L;
   /** Soft-Heartbeat für Presence, falls Songs sehr lange laufen. */
@@ -505,7 +502,7 @@ public class CurrentSongService {
       return;
     }
     String uuid = this.addon.labyAPI().getUniqueId().toString();
-    String url = API_BASE_URL
+    String url = EvilConstants.API_BASE_URL
         + URLEncoder.encode(streamName, StandardCharsets.UTF_8)
         + "&uuid="
         + URLEncoder.encode(uuid, StandardCharsets.UTF_8);
@@ -518,7 +515,7 @@ public class CurrentSongService {
         .userAgent(this.addon.apiUserAgent())
         .addHeader("X-Addon-Version", this.addon.addonVersion())
         .execute(response -> {
-          if (response.getStatusCode() != 200 || response.hasException() || response.get() == null) {
+          if (response.getStatusCode() != 200 || response.hasException()) {
             callback.accept(null);
             return;
           }
@@ -774,7 +771,7 @@ public class CurrentSongService {
       return;
     }
     String uuid = this.addon.labyAPI().getUniqueId().toString();
-    String url = API_BASE_URL
+    String url = EvilConstants.API_BASE_URL
         + URLEncoder.encode(streamName, StandardCharsets.UTF_8)
         + "&uuid="
         + URLEncoder.encode(uuid, StandardCharsets.UTF_8);
@@ -799,10 +796,8 @@ public class CurrentSongService {
    * Ein Request für Now-Playing aller Stationen (AzuraCast). Key = Station-Shortcode.
    */
   public void fetchAllNowPlaying(Consumer<Map<String, CurrentSong>> callback) {
-    if (callback == null) {
-      return;
-    }
-    HttpRequest request = HttpRequest.newBuilder(URI.create(AZURACAST_NOWPLAYING_URL))
+    if (callback == null) return;
+    HttpRequest request = HttpRequest.newBuilder(URI.create(EvilConstants.AZURACAST_NOWPLAYING_URL))
         .timeout(Duration.ofSeconds(8))
         .header("User-Agent", this.addon.apiUserAgent())
         .header("X-Addon-Version", this.addon.addonVersion())
@@ -826,26 +821,16 @@ public class CurrentSongService {
   private static Map<String, CurrentSong> parseAllNowPlaying(String body) {
     Map<String, CurrentSong> songs = new HashMap<>();
     JsonElement root = JsonParser.parseString(body);
-    if (root == null || !root.isJsonArray()) {
-      return songs;
-    }
+    if (root == null || !root.isJsonArray()) return songs;
     JsonArray array = root.getAsJsonArray();
     for (JsonElement element : array) {
-      if (element == null || !element.isJsonObject()) {
-        continue;
-      }
+      if (element == null || !element.isJsonObject()) continue;
       var snapshot = NowPlayingMessageParser.parseNowPlayingSnapshot(element.getAsJsonObject());
-      if (snapshot.isEmpty()) {
-        continue;
-      }
+      if (snapshot.isEmpty()) continue;
       CurrentSong song = snapshot.get().current();
-      if (song == null || !song.isValid()) {
-        continue;
-      }
+      if (song == null || !song.isValid()) continue;
       String shortcode = song.getStationShortcode();
-      if (shortcode == null || shortcode.isBlank()) {
-        continue;
-      }
+      if (shortcode == null || shortcode.isBlank()) continue;
       songs.put(shortcode.trim(), song);
     }
     return songs;

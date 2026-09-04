@@ -36,22 +36,6 @@ public final class StationPickerController {
     return this.radioManager;
   }
 
-  public Component controlsLine() {
-    int volumeInt = Math.round(this.addon.configuration().volume().get());
-    Component playStopStatus = this.radioManager.isPlaying()
-        ? Component.translatable("evilradio.picker.playing").color(NamedTextColor.GREEN)
-        : Component.translatable("evilradio.picker.stopped").color(NamedTextColor.GRAY);
-
-    return Component.translatable("evilradio.picker.volumeLabel", Component.text(String.valueOf(volumeInt)))
-        .color(NamedTextColor.YELLOW)
-        .append(Component.text(" | ").color(NamedTextColor.GRAY))
-        .append(playStopStatus);
-  }
-
-  public Component scrollInfoLine() {
-    return Component.translatable("evilradio.picker.scrollInfo").color(NamedTextColor.GRAY);
-  }
-
   public void adjustVolumeByScroll(double scrollDelta) {
     float currentVolume = this.addon.configuration().volume().get();
     int direction = scrollDelta > 0 ? 1 : -1;
