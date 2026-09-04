@@ -322,23 +322,27 @@
   right: 0;
   height: fit-content;
   layout: fill;
+  space-between-entries: 6;
 }
 
 .picker-audio-eq-preset-container {
   top: 0;
   height: fit-content;
-  width: fit-content;
+  width: 126;
 }
 
 .picker-audio-eq-preset-title {
   top: 0;
   left: 0;
   font-size: 0.6;
+  max-lines: 1;
+  overflow-strategy: clip;
 }
 
 .picker-audio-eq-settings-container {
   top: 0;
   height: fit-content;
+  width: 100%;
   space-between-entries: 2;
 }
 
@@ -351,16 +355,13 @@
   top: 0;
   left: 0;
   height: 16;
+  width: 108;
+  overflow-strategy: clip;
 }
 
-/* Gleiche Breite/Position wie .picker-cover-texts */
 .picker-volume-slider {
   height: 16;
-  margin: 8 2 0 -18;
-}
-
-.picker-now-playing.no-eq .picker-volume-slider {
-  width: 230;
+  margin: 8 0 0 0;
 }
 
 .station-scroll {
