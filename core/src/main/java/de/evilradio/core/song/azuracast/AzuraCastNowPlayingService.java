@@ -32,7 +32,6 @@ public final class AzuraCastNowPlayingService {
 
   private static final long[] BACKOFF_MS = {1000L, 2000L, 5000L, 10000L, 20000L, 30000L};
 
-  private final Logging logging = Logging.create("EvilRadio-AzuraCastNowPlaying");
   private final HttpClient httpClient = HttpClient.newBuilder()
       .connectTimeout(Duration.ofSeconds(10))
       .build();
@@ -110,7 +109,6 @@ public final class AzuraCastNowPlayingService {
   public void start() {
     if (!started.compareAndSet(false, true)) return;
     stopped.set(false);
-    logging.info("AzuraCast NowPlaying service started");
   }
 
   public void switchStation(String shortcode) {
@@ -133,7 +131,6 @@ public final class AzuraCastNowPlayingService {
     closeSocket();
     resetSongs();
     publishState(NowPlayingConnectionState.LOADING, normalized);
-    logging.info("Switching NowPlaying subscription to station:" + normalized + " generation=" + generation);
     connect(generation, normalized, false);
   }
 
@@ -157,7 +154,6 @@ public final class AzuraCastNowPlayingService {
     closeSocket();
     resetSongs();
     publishState(NowPlayingConnectionState.IDLE, null);
-    logging.info("AzuraCast NowPlaying service stopped");
   }
 
   public void shutdown() {
@@ -185,7 +181,6 @@ public final class AzuraCastNowPlayingService {
         webSocket.sendText(subscribe, true);
         backoffIndex.set(0);
         publishState(NowPlayingConnectionState.CONNECTED, shortcode);
-        logging.info("WebSocket connected, subscribed to station:" + shortcode);
       }
 
       @Override
@@ -216,7 +211,6 @@ public final class AzuraCastNowPlayingService {
 
       @Override
       public void onError(WebSocket webSocket, Throwable error) {
-        logging.warn("WebSocket error for station:" + shortcode + " – " + error.getMessage());
         AzuraCastNowPlayingService.this.webSocket.compareAndSet(webSocket, null);
         if (!stopped.get() && generation == guard.currentGeneration()
             && Objects.equals(shortcode, guard.activeShortcode())) {
@@ -230,7 +224,6 @@ public final class AzuraCastNowPlayingService {
         .buildAsync(URI.create(WEBSOCKET_URL), listener)
         .whenComplete((socket, error) -> {
           if (error != null) {
-            logging.warn("WebSocket connect failed for station:" + shortcode + " – " + error.getMessage());
             if (!stopped.get() && generation == guard.currentGeneration()
                 && Objects.equals(shortcode, guard.activeShortcode())) {
               scheduleReconnect(generation, shortcode);
@@ -279,7 +272,6 @@ public final class AzuraCastNowPlayingService {
 
     int index = Math.min(backoffIndex.getAndIncrement(), BACKOFF_MS.length - 1);
     long delay = BACKOFF_MS[index];
-    logging.info("Scheduling NowPlaying reconnect for station:" + shortcode + " in " + delay + "ms");
 
     ScheduledFuture<?> future = scheduler.schedule(
         () -> connect(generation, shortcode, true),
