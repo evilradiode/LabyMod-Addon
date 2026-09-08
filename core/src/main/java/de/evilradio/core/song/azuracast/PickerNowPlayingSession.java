@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import net.labymod.api.util.logging.Logging;
 
 /**
  * Kurzlebige Multi-Station-WebSocket-Session für den Sender-Picker.
@@ -30,7 +29,6 @@ import net.labymod.api.util.logging.Logging;
  */
 public final class PickerNowPlayingSession {
 
-  private static final Logging LOGGING = Logging.create("EvilRadio-PickerNowPlaying");
   private static final long[] BACKOFF_MS = {1000L, 2000L, 5000L, 10000L, 20000L, 30000L};
 
   private final HttpClient httpClient = HttpClient.newBuilder()
@@ -100,8 +98,6 @@ public final class PickerNowPlayingSession {
         PickerNowPlayingSession.this.backoffIndex.set(0);
         webSocket.sendText(buildSubscribePayload(), true);
         webSocket.request(1);
-        LOGGING.info((reconnect ? "Picker WS reconnected" : "Picker WS connected")
-            + ", subscribed to " + shortcodes.size() + " stations");
       }
 
       @Override
@@ -125,7 +121,6 @@ public final class PickerNowPlayingSession {
       public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
         PickerNowPlayingSession.this.webSocket.compareAndSet(webSocket, null);
         if (!closed.get()) {
-          LOGGING.warn("Picker WS closed (" + statusCode + ") – scheduling reconnect");
           scheduleReconnect();
         }
         return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
@@ -133,7 +128,6 @@ public final class PickerNowPlayingSession {
 
       @Override
       public void onError(WebSocket webSocket, Throwable error) {
-        LOGGING.warn("Picker WS error – " + (error == null ? "unknown" : error.getMessage()));
         PickerNowPlayingSession.this.webSocket.compareAndSet(webSocket, null);
         if (!closed.get()) {
           scheduleReconnect();
@@ -146,7 +140,6 @@ public final class PickerNowPlayingSession {
         .buildAsync(URI.create(AzuraCastNowPlayingService.WEBSOCKET_URL), listener)
         .whenComplete((socket, error) -> {
           if (error != null && !closed.get()) {
-            LOGGING.warn("Picker WS connect failed – " + error.getMessage());
             scheduleReconnect();
           }
         });
