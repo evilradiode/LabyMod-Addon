@@ -73,6 +73,7 @@ public class RadioManager {
       }
 
       addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+      addon.sharingController().broadcastCurrentStream();
     }
   }
 
@@ -81,19 +82,15 @@ public class RadioManager {
   }
 
   public void stopStream(boolean manual) {
-    if (manual && addon != null) {
+    if (manual) {
       addon.setUserManuallyStopped(true);
     }
+    radioPlayer.stop();
 
-    if (radioPlayer != null) {
-      radioPlayer.stop();
-    }
-
-    if (addon != null && addon.currentSongService() != null) {
-      addon.currentSongService().resetCurrentSong();
-      addon.currentSongService().nowPlayingService().clearSubscription();
-      addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-    }
+    addon.currentSongService().resetCurrentSong();
+    addon.currentSongService().nowPlayingService().clearSubscription();
+    addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
+    addon.sharingController().broadcastCurrentStream();
   }
 
   public void togglePlayStop() {

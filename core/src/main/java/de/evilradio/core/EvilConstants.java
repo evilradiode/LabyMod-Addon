@@ -2,7 +2,8 @@ package de.evilradio.core;
 
 public class EvilConstants {
 
-  public static final String API_BASE_URL = "https://api.evil-radio.de/?radioInfo=";
+  public static final String API_BASE_URL = "https://api.evil-radio.de";
+  public static final String API_RADIO_INFO = "https://api.evil-radio.de/?radioInfo=";
   public static final String AZURACAST_NOWPLAYING_URL =
       "https://broadcast.evil-radio.de/api/nowplaying";
 

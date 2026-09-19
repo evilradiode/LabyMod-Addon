@@ -4,17 +4,22 @@ import de.evilradio.core.activity.picker.RadioStationListActivity;
 import de.evilradio.core.command.ListenMashupCommand;
 import de.evilradio.core.configuration.AudioEqualizerSubSettings;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
+import de.evilradio.core.group.GroupService;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.listener.ActivityListener;
 import de.evilradio.core.listener.GameListener;
+import de.evilradio.core.nametag.EvilRadioGroupTextTag;
+import de.evilradio.core.nametag.RadioStreamSharedTag;
 import de.evilradio.core.radio.RadioManager;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.radio.RadioStreamService;
 import de.evilradio.core.schedule.ScheduleService;
+import de.evilradio.core.sharing.RadioStreamSharingController;
 import de.evilradio.core.song.CurrentSongService;
 import net.labymod.api.Laby;
 import net.labymod.api.addon.LabyAddon;
 import net.labymod.api.client.component.Component;
+import net.labymod.api.client.entity.player.tag.PositionType;
 import net.labymod.api.client.gui.hud.binding.category.HudWidgetCategory;
 import net.labymod.api.client.gui.icon.Icon;
 import net.labymod.api.models.addon.annotation.AddonMain;
@@ -41,6 +46,8 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   private CurrentSongHudWidget currentSongHudWidget;
   private ActivityListener activityListener;
   private RadioStationListActivity radioStationListActivity;
+
+  private RadioStreamSharingController sharingController;
 
   private boolean wasWindowFocused = true;
   private RadioStream streamBeforeFocusLoss = null;
@@ -84,15 +91,23 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     });
 
     this.radioStationListActivity = new RadioStationListActivity(this);
-    
+
+    this.sharingController = new RadioStreamSharingController(this);
+
+    new GroupService().loadGroups();
+
     // Event-Bus registrieren für Event-Handler
     this.labyAPI().eventBus().registerListener(new GameListener(this));
     this.labyAPI().eventBus().registerListener(this.activityListener = new ActivityListener(this));
+    this.labyAPI().eventBus().registerListener(this.sharingController);
 
     this.registerCommand(new ListenMashupCommand(this));
 
     this.labyAPI().hudWidgetRegistry().categoryRegistry().register(HUD_WIDGET_CATEGORY);
     this.labyAPI().hudWidgetRegistry().register(this.currentSongHudWidget = new CurrentSongHudWidget(this));
+
+    this.labyAPI().tagRegistry().register("evilradio_shared_stream", PositionType.BELOW_NAME, new RadioStreamSharedTag(this));
+    this.labyAPI().tagRegistry().register("evilradio_staff_tag", PositionType.ABOVE_NAME, new EvilRadioGroupTextTag(this));
 
     // Registriere Window-Focus-Listener für Auto-Stop
     this.setupWindowFocusListener();
@@ -193,6 +208,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     return scheduleService;
   }
 
+  public RadioStreamSharingController sharingController() {
+    return sharingController;
+  }
+
   public void openStationPicker() {
     if (!this.configuration().enabled().get() || this.radioStationListActivity == null) return;
     this.labyAPI().minecraft().executeNextTick(() ->
@@ -268,7 +287,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
    * @param context Kontext für Logging (z.B. "game start", "server join")
    */
   public void startLastStreamWithDelay(String context) {
-    // Prüfe zuerst, ob Auto-Start überhaupt aktiviert ist
     if (configuration().autoStartMode().get() == EvilRadioConfiguration.AutoStartMode.DISABLED) return;
     
     int lastStreamId = configuration().lastStreamId().get();
@@ -276,18 +294,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     
     RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
     if (lastStream == null || lastStream.getUrl() == null || lastStream.getUrl().isEmpty()) return;
-    
-    float delaySeconds = configuration().autoStartDelay().get();
-    
-    if (delaySeconds > 0) {
-      // Starte mit Verzögerung
-      Task.builder(() -> {
-        this.startLastStream(lastStream, context);
-      }).delay((long)(delaySeconds * 1000), TimeUnit.MILLISECONDS).build().execute();
-    } else {
-      // Starte sofort
+
+    Task.builder(() -> {
       this.startLastStream(lastStream, context);
-    }
+    }).delay(5, TimeUnit.SECONDS).build().execute();
   }
   
   /**

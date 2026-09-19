@@ -230,6 +230,7 @@ public class CurrentSongService {
           imageUrl == null || imageUrl.isBlank() ? null : Icon.url(imageUrl),
           streamIcon
       );
+      this.addon.sharingController().broadcastCurrentStream();
     }
   }
 
@@ -502,7 +503,7 @@ public class CurrentSongService {
       return;
     }
     String uuid = this.addon.labyAPI().getUniqueId().toString();
-    String url = EvilConstants.API_BASE_URL
+    String url = EvilConstants.API_RADIO_INFO
         + URLEncoder.encode(streamName, StandardCharsets.UTF_8)
         + "&uuid="
         + URLEncoder.encode(uuid, StandardCharsets.UTF_8);
@@ -771,7 +772,7 @@ public class CurrentSongService {
       return;
     }
     String uuid = this.addon.labyAPI().getUniqueId().toString();
-    String url = EvilConstants.API_BASE_URL
+    String url = EvilConstants.API_RADIO_INFO
         + URLEncoder.encode(streamName, StandardCharsets.UTF_8)
         + "&uuid="
         + URLEncoder.encode(uuid, StandardCharsets.UTF_8);

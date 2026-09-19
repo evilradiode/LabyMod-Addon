@@ -132,6 +132,18 @@ public class RadioStreamService {
     }
   }
 
+  public RadioStream findStreamByName(String name) {
+    if(name == null) return null;
+    synchronized (this.streams) {
+      for (RadioStream stream : this.streams) {
+        if (stream.getName().equals(name)) {
+          return stream;
+        }
+      }
+      return null;
+    }
+  }
+
   /**
    * Neu sortieren nach Usage-Änderung (z. B. nach Play).
    */
