@@ -1,10 +1,8 @@
 package de.evilradio.core.activity.picker.widget;
 
-import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
+import de.evilradio.core.activity.picker.RadioStationListActivity;
 import de.evilradio.core.activity.picker.StationPickerController;
-import de.evilradio.core.configuration.StationPickerSubSettings;
-import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.song.CurrentSong;
 import net.labymod.api.client.component.Component;
@@ -26,7 +24,6 @@ public class RadioStationRowWidget extends DivWidget {
 
   private final RadioStream stream;
   private final boolean playing;
-  private IconWidget stationIconWidget;
   private IconWidget coverWidget;
   private ComponentWidget nameWidget;
   private ComponentWidget songWidget;
@@ -59,8 +56,7 @@ public class RadioStationRowWidget extends DivWidget {
       stationIcon = Icon.texture(
           ResourceLocation.create("evilradio", "textures/stations/comingsoon.png"));
     }
-    this.stationIconWidget = new IconWidget(stationIcon).addId("row-station-icon");
-    this.addChild(this.stationIconWidget);
+    this.addChild(new IconWidget(stationIcon).addId("row-station-icon"));
 
     if (StationPickerController.isPlayable(this.stream)) {
       this.coverWidget = new IconWidget(EvilTextures.LOGO).addId("row-cover");
@@ -134,17 +130,11 @@ public class RadioStationRowWidget extends DivWidget {
   }
 
   private void applySong() {
-    if (this.songWidget == null || this.artistWidget == null) {
-      return;
-    }
-
-    StationPickerSubSettings picker = EvilRadioAddon.instance().configuration().stationPicker();
-    TextColor songColor = CurrentSongHudWidget.toTextColor(picker.songColor().get());
-    TextColor artistColor = CurrentSongHudWidget.toTextColor(picker.artistColor().get());
+    if (this.songWidget == null || this.artistWidget == null) return;
 
     if (this.song == null || !this.song.isValid()) {
       this.songWidget.setComponent(
-          Component.translatable("evilradio.picker.loadingSong").color(artistColor));
+          Component.translatable("evilradio.picker.loadingSong").color(RadioStationListActivity.ARTIST_COLOR));
       this.artistWidget.setComponent(Component.empty());
       this.applyCover(null);
       this.updatePlaytime(true);
@@ -154,11 +144,11 @@ public class RadioStationRowWidget extends DivWidget {
     String title = this.song.getDisplayTitle();
     String artist = this.song.getArtist();
     this.songWidget.setComponent(
-        Component.text(title == null || title.isBlank() ? "—" : title).color(songColor));
+        Component.text(title == null || title.isBlank() ? "—" : title).color(RadioStationListActivity.SONG_COLOR));
     if (artist == null || artist.isBlank()) {
       this.artistWidget.setComponent(Component.empty());
     } else {
-      this.artistWidget.setComponent(Component.text(artist).color(artistColor));
+      this.artistWidget.setComponent(Component.text(artist).color(RadioStationListActivity.ARTIST_COLOR));
     }
     this.applyCover(this.song.getImageUrl());
     this.updatePlaytime(true);
@@ -191,9 +181,7 @@ public class RadioStationRowWidget extends DivWidget {
       this.setProgressVisible(false);
       return;
     }
-    TextColor timeColor = CurrentSongHudWidget.toTextColor(
-        EvilRadioAddon.instance().configuration().stationPicker().timeColor().get());
-    this.timeWidget.setComponent(Component.text(label).color(timeColor));
+    this.timeWidget.setComponent(Component.text(label).color(RadioStationListActivity.TIME_COLOR));
     this.timeWidget.setVisible(true);
     this.updateProgressBar();
   }

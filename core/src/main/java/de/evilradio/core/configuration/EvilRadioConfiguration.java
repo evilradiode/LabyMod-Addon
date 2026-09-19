@@ -5,7 +5,6 @@ import net.labymod.api.addon.AddonConfig;
 import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget.ButtonSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.KeybindWidget.KeyBindSetting;
-import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
 import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
@@ -30,8 +29,7 @@ public class EvilRadioConfiguration extends AddonConfig {
   @KeyBindSetting
   private final ConfigProperty<Key> radioMenuKeybind = new ConfigProperty<>(Key.R);
 
-  @SpriteSlot(x = 2)
-  @SliderSetting(min = 0, max = 100, steps = 2f)
+  @Exclude
   private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
 
   @SpriteSlot(x = 7)
@@ -49,9 +47,9 @@ public class EvilRadioConfiguration extends AddonConfig {
   @Exclude
   private final ConfigProperty<Boolean> menuPlayerMinimized = new ConfigProperty<>(false);
 
-  @SpriteSlot(x = 4)
+  @SpriteSlot(y = 2)
   @IntroducedIn(namespace = "evilradio", value = "1.1.0")
-  private final StationPickerSubSettings stationPicker = new StationPickerSubSettings();
+  private final NameTagSettings nameTagSettings = new NameTagSettings();
 
   @Exclude
   private final ConfigProperty<EqualizerStyle> equalizerStyle =
@@ -73,10 +71,6 @@ public class EvilRadioConfiguration extends AddonConfig {
   @DropdownSetting
   @DropdownEntryTranslationPrefix("evilradio.settings.autoStartMode.type")
   private final ConfigProperty<AutoStartMode> autoStartMode = new ConfigProperty<>(AutoStartMode.DISABLED);
-
-  @SpriteSlot(y = 1, x = 1)
-  @SliderSetting(min = 0, max = 10, steps = 0.5f)
-  private final ConfigProperty<Float> autoStartDelay = new ConfigProperty<>(2.0f);
 
   @SpriteSlot(y = 1, x = 2)
   @SwitchSetting
@@ -127,8 +121,8 @@ public class EvilRadioConfiguration extends AddonConfig {
     return menuPlayerMinimized;
   }
 
-  public StationPickerSubSettings stationPicker() {
-    return this.stationPicker;
+  public NameTagSettings nameTagSettings() {
+    return nameTagSettings;
   }
 
   public ConfigProperty<EqualizerStyle> equalizerStyle() {
@@ -145,10 +139,6 @@ public class EvilRadioConfiguration extends AddonConfig {
 
   public ConfigProperty<AutoStartMode> autoStartMode() {
     return autoStartMode;
-  }
-
-  public ConfigProperty<Float> autoStartDelay() {
-    return autoStartDelay;
   }
 
   public ConfigProperty<Boolean> autoStopOnFocusLoss() {
