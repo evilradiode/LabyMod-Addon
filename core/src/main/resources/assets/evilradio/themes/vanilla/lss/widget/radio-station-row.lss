@@ -2,7 +2,7 @@ RadioStationRow {
   width: 100%;
   /* Cover 36 + Padding → alles Text/Progress daneben in derselben Höhe */
   height: 44;
-  background-color: var(--picker-row-bg);
+  background-color: var(--background-color);
   background-color-transition-duration: 120;
   border: 1;
   border-color: rgba(255, 255, 255, 0.1);
