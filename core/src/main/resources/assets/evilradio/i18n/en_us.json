@@ -109,7 +109,8 @@
       "movePlayerLeft": "Move to the left",
       "movePlayerRight": "Move to the right",
       "restorePlayer": "Open radio player",
-      "playerSettings": "Open Addon Settings"
+      "playerSettings": "Open Addon Settings",
+      "currentlyListening": "Currently listening to:"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -198,40 +199,38 @@
         "name": "Preview live banner",
         "description": "Shows the Mashup live banner on the menu player, even if no show is on air."
       },
-      "stationPicker": {
-        "name": "Station menu",
-        "description": "Look of the station list and equalizer.",
-        "backgroundColor": {
-          "name": "List background",
-          "description": "Color and transparency of the list menu (including alpha)."
+      "nameTagSettings": {
+        "name": "Nametag Settings",
+        "header": {
+          "sharing": {
+            "name": "Sharing Settings"
+          },
+          "staffNameTag": {
+            "name": "Staff Nametag"
+          }
         },
-        "borderColor": {
-          "name": "List border",
-          "description": "Border color of the list menu (including alpha)."
+        "shareCurrentStream": {
+          "name": "Share current stream",
+          "description": "Share the current stream with other players. The Stream Nametag will be displayed under your Nametag."
         },
-        "rowBackgroundColor": {
-          "name": "Row background",
-          "description": "Background color of station rows (including alpha)."
+        "showStaffNametag": {
+          "name": "Show staff nametag",
+          "description": "Show the Tag of Staff Members above their Nametag."
         },
-        "backgroundBlur": {
-          "name": "List blur",
-          "description": "Background blur of the list menu (0 = off)."
+        "staffNameTagColor": {
+          "name": "Staff Tag Color",
+          "description": "Color of the staff nametag."
         },
-        "showEqualizer": {
-          "name": "Show equalizer",
-          "description": "Equalizer and EQ button in the list menu. Off = removed completely."
-        },
-        "songColor": {
-          "name": "Song color",
-          "description": "Text color for the song title in the list."
-        },
-        "artistColor": {
-          "name": "Artist color",
-          "description": "Text color for the artist in the list."
-        },
-        "timeColor": {
-          "name": "Time color",
-          "description": "Text color for playtime in the list."
+        "staffNameTagDecoration": {
+          "name": "Staff Tag Decoration",
+          "description": "Decoration of the staff nametag.",
+          "type": {
+            "none": "None",
+            "bold": "Bold",
+            "italic": "Italic",
+            "underlined": "Underline",
+            "strikethrough": "Strikethrough"
+          }
         }
       },
       "audioEqualizer": {
@@ -285,10 +284,6 @@
         "name": "Auto-Stop on Focus Loss",
         "description": "Automatically stop the stream when the game window loses focus"
       },
-      "volume": {
-        "name": "Volume",
-        "description": "The volume of the radio stream (0-100%)"
-      },
       "autoStartMode": {
         "name": "Auto-Start Mode",
         "description": "Choose when the stream should automatically start",
@@ -297,10 +292,6 @@
           "onGameStart": "On Game Start",
           "onServerJoin": "On Server/Singleplayer Join"
         }
-      },
-      "autoStartDelay": {
-        "name": "Auto-Start Delay",
-        "description": "Delay in seconds before automatically starting the stream (0-10 seconds)"
       },
       "usageStatistics": {
         "name": "Usage-based Sorting",

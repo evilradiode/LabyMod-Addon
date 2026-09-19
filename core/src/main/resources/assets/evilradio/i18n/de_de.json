@@ -109,7 +109,8 @@
       "movePlayerLeft": "Nach links schieben",
       "movePlayerRight": "Nach rechts schieben",
       "restorePlayer": "Radio-Player öffnen",
-      "playerSettings": "Addon Einstellungen öffnen"
+      "playerSettings": "Addon Einstellungen öffnen",
+      "currentlyListening": "Hört aktuell:"
     },
     "hudWidget": {
       "evilradio_full_widget": {
@@ -195,40 +196,38 @@
         "name": "Live-Banner testen",
         "description": "Blendet den Mashup-Live-Kasten im Menü-Player ein, unabhängig von einer echten Sendung."
       },
-      "stationPicker": {
-        "name": "Sender-Menü",
-        "description": "Look der Listen-Senderwahl und Equalizer.",
-        "backgroundColor": {
-          "name": "Listen-Hintergrund",
-          "description": "Farbe und Transparenz des Listen-Menüs (inkl. Alpha)."
+      "nameTagSettings": {
+        "name": "Nametag Einstellungen",
+        "header": {
+          "sharing": {
+            "name": "Freigabe Einstellungen"
+          },
+          "staffNameTag": {
+            "name": "Team Nametag"
+          }
         },
-        "borderColor": {
-          "name": "Listen-Rahmen",
-          "description": "Rahmenfarbe des Listen-Menüs (inkl. Alpha)."
+        "shareCurrentStream": {
+          "name": "Teile den aktuellen Stream",
+          "description": "Teile den aktuellen Stream mit anderen Spielern. Der Stream Nametag wird unter deinem Nametag angezeigt."
         },
-        "rowBackgroundColor": {
-          "name": "Zeilen-Hintergrund",
-          "description": "Hintergrundfarbe der Sender-Zeilen (inkl. Alpha)."
+        "showStaffNametag": {
+          "name": "Team Nametag anzeigen",
+          "description": "Zeige den Tag der Teammitglieder über ihrem Nametag."
         },
-        "backgroundBlur": {
-          "name": "Listen-Blur",
-          "description": "Hintergrund-Unschärfe des Listen-Menüs (0 = aus)."
+        "staffNameTagColor": {
+          "name": "Team Tag Farbe",
+          "description": "Farbe des Team Nametags."
         },
-        "showEqualizer": {
-          "name": "Equalizer anzeigen",
-          "description": "Equalizer und EQ-Button im Listen-Menü. Aus = komplett entfernt."
-        },
-        "songColor": {
-          "name": "Song-Farbe",
-          "description": "Textfarbe für den Songtitel in der Liste."
-        },
-        "artistColor": {
-          "name": "Interpret-Farbe",
-          "description": "Textfarbe für den Interpreten in der Liste."
-        },
-        "timeColor": {
-          "name": "Zeit-Farbe",
-          "description": "Textfarbe für die Playtime in der Liste."
+        "staffNameTagDecoration": {
+          "name": "Team Tag Dekoration",
+          "description": "Dekoration des Team Nametags.",
+          "type": {
+            "none": "Keine",
+            "bold": "Fett",
+            "italic": "Kursiv",
+            "underlined": "Unterstrichen",
+            "strikethrough": "Durchgestrichen"
+          }
         }
       },
       "audioEqualizer": {
@@ -282,10 +281,6 @@
         "name": "Auto-Stop bei Fokus-Verlust",
         "description": "Stoppe den Stream automatisch, wenn das Spiel-Fenster den Fokus verliert"
       },
-      "volume": {
-        "name": "Lautstärke",
-        "description": "Die Lautstärke des Radio-Streams (0-100%)"
-      },
       "autoStartMode": {
         "name": "Auto-Start Modus",
         "description": "Wähle, wann der Stream automatisch gestartet werden soll",
@@ -294,10 +289,6 @@
           "onGameStart": "Beim Spielstart",
           "onServerJoin": "Beim Welt betreten"
         }
-      },
-      "autoStartDelay": {
-        "name": "Auto-Start Verzögerung",
-        "description": "Verzögerung in Sekunden vor dem automatischen Start des Streams (0-10 Sekunden)"
       },
       "usageStatistics": {
         "name": "Nutzerbasierte Sortierung",
