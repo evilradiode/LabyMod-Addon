@@ -5,6 +5,7 @@ import de.evilradio.core.EvilTextures;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget.CurrentSongHudWidgetConfig;
 import de.evilradio.core.hudwidget.widget.CurrentSongWidget;
 import de.evilradio.core.hudwidget.widget.ModernCurrentSongWidget;
+import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.client.component.format.TextColor;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidgetConfig;
 import net.labymod.api.client.gui.hud.hudwidget.widget.WidgetHudWidget;
@@ -33,8 +34,8 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public static final Color DEFAULT_SONG_COLOR = Color.WHITE;
   /** Minecraft-Grau (#AAAAAA) – bisher NamedTextColor.GRAY */
   public static final Color DEFAULT_ARTIST_COLOR = Color.ofRGB(170, 170, 170);
-  public static final Color DEFAULT_BACKGROUND_COLOR = Color.ofRGB(0, 0, 0);
-  public static final Color DEFAULT_BORDER_COLOR = Color.ofRGB(85, 85, 85);
+  public static final Color DEFAULT_BACKGROUND_COLOR = Color.of(922746880);
+  public static final Color DEFAULT_BORDER_COLOR = Color.of(-866822827);
   public static final Color DEFAULT_PROGRESS_BAR_COLOR = Color.ofRGB(255, 85, 85);
 
   private final EvilRadioAddon addon;
@@ -114,11 +115,25 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     return this.addon.radioManager().isPlaying();
   }
 
-  public static TextColor toTextColor(Color color) {
-    if (color == null) {
-      return TextColor.color(255, 255, 255);
-    }
-    return TextColor.color(color.getRed(), color.getGreen(), color.getBlue());
+  public TextColor stationTextColor() {
+    return TextColor.color(this.getConfig().stationColor().get().get());
+  }
+
+  public TextColor songTextColor() {
+    return TextColor.color(this.getConfig().songColor().get().get());
+  }
+
+  public TextColor artistTextColor() {
+    return TextColor.color(this.getConfig().artistColor().get().get());
+  }
+
+  public String stationLabel(RadioStream stream, boolean compact) {
+    if (stream == null) return "";
+    String name = stream.getDisplayName() != null && !stream.getDisplayName().isBlank()
+        ? stream.getDisplayName()
+        : stream.getName();
+    if (name == null || name.isBlank()) return "";
+    return compact ? name : "EvilRadio - " + name;
   }
 
   public static class CurrentSongHudWidgetConfig extends HudWidgetConfig {

@@ -205,7 +205,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.lastArtistName = "";
       this.lastLivePrefix = Component.empty();
       if (isPlaying && currentStream != null) {
-        this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(this.stationTextColor()));
+        this.streamWidget.setComponent(Component.text(this.hudWidget.stationLabel(currentStream, false)).color(this.hudWidget.stationTextColor()));
         if (state == AzuraCastNowPlayingService.NowPlayingConnectionState.RECONNECTING) {
           this.statusWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
               .color(NamedTextColor.DARK_GRAY));
@@ -228,11 +228,11 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       return;
     }
 
-    String streamDisplayName = stationLabel(currentStream);
+    String streamDisplayName = this.hudWidget.stationLabel(currentStream, false);
     if (streamDisplayName.isBlank() && currentSong.getStationName() != null) {
       streamDisplayName = "EvilRadio - " + currentSong.getStationName();
     }
-    this.streamWidget.setComponent(Component.text(streamDisplayName).color(this.stationTextColor()));
+    this.streamWidget.setComponent(Component.text(streamDisplayName).color(this.hudWidget.stationTextColor()));
 
     this.lastLiveBadgeTwitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
     Component live = LiveStatusLine.buildPrefix(
@@ -242,8 +242,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
 
     this.lastTrackName = currentSong.getDisplayTitle();
     this.lastArtistName = currentSong.getArtist() == null ? "" : currentSong.getArtist();
-    this.trackWidget.setComponent(Component.text(this.lastTrackName, this.songTextColor()));
-    this.artistWidget.setComponent(Component.text(this.lastArtistName, this.artistTextColor()));
+    this.trackWidget.setComponent(Component.text(this.lastTrackName, this.hudWidget.songTextColor()));
+    this.artistWidget.setComponent(Component.text(this.lastArtistName, this.hudWidget.artistTextColor()));
 
     FontRenderer fontRenderer = Laby.references().minecraftFontRenderer();
     String statusSample = statusLinePlain(currentSong);
@@ -406,25 +406,4 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     }
   }
 
-  private TextColor stationTextColor() {
-    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().stationColor().get());
-  }
-
-  private TextColor songTextColor() {
-    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().songColor().get());
-  }
-
-  private TextColor artistTextColor() {
-    return CurrentSongHudWidget.toTextColor(this.hudWidget.getConfig().artistColor().get());
-  }
-
-  private static String stationLabel(RadioStream stream) {
-    if (stream == null) {
-      return "";
-    }
-    String name = stream.getDisplayName() != null && !stream.getDisplayName().isBlank()
-        ? stream.getDisplayName()
-        : stream.getName();
-    return name == null ? "" : "EvilRadio - " + name;
-  }
 }
