@@ -9,7 +9,6 @@ import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
 
-@ConfigName("usageStatistics")
 public class UsageStatisticsSubSettings extends Config {
 
   // Switch für nutzerbasierte Sortierung (wird im Hauptmenü angezeigt)

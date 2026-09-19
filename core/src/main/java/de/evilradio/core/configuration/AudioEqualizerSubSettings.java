@@ -10,7 +10,6 @@ import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.annotation.ShowSettingInParent;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 
-@ConfigName("audioEqualizer")
 public class AudioEqualizerSubSettings extends Config {
 
   @ShowSettingInParent

@@ -10,7 +10,6 @@ import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.Color;
 
-@ConfigName("stationPicker")
 public class StationPickerSubSettings extends Config {
 
   /** Dunkel, gut lesbar – ähnlich dem alten Panel vor dem starken Glass-Look. */
