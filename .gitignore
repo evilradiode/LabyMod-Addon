@@ -30,6 +30,7 @@ hs_err_pid*
 # User-specific stuff
 /.idea/
 run/**
+.vscode
 
 # CMake
 cmake-build-*/
@@ -78,7 +79,3 @@ access_widener_index.json
 
 # Don't ignore libraries
 !libs/*.jar
-
-#MM addon
-other_addon_as_template/
-core/bin/
