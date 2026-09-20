@@ -359,9 +359,8 @@ public class RadioStationListActivity extends SimpleActivity {
 
     ButtonWidget eqSettingsWidget = ButtonWidget.icon(SpriteCommon.SETTINGS).addId("picker-audio-eq-settings");
     eqSettingsWidget.setPressable(() -> {
-      String path = this.addon.labyAPI().getNamespace(this.addon) + ".audioEqualizer";
       this.addon.labyAPI().coreSettingRegistry()
-          .findSetting((CharSequence) path)
+          .findSetting((CharSequence) (this.addon.labyAPI().getNamespace(this.addon) + ".audioEqualizer"))
           .ifPresent(this.addon.labyAPI()::showSetting);
     });
 
