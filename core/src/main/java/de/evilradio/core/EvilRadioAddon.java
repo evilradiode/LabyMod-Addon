@@ -7,6 +7,7 @@ import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.group.GroupService;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
 import de.evilradio.core.listener.ActivityListener;
+import de.evilradio.core.listener.AudioEqualizerSettingsListener;
 import de.evilradio.core.listener.GameListener;
 import de.evilradio.core.nametag.EvilRadioGroupTextTag;
 import de.evilradio.core.nametag.RadioStreamSharedTag;
@@ -99,6 +100,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     // Event-Bus registrieren für Event-Handler
     this.labyAPI().eventBus().registerListener(new GameListener(this));
     this.labyAPI().eventBus().registerListener(this.activityListener = new ActivityListener(this));
+    this.labyAPI().eventBus().registerListener(new AudioEqualizerSettingsListener(this));
     this.labyAPI().eventBus().registerListener(this.sharingController);
 
     this.registerCommand(new ListenMashupCommand(this));

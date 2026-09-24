@@ -8,7 +8,9 @@ import net.labymod.api.configuration.loader.Config;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.annotation.ShowSettingInParent;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
+import net.labymod.api.configuration.settings.annotation.SettingRequires;
 
+@SettingRequires(value = "preset", required = "CUSTOM")
 public class AudioEqualizerSubSettings extends Config {
 
   @ShowSettingInParent

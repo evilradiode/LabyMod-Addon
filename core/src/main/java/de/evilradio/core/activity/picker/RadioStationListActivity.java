@@ -98,6 +98,7 @@ public class RadioStationListActivity extends SimpleActivity {
   private SliderWidget volumeSlider;
   private ButtonWidget playPauseButton;
   private ButtonWidget equalizerStyleButton;
+  private ButtonWidget audioEqualizerSettingsButton;
   private IconWidget coverWidget;
   private ComponentWidget coverSongWidget;
   private ComponentWidget coverArtistWidget;
@@ -228,6 +229,7 @@ public class RadioStationListActivity extends SimpleActivity {
     this.volumeSlider = null;
     this.playPauseButton = null;
     this.equalizerStyleButton = null;
+    this.audioEqualizerSettingsButton = null;
     this.coverWidget = null;
     this.coverSongWidget = null;
     this.coverArtistWidget = null;
@@ -357,14 +359,15 @@ public class RadioStationListActivity extends SimpleActivity {
 
     HorizontalListWidget eqSettingsDropdownContainer = new HorizontalListWidget().addId("picker-audio-eq-settings-container");
 
-    ButtonWidget eqSettingsWidget = ButtonWidget.icon(SpriteCommon.SETTINGS).addId("picker-audio-eq-settings");
-    eqSettingsWidget.setPressable(() -> {
+    this.audioEqualizerSettingsButton = ButtonWidget.icon(SpriteCommon.SETTINGS).addId("picker-audio-eq-settings");
+    this.audioEqualizerSettingsButton.setPressable(() -> {
       this.addon.labyAPI().coreSettingRegistry()
           .findSetting((CharSequence) (this.addon.labyAPI().getNamespace(this.addon) + ".audioEqualizer"))
           .ifPresent(this.addon.labyAPI()::showSetting);
     });
+    this.syncAudioEqualizerSettingsButton();
 
-    eqSettingsDropdownContainer.addEntry(eqSettingsWidget);
+    eqSettingsDropdownContainer.addEntry(this.audioEqualizerSettingsButton);
 
     DropdownWidget<AudioEqualizer.EqualizerPreset> audioEqualizerPresetDropdown = new DropdownWidget<>().addId("picker-audio-eq-preset");
     audioEqualizerPresetDropdown.addAll(AudioEqualizer.EqualizerPreset.values());
@@ -373,6 +376,7 @@ public class RadioStationListActivity extends SimpleActivity {
     audioEqualizerPresetDropdown.setChangeListener(equalizerPreset -> {
       this.addon.configuration().audioEqualizer().preset().set(equalizerPreset);
       this.addon.applyAudioEqualizerConfiguration();
+      this.syncAudioEqualizerSettingsButton();
     });
     eqSettingsDropdownContainer.addEntry(audioEqualizerPresetDropdown);
 
@@ -958,6 +962,14 @@ public class RadioStationListActivity extends SimpleActivity {
     } else {
       this.equalizerStyleButton.addId("off");
     }
+  }
+
+  private void syncAudioEqualizerSettingsButton() {
+    if (this.audioEqualizerSettingsButton == null) {
+      return;
+    }
+    boolean custom = this.addon.configuration().audioEqualizer().preset().get().isCustom();
+    this.audioEqualizerSettingsButton.setVisible(custom);
   }
 
   private void applyEqualizerStyle(EvilRadioConfiguration.EqualizerStyle style) {
