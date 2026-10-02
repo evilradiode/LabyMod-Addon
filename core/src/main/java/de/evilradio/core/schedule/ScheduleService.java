@@ -3,6 +3,7 @@ package de.evilradio.core.schedule;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.evilradio.core.EvilConstants;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.command.ListenMashupCommand;
 import java.time.LocalDate;
@@ -518,7 +519,7 @@ public class ScheduleService {
 
       if (show.twitch()) {
         message = message.append(Component.space())
-            .append(Component.translatable("evilradio.schedule.twitchUrl")
+            .append(Component.text(EvilConstants.TWITCH_URL)
                 .color(TextColor.color(145, 70, 255))
                 .clickEvent(ClickEvent.openUrl("https://www.twitch.tv/evilradiode"))
                 .hoverEvent(HoverEvent.showText(
