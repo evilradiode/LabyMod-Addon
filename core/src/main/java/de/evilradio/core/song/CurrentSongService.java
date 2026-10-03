@@ -515,6 +515,7 @@ public class CurrentSongService {
         .readTimeout(5000)
         .userAgent(this.addon.apiUserAgent())
         .addHeader("X-Addon-Version", this.addon.addonVersion())
+        .addHeader("X-Minecraft-Version", this.addon.labyAPI().minecraft().getVersion())
         .execute(response -> {
           if (response.getStatusCode() != 200 || response.hasException()) {
             callback.accept(null);
@@ -783,6 +784,7 @@ public class CurrentSongService {
         .readTimeout(5000)
         .userAgent(this.addon.apiUserAgent())
         .addHeader("X-Addon-Version", this.addon.addonVersion())
+        .addHeader("X-Minecraft-Version", this.addon.labyAPI().minecraft().getVersion())
         .execute(response -> {
           if (response.getStatusCode() != 200 || response.hasException()) {
             callback.accept(null);
@@ -802,6 +804,7 @@ public class CurrentSongService {
         .timeout(Duration.ofSeconds(8))
         .header("User-Agent", this.addon.apiUserAgent())
         .header("X-Addon-Version", this.addon.addonVersion())
+        .header("X-Minecraft-Version", this.addon.labyAPI().minecraft().getVersion())
         .GET()
         .build();
 
