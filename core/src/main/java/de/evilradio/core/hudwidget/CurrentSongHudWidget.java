@@ -4,6 +4,7 @@ import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget.CurrentSongHudWidgetConfig;
 import de.evilradio.core.hudwidget.widget.CurrentSongWidget;
+import de.evilradio.core.hudwidget.widget.LabyCurrentSongWidget;
 import de.evilradio.core.hudwidget.widget.ModernCurrentSongWidget;
 import de.evilradio.core.radio.RadioStream;
 import net.labymod.api.client.component.format.TextColor;
@@ -13,6 +14,8 @@ import net.labymod.api.client.gui.screen.widget.widgets.hud.HudWidgetWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SliderWidget.SliderSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.SwitchWidget.SwitchSetting;
 import net.labymod.api.client.gui.screen.widget.widgets.input.color.ColorPickerWidget.ColorPickerSetting;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownEntryTranslationPrefix;
+import net.labymod.api.client.gui.screen.widget.widgets.input.dropdown.DropdownWidget.DropdownSetting;
 import net.labymod.api.configuration.loader.annotation.IntroducedIn;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.configuration.settings.annotation.ColorRowBreak;
@@ -83,11 +86,15 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(COLOR_REASON))
     );
-    config.useModernWidget.addChangeListener((property, oldValue, newValue) -> {
+    config.hudWidgetDesign.addChangeListener((property, oldValue, newValue) -> {
       if (this.hudWidgetWidget != null) {
         this.hudWidgetWidget.reInitialize();
       }
     });
+    config.seeThrough.addChangeListener(
+        (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
+            () -> this.requestUpdate(COLOR_REASON))
+    );
     config.showLastSong.addChangeListener(
         (property, oldValue, newValue) -> ThreadSafe.executeOnRenderThread(
             () -> this.requestUpdate(TOGGLE_PREVIOUS_SONG_REASON))
@@ -98,12 +105,10 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
   public void initialize(HudWidgetWidget widget) {
     super.initialize(widget);
     this.hudWidgetWidget = widget;
-    if (this.config.useModernWidget.get()) {
-      widget.addChild(new ModernCurrentSongWidget(this.addon, this));
-      widget.addId("current-song-modern");
-    } else {
-      widget.addChild(new CurrentSongWidget(this.addon, this));
-      widget.addId("current-song");
+    switch (this.config.hudWidgetDesign.get()) {
+      case LABY -> widget.addChild(new LabyCurrentSongWidget(this.addon, this));
+      case GLASS -> widget.addChild(new ModernCurrentSongWidget(this.addon, this));
+      case CLASSIC -> widget.addChild(new CurrentSongWidget(this.addon, this));
     }
   }
 
@@ -136,16 +141,25 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     return compact ? name : "EvilRadio - " + name;
   }
 
+  public enum SongHudWidgetDesign {
+    CLASSIC, GLASS, LABY
+  }
+
   public static class CurrentSongHudWidgetConfig extends HudWidgetConfig {
 
     @SwitchSetting
     private final ConfigProperty<Boolean> showCover = ConfigProperty.create(true);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.")
-    @SwitchSetting
-    private final ConfigProperty<Boolean> useModernWidget = ConfigProperty.create(false);
+    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @DropdownEntryTranslationPrefix("evilradio.hudWidget.evilradio_full_widget.hudWidgetDesign.style")
+    @DropdownSetting
+    private final ConfigProperty<SongHudWidgetDesign> hudWidgetDesign = ConfigProperty.create(SongHudWidgetDesign.CLASSIC);
 
-    @SettingRequires("useModernWidget")
+    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @SettingRequires(value = "hudWidgetDesign", required = "LABY")
+    @SwitchSetting
+    private final ConfigProperty<Boolean> seeThrough = ConfigProperty.create(false);
+
     @IntroducedIn(namespace = "evilradio", value = "1.1.0")
     @SwitchSetting
     private final ConfigProperty<Boolean> showLastSong = ConfigProperty.create(false);
@@ -153,6 +167,7 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SettingSection("customization")
 
     @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @SettingRequires(value = "hudWidgetDesign", required = "GLASS")
     @SliderSetting(min = 0, max = 100)
     private final ConfigProperty<Integer> backgroundBlur = ConfigProperty.create(25);
 
@@ -183,6 +198,14 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
 
     public ConfigProperty<Boolean> showCover() {
       return this.showCover;
+    }
+
+    public ConfigProperty<SongHudWidgetDesign> hudWidgetDesign() {
+      return hudWidgetDesign;
+    }
+
+    public ConfigProperty<Boolean> seeThrough() {
+      return seeThrough;
     }
 
     public ConfigProperty<Boolean> showLastSong() {

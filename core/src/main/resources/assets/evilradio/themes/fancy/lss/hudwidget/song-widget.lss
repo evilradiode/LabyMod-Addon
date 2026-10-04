@@ -10,7 +10,7 @@ CurrentSong {
   .player {
     height: 100%;
     orientation: vertical;
-    width: var(--current-song-widget-max-player-width);
+    width: var(--song-widget-max-player-width);
     padding-left: 2;
     padding-right: 2;
 
@@ -53,7 +53,7 @@ CurrentSong {
         top: 0;
         left: 0;
         height: 2;
-        width: var(--current-song-progress-width);
+        width: var(--song-widget-progress-width);
         background-color: var(--song-widget-progress-bar-color);
       }
 

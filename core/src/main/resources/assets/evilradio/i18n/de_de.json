@@ -124,9 +124,17 @@
           "name": "Cover anzeigen",
           "description": "Zeige das Albumcover im Widget."
         },
-        "useModernWidget": {
-          "name": "Modernes Widget nutzen",
-          "description": "Verwende den modernen Widget-Stil."
+        "hudWidgetDesign": {
+          "name": "Style des Widgets",
+          "style": {
+            "classic": "Klassisch",
+            "glass": "Glas",
+            "laby": "Laby"
+          }
+        },
+        "seeThrough": {
+          "name": "Durchsichtiges Widget",
+          "description": "Das Widget wird durchsichtig, um zu sehen was sich dahinter befindet"
         },
         "showLastSong": {
           "name": "Vorheriger Song anzeigen",

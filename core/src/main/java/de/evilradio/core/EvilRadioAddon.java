@@ -203,7 +203,11 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   public CurrentSongService currentSongService() {
     return currentSongService;
   }
-  
+
+  public CurrentSongHudWidget currentSongHudWidget() {
+    return currentSongHudWidget;
+  }
+
   public ScheduleService scheduleService() {
     return scheduleService;
   }

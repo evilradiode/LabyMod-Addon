@@ -1,5 +1,6 @@
 package de.evilradio.core.hudwidget.widget;
 
+import de.evilradio.core.EvilConstants.HudWidgetVariables;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
@@ -10,7 +11,6 @@ import de.evilradio.core.song.azuracast.AzuraCastNowPlayingService;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
-import net.labymod.api.client.component.format.TextColor;
 import net.labymod.api.client.gfx.pipeline.renderer.text.FontRenderer;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
@@ -23,19 +23,12 @@ import net.labymod.api.client.gui.screen.widget.widgets.layout.FlexibleContentWi
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
 
-@Link("widget/song-widget.lss")
+@Link("hudwidget/song-widget.lss")
 @AutoWidget
 public class CurrentSongWidget extends FlexibleContentWidget implements Updatable {
 
   private final EvilRadioAddon addon;
   private final CurrentSongHudWidget hudWidget;
-
-  private static final String MAX_PLAYER_WIDTH_KEY = "--current-song-widget-max-player-width";
-  private static final String PROGRESS_FILL_WIDTH_KEY = "--current-song-progress-width";
-  private static final String BACKGROUND_VARIABLE_KEY = "--song-widget-bg";
-  private static final String PROGRESS_BAR_COLOR_VARIABLE_KEY = "--song-widget-progress-bar-color";
-
-  private static final float MAX_PLAYER_WIDTH = 160f;
 
   private ComponentWidget streamWidget;
   private ComponentWidget statusWidget;
@@ -76,8 +69,8 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     this.lastLivePrefix = Component.empty();
     this.lastLiveBadgeTwitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
 
-    this.setVariable(MAX_PLAYER_WIDTH_KEY, MAX_PLAYER_WIDTH);
-    this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
+    this.setVariable(HudWidgetVariables.MAX_PLAYER_WIDTH_KEY, HudWidgetVariables.MAX_PLAYER_WIDTH);
+    this.setVariable(HudWidgetVariables.PROGRESS_FILL_WIDTH_KEY, 0);
     this.applyBackgroundColor();
 
     boolean showCover = this.hudWidget.getConfig().showCover().get();
@@ -255,7 +248,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         Math.max(streamNameWidth, trackWidth),
         Math.max(artistWidth, statusWidth)
     );
-    float playerWidth = Math.clamp(naturalWidth + 4f, 160f, MAX_PLAYER_WIDTH);
+    float playerWidth = Math.clamp(naturalWidth + 4f, 160f, HudWidgetVariables.MAX_PLAYER_WIDTH);
 
     this.progressTrackMaxWidth = Math.max(40f, playerWidth);
 
@@ -309,9 +302,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   }
 
   private void applyCover(CurrentSong currentSong) {
-    if (this.coverWidget == null || currentSong == null) {
-      return;
-    }
+    if (this.coverWidget == null || currentSong == null) return;
 
     ArtworkCache cache = this.addon.currentSongService().artworkCache();
     long generation = cache.currentGeneration();
@@ -324,29 +315,21 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     cache.put(cacheKey, url);
 
     cache.applyIfCurrent(generation, url, artworkUrl -> {
-      if (generation != cache.currentGeneration()) {
-        return;
-      }
-      if (artworkUrl.equals(this.appliedCoverUrl) && generation == this.appliedArtworkGeneration) {
-        return;
-      }
+      if (generation != cache.currentGeneration()) return;
+      if (artworkUrl.equals(this.appliedCoverUrl) && generation == this.appliedArtworkGeneration) return;
       this.appliedCoverUrl = artworkUrl;
       this.appliedArtworkGeneration = generation;
       this.coverWidget.icon().set(Icon.url(artworkUrl));
     });
 
     if (url == null || url.isBlank()) {
-      if (this.appliedCoverUrl != null) {
-        return;
-      }
+      if (this.appliedCoverUrl != null) return;
       this.coverWidget.icon().set(EvilTextures.LOGO);
     }
   }
 
   private void updateProgress(CurrentSong song) {
-    if (this.statusWidget == null || this.progressTrack == null || this.progressFill == null) {
-      return;
-    }
+    if (this.statusWidget == null || this.progressTrack == null || this.progressFill == null) return;
 
     long elapsed = song.getCurrentElapsedSeconds();
     boolean hasDuration = song.hasKnownDuration();
@@ -374,8 +357,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       fillWidth = this.progressTrackMaxWidth * 0.3f;
       this.progressTrack.addId("indeterminate");
     }
-    this.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
-    this.progressFill.setVariable(PROGRESS_FILL_WIDTH_KEY, fillWidth);
+    this.setVariable(HudWidgetVariables.PROGRESS_FILL_WIDTH_KEY, fillWidth);
     this.setProgressVisible(true);
   }
 
@@ -384,10 +366,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
       this.lastRenderedElapsed = -1L;
       this.lastRenderedProgressPercent = -1;
       this.lastRenderedHadDuration = false;
-      this.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
-      if (this.progressFill != null) {
-        this.progressFill.setVariable(PROGRESS_FILL_WIDTH_KEY, 0);
-      }
+      this.setVariable(HudWidgetVariables.PROGRESS_FILL_WIDTH_KEY, 0);
     }
     if (this.progressTrack != null) {
       this.progressTrack.setVisible(visible);
@@ -398,12 +377,9 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
   }
 
   private void applyBackgroundColor() {
-    this.setVariable(BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
+    this.setVariable(HudWidgetVariables.BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
     int progressColor = this.hudWidget.getConfig().progressBarColor().get().get();
-    this.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
-    if (this.progressFill != null) {
-      this.progressFill.setVariable(PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
-    }
+    this.setVariable(HudWidgetVariables.PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
   }
 
 }

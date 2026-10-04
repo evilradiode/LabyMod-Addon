@@ -1,3 +1,5 @@
+import net.labymod.labygradle.common.extension.model.labymod.ReleaseChannel
+
 plugins {
     id("net.labymod.labygradle")
     id("net.labymod.labygradle.addon")
@@ -16,7 +18,7 @@ labyMod {
             runs {
                 getByName("client") {
                     // When the property is set to true, you can log in with a Minecraft account
-                    // devLogin = true
+                    devLogin = true
                 }
             }
         }
@@ -29,6 +31,7 @@ labyMod {
         description = "Ein Radio-Addon für LabyMod 4"
         minecraftVersion = "*"
         version = rootProject.version.toString()
+        releaseChannel = ReleaseChannel.create("internal_next")
     }
 }
 

@@ -124,9 +124,17 @@
           "name": "Show Cover",
           "description": "Show the album cover in the widget."
         },
-        "useModernWidget": {
-          "name": "Use Modern Widget",
-          "description": "Use the modern widget design."
+        "hudWidgetDesign": {
+          "name": "Style of the Widget",
+          "style": {
+            "classic": "Classic",
+            "glass": "Glass",
+            "laby": "Laby"
+          }
+        },
+        "seeThrough": {
+          "name": "See Through",
+          "description": "Make the widget see-through."
         },
         "showLastSong": {
           "name": "Show Last Song",

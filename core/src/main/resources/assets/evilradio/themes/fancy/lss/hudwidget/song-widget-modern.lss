@@ -9,11 +9,11 @@ ModernCurrentSong {
     top: 0;
     width: 220;
     height: fit-content;
-    filter: blur(var(--modern-song-widget-blur));
+    filter: blur(var(--song-widget-blur));
     border-radius: 10;
     border-thickness: 2;
-    border-color: var(--modern-song-widget-border-color);
-    background-color: var(--modern-song-widget-bg);
+    border-color: var(--song-widget-border-color);
+    background-color: var(--song-widget-bg);
     box-shadow: none;
     orientation: vertical;
   }
@@ -29,7 +29,7 @@ ModernCurrentSong {
     .player {
       height: fit-content;
       orientation: vertical;
-      width: var(--modern-song-widget-max-player-width);
+      width: var(--song-widget-max-player-width);
       padding-left: 5;
       padding-right: 2;
 
@@ -79,10 +79,10 @@ ModernCurrentSong {
             top: 0;
             left: 0;
             height: 4;
-            width: var(--modern-song-widget-progress-width);
+            width: var(--song-widget-progress-width);
             max-width: 100%;
             border-radius: 5;
-            background-color: var(--modern-song-widget-progress-bar-color);
+            background-color: var(--song-widget-progress-bar-color);
           }
 
           &.indeterminate {
@@ -109,11 +109,11 @@ ModernCurrentSong {
     margin-top: 2;
     width: 220;
     height: fit-content;
-    filter: blur(var(--modern-song-widget-blur));
+    filter: blur(var(--song-widget-blur));
     border-radius: 10;
     border-thickness: 2;
-    border-color: var(--modern-song-widget-border-color);
-    background-color: var(--modern-song-widget-bg);
+    border-color: var(--song-widget-border-color);
+    background-color: var(--song-widget-bg);
     box-shadow: none;
     orientation: vertical;
     margin-bottom: 2;
@@ -138,7 +138,7 @@ ModernCurrentSong {
       .previous-player {
         height: fit-content;
         orientation: vertical;
-        width: calc(var(--modern-song-widget-max-player-width) + 20);
+        width: calc(var(--song-widget-max-player-width) + 20);
         padding-left: 5;
         padding-right: 2;
 

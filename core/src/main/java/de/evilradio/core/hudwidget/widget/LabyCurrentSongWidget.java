@@ -22,9 +22,9 @@ import net.labymod.api.client.gui.screen.widget.widgets.DivWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.FlexibleContentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
 
-@Link("hudwidget/song-widget-modern.lss")
+@Link("hudwidget/song-widget-laby.lss")
 @AutoWidget
-public class ModernCurrentSongWidget extends FlexibleContentWidget implements Updatable {
+public class LabyCurrentSongWidget extends FlexibleContentWidget implements Updatable {
 
   private final EvilRadioAddon addon;
   private final CurrentSongHudWidget hudWidget;
@@ -34,7 +34,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private ComponentWidget trackWidget;
   private ComponentWidget artistWidget;
 
-  private FlexibleContentWidget previousSongContainer;
   private IconWidget previousSongIconWidget;
   private ComponentWidget previousTrackWidget;
   private ComponentWidget previousArtistWidget;
@@ -56,7 +55,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   /** Ob der Previous-Block aktuell im Tree hängt (für HUD-Höhe / Snapping). */
   private boolean previousSectionMounted;
 
-  public ModernCurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget) {
+  public LabyCurrentSongWidget(EvilRadioAddon addon, CurrentSongHudWidget hudWidget) {
     this.addon = addon;
     this.hudWidget = hudWidget;
   }
@@ -75,7 +74,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     this.lastArtistName = "";
     this.lastLivePrefix = null;
     this.previousSectionMounted = false;
-    this.previousSongContainer = null;
     this.previousSongIconWidget = null;
     this.previousTrackWidget = null;
     this.previousArtistWidget = null;
@@ -83,6 +81,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
 
     this.setVariable(HudWidgetVariables.MAX_PLAYER_WIDTH_KEY, HudWidgetVariables.MAX_PLAYER_WIDTH);
     this.setVariable(HudWidgetVariables.PROGRESS_FILL_WIDTH_KEY, 0);
+    this.setVariable(HudWidgetVariables.OPACITY_VARIABLE_KEY, this.hudWidget.getConfig().seeThrough().get() ? 0.7 : 1.0);
     this.applyBackgroundColor();
 
     boolean showCover = this.hudWidget.getConfig().showCover().get();
@@ -90,6 +89,7 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
       this.addId("no-cover");
     }
 
+    FlexibleContentWidget beforeSongContainer = new FlexibleContentWidget().addId("before-song-container");
     FlexibleContentWidget songContainer = new FlexibleContentWidget().addId("song-container");
 
     FlexibleContentWidget content = new FlexibleContentWidget().addId("content");
@@ -129,7 +129,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     content.addFlexibleContent(player);
 
     songContainer.addContent(content);
-    this.addContent(songContainer);
+    beforeSongContainer.addContent(songContainer);
+    this.addContent(beforeSongContainer);
 
     CurrentSong currentSong = this.addon.currentSongService().getCurrentSong();
     CurrentSong previousSong = this.addon.currentSongService().getPreviousSong();
@@ -142,7 +143,8 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   }
 
   private void mountPreviousSongSection() {
-    this.previousSongContainer = new FlexibleContentWidget().addId("previous-song-container");
+    FlexibleContentWidget beforePreviousSongContainer = new FlexibleContentWidget().addId("before-previous-song-container");
+    FlexibleContentWidget previousSongContainer = new FlexibleContentWidget().addId("previous-song-container");
 
     FlexibleContentWidget previousSongContent = new FlexibleContentWidget().addId("previous-song-content");
 
@@ -162,8 +164,9 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
     previousSongPlayer.addContent(this.previousArtistWidget);
 
     previousSongContent.addFlexibleContent(previousSongPlayer);
-    this.previousSongContainer.addContent(previousSongContent);
-    this.addContent(this.previousSongContainer);
+    previousSongContainer.addContent(previousSongContent);
+    beforePreviousSongContainer.addContent(previousSongContainer);
+    this.addContent(beforePreviousSongContainer);
 
     this.previousSectionMounted = true;
   }
@@ -486,7 +489,6 @@ public class ModernCurrentSongWidget extends FlexibleContentWidget implements Up
   private void applyBackgroundColor() {
     this.setVariable(HudWidgetVariables.BACKGROUND_VARIABLE_KEY, this.hudWidget.getConfig().backgroundColor().get().get());
     this.setVariable(HudWidgetVariables.BORDER_COLOR_VARIABLE_KEY, this.hudWidget.getConfig().borderColor().get().get());
-    this.setVariable(HudWidgetVariables.BACKGROUND_BLUR_VARIABLE_KEY, this.hudWidget.getConfig().backgroundBlur().get());
     int progressColor = this.hudWidget.getConfig().progressBarColor().get().get();
     this.setVariable(HudWidgetVariables.PROGRESS_BAR_COLOR_VARIABLE_KEY, progressColor);
     if (this.progressFill != null) {
