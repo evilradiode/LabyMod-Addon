@@ -803,8 +803,6 @@ public class CurrentSongService {
     HttpRequest request = HttpRequest.newBuilder(URI.create(EvilConstants.AZURACAST_NOWPLAYING_URL))
         .timeout(Duration.ofSeconds(8))
         .header("User-Agent", this.addon.apiUserAgent())
-        .header("X-Addon-Version", this.addon.addonVersion())
-        .header("X-Minecraft-Version", this.addon.labyAPI().minecraft().getVersion())
         .GET()
         .build();
 
