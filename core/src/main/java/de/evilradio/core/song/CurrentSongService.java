@@ -516,6 +516,8 @@ public class CurrentSongService {
         .userAgent(this.addon.apiUserAgent())
         .addHeader("X-Addon-Version", this.addon.addonVersion())
         .addHeader("X-Minecraft-Version", this.addon.labyAPI().minecraft().getVersion())
+        .addHeader("X-Used-Theme", this.addon.labyAPI().config().appearance().theme().get())
+        .addHeader("X-Used-Widget-Theme", this.addon.currentSongHudWidget().getConfig().hudWidgetDesign().get().name())
         .execute(response -> {
           if (response.getStatusCode() != 200 || response.hasException()) {
             callback.accept(null);
@@ -785,6 +787,8 @@ public class CurrentSongService {
         .userAgent(this.addon.apiUserAgent())
         .addHeader("X-Addon-Version", this.addon.addonVersion())
         .addHeader("X-Minecraft-Version", this.addon.labyAPI().minecraft().getVersion())
+        .addHeader("X-Used-Theme", this.addon.labyAPI().config().appearance().theme().get())
+        .addHeader("X-Used-Widget-Theme", this.addon.currentSongHudWidget().getConfig().hudWidgetDesign().get().name())
         .execute(response -> {
           if (response.getStatusCode() != 200 || response.hasException()) {
             callback.accept(null);
