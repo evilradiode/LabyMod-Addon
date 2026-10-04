@@ -1,5 +1,4 @@
   .player-restore {
-    bottom: 48;
     width: 32;
     height: 32;
     padding: 3;
@@ -14,18 +13,22 @@
 
   .player-restore.right {
     right: 8;
+    bottom: 20;
   }
 
   .player-restore.left {
     left: 8;
+    bottom: 30;
   }
 
   .song-container.right {
     right: 8;
+    bottom: 20;
   }
 
   .song-container.left {
     left: 8;
+    bottom: 30;
   }
 
   .player-restore:hover {
@@ -33,7 +36,6 @@
   }
 
   .song-container {
-    bottom: 48;
     width: 132;
     height: fit-content;
     priority-layer: very_front;
