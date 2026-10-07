@@ -63,9 +63,10 @@ public class RadioManager {
 
     if (radioPlayer != null) {
       radioPlayer.setSharedContextSupplier(this::fetchSharedOpenAlContext);
-      radioPlayer.setOutputDeviceName(
-          MinecraftSoundDeviceProvider.getSelectedSoundDevice(addon.labyAPI().minecraft())
-      );
+      String soundDevice = this.addon.labyAPI().minecraft().options().getSoundDevice();
+      if(soundDevice != null && !soundDevice.isBlank()) {
+        radioPlayer.setOutputDeviceName(soundDevice);
+      }
       radioPlayer.play(stream.getUrl());
 
       if (addon.currentSongService() != null) {
