@@ -239,7 +239,7 @@ public class CurrentSongService {
    * „aktuell“ ankommen. Den nicht über einen noch laufenden Song legen.
    */
   private static boolean isStaleRecoveredSong(CurrentSong current, CurrentSong incoming) {
-    if (current == null || incoming == null || !isElapsedToEnd(incoming)) {
+    if (current == null || !isElapsedToEnd(incoming)) {
       return false;
     }
     return isSongIdentityChanged(current, incoming) && !isElapsedToEnd(current);
