@@ -211,19 +211,7 @@ public class ScheduleService {
             return;
           }
 
-          JsonArray scheduleArray = response.get();
-          if (scheduleArray == null || scheduleArray.size() == 0) {
-            this.runOnRender(onDone);
-            return;
-          }
-
-          this.applyParsedSchedule(scheduleArray);
-          this.logging.info(
-              "Sendeplan geladen und lokal gespeichert: "
-                  + this.cachedShows.size()
-                  + " Sendungen / "
-                  + this.cachedDays.size()
-                  + " Tage");
+          this.applyParsedSchedule(response.get());
           this.runOnRender(onDone);
         });
   }
@@ -250,12 +238,7 @@ public class ScheduleService {
             return;
           }
 
-          JsonArray scheduleArray = response.get();
-          if (scheduleArray == null || scheduleArray.size() == 0) {
-            return;
-          }
-
-          this.applyParsedSchedule(scheduleArray);
+          this.applyParsedSchedule(response.get());
           this.checkCachedShows();
         });
   }
@@ -289,7 +272,7 @@ public class ScheduleService {
 
     for (JsonElement dayElement : scheduleArray) {
       JsonArray dayDataArray = this.extractDayEntries(dayElement);
-      if (dayDataArray == null || dayDataArray.size() == 0) {
+      if (dayDataArray == null || dayDataArray.isEmpty()) {
         continue;
       }
 
