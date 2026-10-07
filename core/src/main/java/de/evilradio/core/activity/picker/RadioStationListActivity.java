@@ -729,7 +729,7 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private CurrentSong withMashupShowTiming(@Nullable String shortcode, @Nullable CurrentSong song) {
-    if (song == null || shortcode == null || !"mashup".equals(shortcode)) {
+    if (song == null || !"mashup".equals(shortcode)) {
       return song;
     }
     if (this.mashupShowStatus == null || !this.mashupShowStatus.onAir()) {
@@ -1433,9 +1433,7 @@ public class RadioStationListActivity extends SimpleActivity {
         continue;
       }
       CurrentSong updated = this.addon.currentSongService().applyShowToSong(song, this.mashupShowStatus);
-      if (key != null) {
-        this.songByShortcode.put(key, updated);
-      }
+      this.songByShortcode.put(key, updated);
       row.setSong(updated);
       row.updateOnAirAndTwitchStatus(this.mashupOnAir, this.mashupTwitch);
     }
