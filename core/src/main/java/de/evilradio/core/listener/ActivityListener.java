@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import de.evilradio.core.song.azuracast.AzuraCastNowPlayingService;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
+import net.labymod.api.client.gui.tooltip.Tooltip;
 import net.labymod.api.models.OperatingSystem;
 import net.labymod.api.client.gui.hud.hudwidget.HudWidget.Updatable;
 import net.labymod.api.client.gui.icon.Icon;
@@ -202,8 +203,8 @@ public class ActivityListener implements Updatable {
     if (this.addon.configuration().menuPlayerMinimized().get()) {
       this.restoreWidget = new IconWidget(EvilTextures.LOGO).addId("player-restore");
       this.applyMenuPlayerPosition(this.restoreWidget);
-      this.restoreWidget.setHoverComponent(
-          Component.translatable("evilradio.widget.restorePlayer").color(NamedTextColor.GRAY));
+      this.restoreWidget.tooltip(
+          Tooltip.text(Component.translatable("evilradio.widget.restorePlayer", NamedTextColor.GRAY)));
       this.restoreWidget.setPressable(() -> {
         this.addon.configuration().menuPlayerMinimized().set(false);
         this.rebuildMenuPlayer();
@@ -222,26 +223,24 @@ public class ActivityListener implements Updatable {
       this.addon.labyAPI().coreSettingRegistry().findSetting((CharSequence) this.addon.labyAPI().getNamespace(this.addon))
           .ifPresent(this.addon.labyAPI()::showSetting);
     }).addId("player-settings");
-    settingsButton.setHoverComponent(
-        Component.translatable("evilradio.widget.playerSettings")
-            .color(NamedTextColor.GRAY));
+    settingsButton.tooltip(
+        Tooltip.text(Component.translatable("evilradio.widget.playerSettings", NamedTextColor.GRAY)));
     chrome.addEntry(settingsButton);
 
     boolean left = this.isMenuPlayerLeft();
     ButtonWidget moveButton = ButtonWidget.icon(left ? SpriteCommon.ARROW_RIGHT : SpriteCommon.ARROW_LEFT, this::toggleMenuPlayerSide)
         .addId("player-move");
-    moveButton.setHoverComponent(
-        Component.translatable(
-                left ? "evilradio.widget.movePlayerRight" : "evilradio.widget.movePlayerLeft")
-            .color(NamedTextColor.GRAY));
+    moveButton.tooltip(
+        Tooltip.text(Component.translatable(
+                left ? "evilradio.widget.movePlayerRight" : "evilradio.widget.movePlayerLeft", NamedTextColor.GRAY)));
     chrome.addEntry(moveButton);
 
     ButtonWidget closeButton = ButtonWidget.icon(EvilTextures.SpriteCommon.X, () -> {
       this.addon.configuration().menuPlayerMinimized().set(true);
       this.rebuildMenuPlayer();
     }).addId("player-close");
-    closeButton.setHoverComponent(
-        Component.translatable("evilradio.widget.minimizePlayer").color(NamedTextColor.GRAY));
+    closeButton.tooltip(
+        Tooltip.text(Component.translatable("evilradio.widget.minimizePlayer", NamedTextColor.GRAY)));
     chrome.addEntry(closeButton);
     this.songContainer.addContent(chrome);
 
@@ -449,15 +448,12 @@ public class ActivityListener implements Updatable {
       this.applyStationIcon();
       this.refreshLiveLine(null);
       if (isPlaying && currentStream != null) {
-        this.streamWidget.setComponent(Component.text(stationLabel(currentStream)).color(NamedTextColor.WHITE));
+        this.streamWidget.setComponent(Component.text(stationLabel(currentStream), NamedTextColor.WHITE));
         if (state == AzuraCastNowPlayingService.NowPlayingConnectionState.RECONNECTING) {
-          this.trackWidget.setComponent(Component.translatable("evilradio.widget.reconnecting")
-              .color(NamedTextColor.DARK_GRAY));
-          this.artistWidget.setComponent(Component.translatable("evilradio.widget.reconnectingHint")
-              .color(NamedTextColor.DARK_GRAY));
+          this.trackWidget.setComponent(Component.translatable("evilradio.widget.reconnecting", NamedTextColor.DARK_GRAY));
+          this.artistWidget.setComponent(Component.translatable("evilradio.widget.reconnectingHint"));
         } else {
-          this.trackWidget.setComponent(Component.translatable("evilradio.widget.loadingSong")
-              .color(NamedTextColor.DARK_GRAY));
+          this.trackWidget.setComponent(Component.translatable("evilradio.widget.loadingSong", NamedTextColor.DARK_GRAY));
           this.artistWidget.setComponent(Component.empty());
           this.setLayoutHidden(this.artistWidget, true);
         }
@@ -465,8 +461,7 @@ public class ActivityListener implements Updatable {
         this.streamWidget.setComponent(Component.empty());
         this.setLayoutHidden(this.streamWidget, true);
         this.trackWidget.addId("idle");
-        this.trackWidget.setComponent(Component.translatable("evilradio.widget.clickPlayToStart")
-            .color(NamedTextColor.GRAY));
+        this.trackWidget.setComponent(Component.translatable("evilradio.widget.clickPlayToStart", NamedTextColor.GRAY));
         this.artistWidget.setComponent(Component.empty());
         this.setLayoutHidden(this.artistWidget, true);
       }
@@ -480,7 +475,7 @@ public class ActivityListener implements Updatable {
       streamDisplayName = currentSong.getStationName();
     }
     this.lastLiveBadgeTwitchPhase = LiveStatusLine.showTwitchPhase(System.currentTimeMillis());
-    this.streamWidget.setComponent(Component.text(streamDisplayName).color(NamedTextColor.GRAY));
+    this.streamWidget.setComponent(Component.text(streamDisplayName, NamedTextColor.GRAY));
     this.refreshLiveLine(currentSong);
 
     this.trackWidget.setComponent(Component.text(currentSong.getDisplayTitle(), NamedTextColor.WHITE));
@@ -537,7 +532,7 @@ public class ActivityListener implements Updatable {
     if (timeLabel.isEmpty()) {
       this.statusWidget.setComponent(Component.empty());
     } else {
-      this.statusWidget.setComponent(Component.text(timeLabel).color(NamedTextColor.GRAY));
+      this.statusWidget.setComponent(Component.text(timeLabel, NamedTextColor.GRAY));
     }
   }
 
