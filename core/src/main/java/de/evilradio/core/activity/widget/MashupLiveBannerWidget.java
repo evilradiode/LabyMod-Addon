@@ -11,6 +11,7 @@ import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.FlexibleContentWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.HorizontalListWidget;
+import net.labymod.api.client.gui.tooltip.Tooltip;
 
 @AutoWidget
 public class MashupLiveBannerWidget extends FlexibleContentWidget {
@@ -133,8 +134,9 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
         if (!this.showTwitch) {
           wishBox.addId("alone");
         }
-        wishBox.setHoverComponent(
-            Component.translatable("evilradio.schedule.grussboxHover").color(NamedTextColor.GRAY));
+        wishBox.tooltip(Tooltip.text(
+            Component.translatable("evilradio.schedule.grussboxHover").color(NamedTextColor.GRAY)
+        ));
         actions.addEntry(wishBox);
       }
       if (this.showTwitch) {
@@ -149,9 +151,10 @@ public class MashupLiveBannerWidget extends FlexibleContentWidget {
         if (!this.showWishBox) {
           twitch.addId("alone");
         }
-        twitch.setHoverComponent(
+        twitch.tooltip(Tooltip.text(
             Component.translatable("evilradio.schedule.twitchButtonHover")
-                .color(NamedTextColor.GRAY));
+                .color(NamedTextColor.GRAY)
+        ));
         actions.addEntry(twitch);
       }
       this.addContent(actions);
