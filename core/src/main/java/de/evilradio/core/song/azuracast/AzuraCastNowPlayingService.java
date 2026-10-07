@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import net.labymod.api.util.logging.Logging;
 
 /**
  * Dynamischer AzuraCast-/Centrifugo-Now-Playing-WebSocket-Client.
