@@ -54,7 +54,7 @@ public class RadioStreamSharedTag extends ComponentNameTag {
     if (sharedRadioStream == null) return super.buildComponents(snapshot);
 
     RadioStream radioStream = this.addon.radioStreamService().findStreamByName(
-        sharedRadioStream.getStreamId());
+        sharedRadioStream.streamId());
     if (radioStream == null) return super.buildComponents(snapshot);
 
     this.icon = radioStream.getIcon();

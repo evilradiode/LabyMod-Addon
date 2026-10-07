@@ -81,8 +81,9 @@ public class RadioStreamSharingController {
     }
 
     SharedRadioStream sharedRadioStream = this.sharedRadioStreams.get(event.getSender());
-    if(sharedRadioStream == null || !sharedRadioStream.getStreamId().equals(streamId)) {
-      this.sharedRadioStreams.put(event.getSender(), new SharedRadioStream(streamId, event.getSender()));
+    if(sharedRadioStream == null || !sharedRadioStream.streamId().equals(streamId)) {
+      this.sharedRadioStreams.put(event.getSender(),
+          new SharedRadioStream(streamId, event.getSender()));
     }
   }
 
@@ -111,23 +112,6 @@ public class RadioStreamSharingController {
     return this.sharedRadioStreams.get(uuid);
   }
 
-  public class SharedRadioStream {
-
-    private final String streamId;
-    private final UUID uuid;
-
-    public SharedRadioStream(String streamId, UUID uuid) {
-      this.streamId = streamId;
-      this.uuid = uuid;
-    }
-
-    public String getStreamId() {
-      return streamId;
-    }
-
-    public UUID getUuid() {
-      return uuid;
-    }
-  }
+  public record SharedRadioStream(String streamId, UUID uuid) {}
 
 }
