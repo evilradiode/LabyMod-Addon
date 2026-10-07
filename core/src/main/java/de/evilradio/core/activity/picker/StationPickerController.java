@@ -8,7 +8,6 @@ import de.evilradio.core.song.CurrentSongService.ShowStatus;
 import java.util.List;
 import java.util.function.Consumer;
 import net.labymod.api.client.component.Component;
-import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.icon.Icon;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,17 +42,13 @@ public final class StationPickerController {
     this.addon.configuration().volume().set(newVolume);
   }
 
-  /**
-   * @return {@code true} if the middle-click was handled (including debounce cancel)
-   */
-  public boolean handleMiddleClick() {
+  public void handleMiddleClick() {
     long currentTime = System.currentTimeMillis();
     if (currentTime - this.lastMiddleClickTime < MIDDLE_CLICK_DEBOUNCE_MS) {
-      return true;
+      return;
     }
     this.lastMiddleClickTime = currentTime;
     this.radioManager.togglePlayStop();
-    return true;
   }
 
   public void playStream(@Nullable RadioStream stream, @Nullable Runnable closeMenu) {
