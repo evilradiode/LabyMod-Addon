@@ -8,8 +8,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import de.evilradio.core.EvilRadioAddon;
 import net.labymod.api.client.Minecraft;
+import net.labymod.api.client.gui.tooltip.Tooltip;
 import net.labymod.api.client.options.MinecraftOptions;
 
+//TODO: use LabyMod Getter for soundDevice it available in future update
+/**
+ * @deprecated use LabyMod Getter for soundDevice it available in future update
+ */
+@Deprecated
 public final class MinecraftSoundDeviceProvider {
 
   private static final Pattern OPTIONS_SOUND_DEVICE_PATTERN =
