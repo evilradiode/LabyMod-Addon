@@ -2,7 +2,9 @@ package de.evilradio.core.command;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.activity.picker.StationPickerController;
+import de.evilradio.core.activity.popup.MusicWishBoxActivity;
 import de.evilradio.core.radio.RadioStream;
+import net.labymod.api.Laby;
 import net.labymod.api.client.chat.command.Command;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
@@ -26,6 +28,16 @@ public class ListenMashupCommand extends Command {
     if (!this.addon.configuration().enabled().get()) {
       this.displayMessage(Component.translatable("evilradio.schedule.listenDisabled")
           .color(NamedTextColor.RED));
+      return true;
+    }
+
+    if(arguments.length == 1 && arguments[0].equals("wish")) {
+      Laby.labyAPI().minecraft().executeNextTick(() -> {
+        Laby.labyAPI().minecraft().minecraftWindow().displayScreen(new MusicWishBoxActivity(
+            this.addon,
+            Laby.labyAPI().minecraft().minecraftWindow().currentScreen()
+        ));
+      });
       return true;
     }
 

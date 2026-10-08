@@ -206,27 +206,17 @@ public final class NowPlayingMessageParser {
       stationShortcode = textOrNull(station, "shortcode");
     }
 
-    boolean onAir = false;
-    String moderatorName = null;
-    if (np.has("live") && np.get("live").isJsonObject()) {
-      JsonObject live = np.getAsJsonObject("live");
-      // OnAir/Twitch nicht aus AzuraCast. streamer_name nur Fallback –
-      // Anzeige-Name kommt bevorzugt aus radioInfo show.dj.
-      moderatorName = textOrNull(live, "streamer_name");
-    }
-
+    // Sendungsdaten (OnAir/Twitch/DJ/Wunschbox) kommen ausschließlich aus radioInfo –
+    // live/streamer_name aus AzuraCast werden bewusst ignoriert.
     JsonObject nowPlaying = np.has("now_playing") && np.get("now_playing").isJsonObject()
         ? np.getAsJsonObject("now_playing")
         : null;
     if (nowPlaying == null) {
       return Optional.empty();
     }
-    if ((moderatorName == null || moderatorName.isBlank()) && nowPlaying.has("streamer")) {
-      moderatorName = textOrNull(nowPlaying, "streamer");
-    }
 
     Optional<CurrentSong> current = parseSongEntry(
-        nowPlaying, stationId, stationName, stationShortcode, onAir, moderatorName, receivedAt);
+        nowPlaying, stationId, stationName, stationShortcode, receivedAt);
     if (current.isEmpty()) {
       return Optional.empty();
     }
@@ -241,7 +231,7 @@ public final class NowPlayingMessageParser {
           continue;
         }
         CurrentSong candidate = parseSongEntry(history.get(i).getAsJsonObject(),
-            stationId, stationName, stationShortcode, false, null, receivedAt).orElse(null);
+            stationId, stationName, stationShortcode, receivedAt).orElse(null);
         if (candidate != null && candidate.isUsableAsPreviousSong()) {
           previous = candidate;
           break;
@@ -257,8 +247,6 @@ public final class NowPlayingMessageParser {
       int stationId,
       String stationName,
       String stationShortcode,
-      boolean onAir,
-      String moderatorName,
       long receivedAt
   ) {
     if (entry == null || !entry.has("song") || !entry.get("song").isJsonObject()) {
@@ -294,9 +282,6 @@ public final class NowPlayingMessageParser {
         artist,
         art,
         songId,
-        moderatorName,
-        onAir,
-        false,
         playedAt,
         duration,
         elapsed,

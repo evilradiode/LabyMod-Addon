@@ -53,6 +53,8 @@ public class CurrentSongService {
 
   private final AtomicReference<CurrentSong> currentSong = new AtomicReference<>();
   private final AtomicReference<CurrentSong> previousSong = new AtomicReference<>();
+  /** Letzte Sendungsdaten aus radioInfo – einzige Quelle für OnAir/Twitch/DJ/Sendezeit. */
+  private final AtomicReference<CurrentSong.Show> currentShow = new AtomicReference<>(CurrentSong.Show.NONE);
   private final AtomicReference<AzuraCastNowPlayingService.NowPlayingConnectionState> connectionState =
       new AtomicReference<>(AzuraCastNowPlayingService.NowPlayingConnectionState.IDLE);
   private final AtomicReference<String> currentShortcode = new AtomicReference<>();
@@ -124,6 +126,7 @@ public class CurrentSongService {
     this.artworkCache.bumpGeneration();
     this.currentSong.set(null);
     this.previousSong.set(null);
+    this.currentShow.set(CurrentSong.Show.NONE);
     this.connectionState.set(AzuraCastNowPlayingService.NowPlayingConnectionState.LOADING);
     this.lastShowStatusFetchAt.set(0L);
     this.lastStuckRefreshAt.set(0L);
@@ -170,24 +173,8 @@ public class CurrentSongService {
     boolean streamSelectedToast = Boolean.TRUE.equals(
         this.pendingStreamSelectedNotification.getAndSet(false));
 
-    // Twitch/OnAir kommen nicht aus dem WS – Flags vom vorherigen Snapshot behalten,
-    // bis radioInfo antwortet (oder Soft-Heartbeat).
-    if (previous != null && (previous.isOnAir() || previous.isTwitch())) {
-      song = song.withLiveStatus(previous.isOnAir(), previous.isTwitch());
-    }
-    // Moderator-Name: API (show.dj) ist kanonisch – Azura-Namen bei Songwechsel nicht überschreiben.
-    if (previous != null
-        && previous.getModeratorName() != null
-        && !previous.getModeratorName().isBlank()) {
-      song = song.withModeratorName(previous.getModeratorName());
-    }
-    // Live-Sendezeit behalten, solange OnAir (auch wenn der Track eine eigene Dauer hat).
-    if (previous != null
-        && previous.isOnAir()
-        && previous.getLiveClockLabel() != null) {
-      song = song.withShowWindow(
-          previous.getPlayedAt(), previous.getDuration(), previous.getLiveClockLabel());
-    }
+    // Sendungsdaten kommen nicht aus dem WS – letzten radioInfo-Stand anhängen.
+    song = song.withShow(this.currentShow.get());
 
     String cacheKey = ArtworkCache.key(activeShortcode, song.getSongId(), song.getImageUrl());
     long artworkGeneration = this.artworkCache.currentGeneration();
@@ -349,68 +336,59 @@ public class CurrentSongService {
   }
 
   private void applyShowStatus(ShowStatus show) {
-    CurrentSong current = this.currentSong.get();
-    if (current == null || !current.isValid() || current.isAdBreak()) {
-      return;
-    }
-
     ShowStatus effective = this.applyLiveGrace(this.currentStreamName.get(), show);
-    CurrentSong updated = this.mergeShowIntoSong(current, effective);
+    CurrentSong.Show info = toShow(effective);
+    CurrentSong.Show previousInfo = this.currentShow.getAndSet(info);
 
-    if (current.isOnAir() == updated.isOnAir()
-        && current.isTwitch() == updated.isTwitch()
-        && Objects.equals(current.getModeratorName(), updated.getModeratorName())
-        && current.getPlayedAt() == updated.getPlayedAt()
-        && current.getDuration() == updated.getDuration()) {
-      return;
+    boolean changed = false;
+    // Während OnAir bzw. direkt nach Sendungsende keinen „Vorherigen Song“ (Live-Müll/Autopilot)
+    if ((info.onAir() || previousInfo.onAir()) && this.previousSong.getAndSet(null) != null) {
+      changed = true;
     }
 
-    if (this.currentSong.compareAndSet(current, updated)) {
-      this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
-    } else {
-      // Zwischenzeitlich neuer WS-Song – Flags erneut auf aktuellen Snapshot anwenden.
-      CurrentSong latest = this.currentSong.get();
-      if (latest == null || latest.isAdBreak()) {
-        return;
-      }
-      this.currentSong.set(this.mergeShowIntoSong(latest, effective));
+    CurrentSong current = this.currentSong.get();
+    if (current != null && !info.equals(current.getShow())) {
+      // updateAndGet: falls zwischenzeitlich ein neuer WS-Song kam, auf diesen anwenden
+      this.currentSong.updateAndGet(song -> song == null ? null : song.withShow(info));
+      changed = true;
+    }
+
+    if (changed) {
       this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
     }
   }
 
   /**
-   * Übernimmt Live-Flags, DJ-Namen und ggf. Sendezeit (start/end) aus radioInfo.
+   * Übernimmt Live-Flags, DJ-Namen, Wunschbox und ggf. Sendezeit (start/end) aus radioInfo.
    */
   public CurrentSong applyShowToSong(CurrentSong song, ShowStatus show) {
     if (song == null || show == null) {
       return song;
     }
-    return this.mergeShowIntoSong(song, show);
+    return song.withShow(toShow(show));
   }
 
-  private CurrentSong mergeShowIntoSong(CurrentSong song, ShowStatus show) {
-    CurrentSong updated = song.withLiveStatus(show.onAir(), show.twitch());
-    // show.dj ist die Anzeige-Quelle; Azura nur Fallback bis die API einen Namen liefert.
-    if (show.moderatorName() != null && !show.moderatorName().isBlank()) {
-      updated = updated.withModeratorName(show.moderatorName());
+  private static CurrentSong.Show toShow(ShowStatus show) {
+    if (show == null) {
+      return CurrentSong.Show.NONE;
     }
-    // Bei Live: Sendezeit aus start/end (z. B. 14:00–16:00), Azura-Trackdauer oft 0.
-    if (show.onAir() && show.hasShowWindow()) {
-      updated = updated.withShowWindow(
-          show.showPlayedAtSec(),
-          show.showDurationSec(),
-          show.startHHmm(),
-          show.endHHmm());
-      if (this.previousSong.get() != null) {
-        this.previousSong.set(null);
-      }
-    } else if (!show.onAir() && song.getLiveClockLabel() != null) {
-      // Sendung vorbei → Uhrzeit-Label und Sende-Fenster entfernen;
-      // vorherigen Song leeren, bis wieder ein echter Track kommt
-      updated = updated.withShowWindow(0L, 0L, null);
-      this.previousSong.set(null);
-    }
-    return updated;
+    // Sendezeit (z. B. 14:00–16:00) nur bei Live – Azura-Trackdauer ist dann oft 0.
+    boolean window = show.onAir() && show.hasShowWindow();
+    return new CurrentSong.Show(
+        show.onAir(),
+        show.twitch(),
+        show.stream(),
+        show.name(),
+        show.pictureUrl(),
+        show.moderatorName(),
+        show.moderatorImage(),
+        show.startHHmm(),
+        show.endHHmm(),
+        show.event(),
+        show.wishBoxEnabled(),
+        window ? show.showPlayedAtSec() : 0L,
+        window ? show.showDurationSec() : 0L,
+        window ? CurrentSong.formatShowClock(show.startHHmm(), show.endHHmm()) : null);
   }
 
   /**
@@ -449,10 +427,9 @@ public class CurrentSongService {
     if (grace != null && (grace.onAir || grace.twitch)) {
       long graceUntilMs = graceGraceUntilMs(grace);
       if (System.currentTimeMillis() < graceUntilMs) {
-        return new ShowStatus(
+        return raw.withLiveWindow(
             grace.onAir,
             grace.twitch,
-            raw.moderatorName(),
             grace.showPlayedAtSec,
             grace.showDurationSec,
             grace.startHHmm,
@@ -542,31 +519,39 @@ public class CurrentSongService {
   }
 
   private static ShowStatus parseShowStatus(JsonObject object) {
-    boolean twitch = false;
-    boolean onAir = false;
-    String moderatorName = null;
-    String start = null;
-    String end = null;
-    if (object.has("show") && object.get("show").isJsonObject()) {
-      JsonObject showObject = object.get("show").getAsJsonObject();
-      if (showObject.has("twitch") && showObject.get("twitch").isJsonPrimitive()) {
-        twitch = showObject.get("twitch").getAsBoolean();
-      }
-      if (showObject.has("live") && showObject.get("live").isJsonPrimitive()) {
-        onAir = showObject.get("live").getAsBoolean();
-      }
-      if (showObject.has("start") && showObject.get("start").isJsonPrimitive()) {
-        start = normalizeShowField(showObject.get("start").getAsString());
-      }
-      if (showObject.has("end") && showObject.get("end").isJsonPrimitive()) {
-        end = normalizeShowField(showObject.get("end").getAsString());
-      }
-      if (showObject.has("dj") && showObject.get("dj").isJsonPrimitive()) {
-        moderatorName = normalizeShowField(showObject.get("dj").getAsString());
-      }
-    }
+    JsonObject showObject = object.has("show") && object.get("show").isJsonObject()
+        ? object.get("show").getAsJsonObject()
+        : new JsonObject();
+    String start = showString(showObject, "start");
+    String end = showString(showObject, "end");
     long[] window = resolveShowWindow(start, end);
-    return new ShowStatus(onAir, twitch, moderatorName, window[0], window[1], start, end);
+    return new ShowStatus(
+        showBoolean(showObject, "live"),
+        showBoolean(showObject, "twitch"),
+        showString(showObject, "stream"),
+        showString(showObject, "name"),
+        showString(showObject, "picture"),
+        showString(showObject, "dj"),
+        showString(showObject, "djImage"),
+        start,
+        end,
+        showBoolean(showObject, "event"),
+        showBoolean(showObject, "wishBox"),
+        window[0],
+        window[1]);
+  }
+
+  private static String showString(JsonObject showObject, String key) {
+    if (!showObject.has(key) || !showObject.get(key).isJsonPrimitive()) {
+      return null;
+    }
+    return normalizeShowField(showObject.get(key).getAsString());
+  }
+
+  private static boolean showBoolean(JsonObject showObject, String key) {
+    return showObject.has(key)
+        && showObject.get(key).isJsonPrimitive()
+        && showObject.get(key).getAsBoolean();
   }
 
   private static String normalizeShowField(String value) {
@@ -619,12 +604,26 @@ public class CurrentSongService {
   public record ShowStatus(
       boolean onAir,
       boolean twitch,
+      String stream,
+      String name,
+      String pictureUrl,
       String moderatorName,
-      long showPlayedAtSec,
-      long showDurationSec,
+      String moderatorImage,
       String startHHmm,
-      String endHHmm
+      String endHHmm,
+      boolean event,
+      boolean wishBoxEnabled,
+      long showPlayedAtSec,
+      long showDurationSec
   ) {
+    /** Kopie mit Live-Flags und Sendezeit aus der Grace (Rest der Daten bleibt aktuell). */
+    ShowStatus withLiveWindow(
+        boolean onAir, boolean twitch, long playedAtSec, long durationSec, String startHHmm, String endHHmm) {
+      return new ShowStatus(
+          onAir, twitch, this.stream, this.name, this.pictureUrl, this.moderatorName, this.moderatorImage,
+          startHHmm, endHHmm, this.event, this.wishBoxEnabled, playedAtSec, durationSec);
+    }
+
     public boolean hasShowWindow() {
       return this.showPlayedAtSec > 0L && this.showDurationSec > 0L;
     }
@@ -715,23 +714,7 @@ public class CurrentSongService {
     String title = currentSongObject.get("title").getAsString();
     String artist = currentSongObject.get("artist").getAsString();
     String image = currentSongObject.get("image").getAsString();
-
-    String moderatorName = null;
-    boolean twitch = false;
-    boolean onAir = false;
-    if (object.has("show") && object.get("show").isJsonObject()) {
-      JsonObject showObject = object.get("show").getAsJsonObject();
-      if (showObject.has("twitch")) {
-        twitch = showObject.get("twitch").getAsBoolean();
-      }
-      if (showObject.has("live")) {
-        onAir = showObject.get("live").getAsBoolean();
-      }
-      if (showObject.has("dj")) {
-        moderatorName = showObject.get("dj").getAsString();
-      }
-    }
-    return new CurrentSong(title, artist, image, moderatorName, onAir, twitch);
+    return new CurrentSong(title, artist, image).withShow(toShow(parseShowStatus(object)));
   }
 
   /**
@@ -756,6 +739,7 @@ public class CurrentSongService {
     this.clearLiveGrace(this.currentStreamName.get());
     this.currentSong.set(null);
     this.previousSong.set(null);
+    this.currentShow.set(CurrentSong.Show.NONE);
     this.currentStreamName.set(null);
     this.currentShortcode.set(null);
     this.connectionState.set(AzuraCastNowPlayingService.NowPlayingConnectionState.IDLE);

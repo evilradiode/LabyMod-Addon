@@ -8,6 +8,38 @@
     }
   },
   "evilradio": {
+    "form": {
+      "wishbox": {
+        "title": "Wishbox",
+        "name": "Name",
+        "nameInfo": "If empty and not anonymous, your Minecraft Username will be submitted.",
+        "age": "Age",
+        "anonymous": "Anonymous",
+        "artist": {
+          "name": "Artist",
+          "placeholder": "Name of the Artist/Band"
+        },
+        "song": {
+          "name": "Song",
+          "placeholder": "Name of the Song"
+        },
+        "greet": "Greet or Message (optional)",
+        "submit": {
+          "button": "Submit",
+          "error": {
+            "title": "Error while submitting your wish",
+            "empty": "Please enter an artist and song!",
+            "cooldown": "You have already sent a greeting. Please wait at least 5 minutes before sending another one.",
+            "noModerator": "There is currently no moderator live.",
+            "moderatorDisabled": "The moderator has disabled the wishbox.",
+            "notListening": "You are not listening to any station."
+          },
+          "nameInformation": "Since you haven't entered a name, your Minecraft Username was submitted instead.",
+          "success": "Your greeting/wish has been sent successfully."
+        },
+        "abort": "Abort"
+      }
+    },
     "menu": {
       "title": "Our Stations",
       "description": "You want to hear a song, but no moderator is live? No problem!",

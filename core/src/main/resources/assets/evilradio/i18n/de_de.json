@@ -8,6 +8,38 @@
     }
   },
   "evilradio": {
+    "form": {
+      "wishbox": {
+        "title": "Gruss- und Wunschbox",
+        "name": "Name",
+        "nameInfo": "Wenn leer, wird dein Minecraft Username anstelle deines Namens übermittelt.",
+        "age": "Alter",
+        "anonymous": "Anonym",
+        "artist": {
+          "name": "Interpret",
+          "placeholder": "Name des Interprets/Bands"
+        },
+        "song": {
+          "name": "Song",
+          "placeholder": "Name des Songs"
+        },
+        "greet": "Gruss oder Nachricht (optional)",
+        "submit": {
+          "button": "Absenden",
+          "error": {
+            "title": "Fehler beim Absenden deines Grusses/Wunsches",
+            "empty": "Bitte gib einen Interpret und einen Song an!",
+            "cooldown": "Du hast bereits einen Gruss gesendet. Bitte warte mindestens 5 Minuten, bevor du einen anderen absenden kannst.",
+            "noModerator": "Derzeit ist kein Moderator live.",
+            "moderatorDisabled": "Der Moderator hat die Gruss- und Wunschbox deaktiviert.",
+            "notListening": "Du hörst derzeit keine Station."
+          },
+          "nameInformation": "Wenn du keinen Namen eingibst, wird dein Minecraft Username anstelle deines Namens übermittelt.",
+          "success": "Dein Gruss/Wunsch wurde erfolgreich gesendet."
+        },
+        "abort": "Abbrechen"
+      }
+    },
     "menu": {
       "title": "Unsere Sender",
       "description": "Du möchtest ein Lied hören, aber es ist kein Moderator live? Kein Problem!",

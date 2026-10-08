@@ -1,0 +1,206 @@
+@import super();
+
+.container {
+  left: 50%;
+  top: 50%;
+  width: 300;
+  height: fit-content;
+  alignment-x: center;
+  alignment-y: center;
+  background-color: var(--background-color);
+  border-color: var(--background-color-border);
+  border-radius: var(--border-radius);
+  border-thickness: var(--border-thickness);
+  box-shadow: none;
+  renderer: "Card";
+
+  .header {
+    left: 50%;
+    width: 100%;
+    height: 25;
+    padding: 0 2 0 2;
+    space-between-entries: 5;
+    background-color: rgba(170, 0, 0, 0.3);
+    border-radius: 3 3 0 0;
+
+    .head {
+      width: 16;
+      height: width;
+      alignment: center;
+    }
+
+    .title {
+      alignment: center;
+    }
+
+  }
+
+  .content {
+    width: 100%;
+    height: fit-content;
+    overwrite-width: false;
+
+    .error-message {
+      margin: 10 0 5 0;
+      alignment-x: center;
+    }
+
+    .name-age-container {
+      width: 100%;
+      height: fit-content;
+    }
+
+    .name-container {
+      width: 60%;
+      height: fit-content;
+      margin-left: 15;
+      margin-right: 15;
+
+      .name-title {
+        margin-top: 10;
+        margin-bottom: 5;
+        alignment-x: center;
+      }
+
+      .name-input {
+        width: 100%;
+        height: 15;
+        alignment-x: center;
+      }
+
+      .name-info {
+        width: 100%;
+        height: 15;
+        alignment-x: center;
+        font-size: 0.6;
+        margin-top: 1;
+      }
+
+    }
+
+    .age-container {
+      width: 20%;
+      height: fit-content;
+      margin-left: 15;
+      margin-right: 15;
+
+      .age-title {
+        margin-top: 10;
+        margin-bottom: 5;
+        alignment-x: center;
+      }
+
+      .age-input {
+        width: 100%;
+        height: 15;
+        alignment-x: center;
+        margin-bottom: 16;
+      }
+
+    }
+
+    .anonymous-container {
+      width: 15%;
+      height: fit-content;
+      margin-left: 15;
+      margin-right: 15;
+
+      .anonymous-title {
+        margin-top: 10;
+        margin-bottom: 5;
+        alignment-x: center;
+      }
+
+      .anonymous-input {
+        width: 100%;
+        height: 15;
+        alignment-x: center;
+        margin-bottom: 16;
+        background-color: var(--background-color);
+      }
+
+    }
+
+    .artist-container {
+      width: 100%;
+      height: fit-content;
+      margin-left: 15;
+      margin-right: 15;
+
+      .artist-title {
+        margin-top: 10;
+        margin-bottom: 5;
+        alignment-x: center;
+      }
+
+      .artist-input {
+        width: 100%;
+        height: 15;
+        alignment-x: center;
+      }
+
+    }
+
+    .song-container {
+      width: 100%;
+      height: fit-content;
+      margin-left: 15;
+      margin-right: 15;
+
+      .song-title {
+        margin-top: 10;
+        margin-bottom: 5;
+        alignment-x: center;
+      }
+
+      .song-input {
+        width: 100%;
+        height: 15;
+        alignment-x: center;
+      }
+
+    }
+
+    .greet-container {
+      width: 100%;
+      height: fit-content;
+      margin-left: 15;
+      margin-right: 15;
+
+      .greet-title {
+        margin-top: 10;
+        margin-bottom: 5;
+        alignment-x: center;
+      }
+
+      .greet-input {
+        width: 100%;
+        height: fit-content;
+        min-height: 15;
+      }
+
+    }
+
+    .button-container {
+      orientation: horizontal;
+      margin: 10 0 10 0;
+      width: fit-content;
+      height: fit-content;
+      alignment-x: center;
+
+      .submit-button {
+        width: 60;
+        height: 20;
+        margin-right: 5;
+      }
+
+      .close-button {
+        width: 60;
+        height: 20;
+        margin-left: 5;
+      }
+
+    }
+
+  }
+}

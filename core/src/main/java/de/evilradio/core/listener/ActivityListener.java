@@ -129,7 +129,8 @@ public class ActivityListener implements Updatable {
   private boolean menuPlayerAttached;
 
   private static final ShowStatus DEBUG_MASHUP_LIVE =
-      new ShowStatus(true, true, "Debug-DJ", 0L, 0L, "20:00", "22:00");
+      new ShowStatus(true, true, "Mashup", "Debug-Show", null, "Debug-DJ", null,
+          "20:00", "22:00", false, false, 0L, 0L);
 
   private boolean debugForceMashupLive() {
     return this.addon.configuration().debugForceMashupLive().get()

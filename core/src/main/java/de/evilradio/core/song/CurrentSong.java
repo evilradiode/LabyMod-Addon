@@ -4,6 +4,9 @@ import net.labymod.api.util.I18n;
 
 /**
  * Unveränderlicher Snapshot der Now-Playing-Daten eines Senders.
+ * <p>
+ * Track-Daten kommen aus AzuraCast (WebSocket/REST), Sendungsdaten ({@link Show}) ausschließlich
+ * aus der Evil-Radio-REST-API ({@code radioInfo}).
  */
 public final class CurrentSong {
 
@@ -16,26 +19,15 @@ public final class CurrentSong {
   private final String artist;
   private final String imageUrl;
   private final String songId;
-  private final String moderatorName;
-  private final boolean onAir;
-  private final boolean twitch;
   private final long playedAt;
   private final long duration;
   private final long elapsedAtUpdate;
   private final long receivedAt;
   private final boolean adBreak;
-  /** Bei Live-Sendung z. B. {@code 14:00–16:00}, sonst {@code null}. */
-  private final String liveClockLabel;
+  private final Show show;
 
   public CurrentSong(String title, String artist, String imageUrl) {
-    this(0, null, null, title, artist, imageUrl, null, null, false, false, 0L, 0L, 0L,
-        System.currentTimeMillis(), false, null);
-  }
-
-  public CurrentSong(String title, String artist, String imageUrl, String moderatorName, boolean onAir,
-      boolean twitch) {
-    this(0, null, null, title, artist, imageUrl, null, moderatorName, onAir, twitch, 0L, 0L, 0L,
-        System.currentTimeMillis(), false, null);
+    this(0, null, null, title, artist, imageUrl, null, 0L, 0L, 0L, System.currentTimeMillis());
   }
 
   public CurrentSong(
@@ -46,9 +38,6 @@ public final class CurrentSong {
       String artist,
       String imageUrl,
       String songId,
-      String moderatorName,
-      boolean onAir,
-      boolean twitch,
       long playedAt,
       long duration,
       long elapsedAtUpdate,
@@ -70,50 +59,27 @@ public final class CurrentSong {
     }
     this.imageUrl = imageUrl;
     this.songId = songId;
-    this.moderatorName = moderatorName;
-    this.onAir = onAir;
-    this.twitch = twitch;
     this.playedAt = playedAt;
     this.duration = Math.max(0L, duration);
     this.elapsedAtUpdate = Math.max(0L, elapsedAtUpdate);
     this.receivedAt = receivedAt <= 0L ? System.currentTimeMillis() : receivedAt;
-    this.liveClockLabel = null;
+    this.show = Show.NONE;
   }
 
-  private CurrentSong(
-      int stationId,
-      String stationName,
-      String stationShortcode,
-      String title,
-      String artist,
-      String imageUrl,
-      String songId,
-      String moderatorName,
-      boolean onAir,
-      boolean twitch,
-      long playedAt,
-      long duration,
-      long elapsedAtUpdate,
-      long receivedAt,
-      boolean adBreak,
-      String liveClockLabel
-  ) {
-    this.stationId = stationId;
-    this.stationName = stationName;
+  private CurrentSong(CurrentSong source, String stationShortcode, Show show) {
+    this.stationId = source.stationId;
+    this.stationName = source.stationName;
     this.stationShortcode = stationShortcode;
-    this.title = title == null ? "" : title;
-    this.artist = artist == null ? "" : artist;
-    this.imageUrl = imageUrl;
-    this.songId = songId;
-    this.moderatorName = moderatorName;
-    this.onAir = onAir;
-    this.twitch = twitch;
-    this.playedAt = playedAt;
-    this.duration = Math.max(0L, duration);
-    this.elapsedAtUpdate = Math.max(0L, elapsedAtUpdate);
-    this.receivedAt = receivedAt <= 0L ? System.currentTimeMillis() : receivedAt;
-    this.adBreak = adBreak;
-    this.liveClockLabel = liveClockLabel == null || liveClockLabel.isBlank() ? null : liveClockLabel.trim();
+    this.title = source.title;
+    this.artist = source.artist;
+    this.imageUrl = source.imageUrl;
+    this.songId = source.songId;
+    this.playedAt = source.playedAt;
+    this.duration = source.duration;
+    this.elapsedAtUpdate = source.elapsedAtUpdate;
+    this.receivedAt = source.receivedAt;
+    this.adBreak = source.adBreak;
+    this.show = show == null ? Show.NONE : show;
   }
 
   private static boolean isAdBreakMarker(String value) {
@@ -156,24 +122,55 @@ public final class CurrentSong {
     return songId;
   }
 
+  public Show getShow() {
+    return show;
+  }
+
   public boolean isOnAir() {
-    return onAir;
+    return show.onAir();
   }
 
   public String getModeratorName() {
-    return moderatorName;
+    return show.moderatorName();
+  }
+
+  public boolean isWishBoxEnabled() {
+    return show.wishBoxEnabled();
   }
 
   public boolean isTwitch() {
-    return twitch;
+    return show.twitch();
   }
 
+  public String getShowName() {
+    return show.name();
+  }
+
+  public String getShowPictureUrl() {
+    return show.pictureUrl();
+  }
+
+  public String getModeratorImageUrl() {
+    return show.moderatorImage();
+  }
+
+  public boolean isEvent() {
+    return show.event();
+  }
+
+  /**
+   * Startzeit (Unix-Sekunden/-Millis): bei Live-Sendung mit Sendefenster der Sendungsbeginn,
+   * sonst der Track-Start aus AzuraCast.
+   */
   public long getPlayedAt() {
-    return playedAt;
+    return hasLiveShowWindow() ? show.playedAtSec() : playedAt;
   }
 
+  /**
+   * Dauer in Sekunden: bei Live-Sendung mit Sendefenster die Sendungsdauer, sonst die Track-Dauer.
+   */
   public long getDuration() {
-    return duration;
+    return hasLiveShowWindow() ? show.durationSec() : duration;
   }
 
   public long getElapsedAtUpdate() {
@@ -184,8 +181,13 @@ public final class CurrentSong {
     return receivedAt;
   }
 
+  /** Bei Live-Sendung z. B. {@code 14:00–16:00 Uhr}, sonst {@code null}. */
   public String getLiveClockLabel() {
-    return liveClockLabel;
+    return show.onAir() ? show.clockLabel() : null;
+  }
+
+  private boolean hasLiveShowWindow() {
+    return show.onAir() && show.hasWindow();
   }
 
   public boolean isValid() {
@@ -197,20 +199,21 @@ public final class CurrentSong {
   }
 
   public boolean hasKnownDuration() {
-    return duration > 0L;
+    return getDuration() > 0L;
   }
 
   /**
    * Playtime-Text: bei Live-Sendung Uhrzeit ({@code 14:00–16:00}), sonst {@code m:ss / m:ss}.
    */
   public String getPlaytimeLabel() {
-    if (this.liveClockLabel != null) {
-      return this.liveClockLabel;
+    String clockLabel = getLiveClockLabel();
+    if (clockLabel != null) {
+      return clockLabel;
     }
     if (!hasKnownDuration()) {
       return null;
     }
-    return formatTime(getCurrentElapsedSeconds()) + " / " + formatTime(this.duration);
+    return formatTime(getCurrentElapsedSeconds()) + " / " + formatTime(getDuration());
   }
 
   /**
@@ -227,7 +230,7 @@ public final class CurrentSong {
       return 0L;
     }
     if (hasKnownDuration()) {
-      return Math.min(this.duration, elapsed);
+      return Math.min(getDuration(), elapsed);
     }
     return elapsed;
   }
@@ -236,13 +239,14 @@ public final class CurrentSong {
    * @return verstrichene Sekunden ab {@code played_at}, oder {@code -1} wenn unbekannt
    */
   private long elapsedFromPlayedAt() {
-    if (this.playedAt >= 1_000_000_000_000L) {
+    long start = getPlayedAt();
+    if (start >= 1_000_000_000_000L) {
       // Unix-Millis
-      return (System.currentTimeMillis() - this.playedAt) / 1000L;
+      return (System.currentTimeMillis() - start) / 1000L;
     }
-    if (this.playedAt >= 1_000_000_000L) {
+    if (start >= 1_000_000_000L) {
       // Unix-Sekunden
-      return (System.currentTimeMillis() / 1000L) - this.playedAt;
+      return (System.currentTimeMillis() / 1000L) - start;
     }
     return -1L;
   }
@@ -254,81 +258,18 @@ public final class CurrentSong {
     if (!hasKnownDuration()) {
       return -1.0d;
     }
-    return Math.clamp((double) getCurrentElapsedSeconds() / (double) duration, 0.0d, 1.0d);
-  }
-
-  public CurrentSong withTwitch(boolean twitchLive) {
-    return withLiveStatus(onAir, twitchLive);
+    return Math.clamp((double) getCurrentElapsedSeconds() / (double) getDuration(), 0.0d, 1.0d);
   }
 
   /**
-   * OnAir/Twitch aus der Evil-Radio-API (nicht aus AzuraCast-WS).
+   * Sendungsdaten aus der Evil-Radio-API (radioInfo) übernehmen.
    */
-  public CurrentSong withLiveStatus(boolean onAirLive, boolean twitchLive) {
-    return copy(
-        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, moderatorName,
-        onAirLive, twitchLive, playedAt, duration, elapsedAtUpdate, receivedAt, adBreak, liveClockLabel);
-  }
-
-  public CurrentSong withModeratorName(String name) {
-    return copy(
-        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, name,
-        onAir, twitch, playedAt, duration, elapsedAtUpdate, receivedAt, adBreak, liveClockLabel);
-  }
-
-  /**
-   * Fortschritt/Playtime (z. B. Sendezeit aus radioInfo {@code show.start}/{@code show.end}).
-   * {@code playedAt} in Unix-Sekunden oder -Millis (wie AzuraCast).
-   */
-  public CurrentSong withTiming(long playedAtEpoch, long durationSeconds) {
-    return copy(
-        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, moderatorName,
-        onAir, twitch, playedAtEpoch, durationSeconds, 0L, System.currentTimeMillis(), adBreak,
-        liveClockLabel);
-  }
-
-  /**
-   * Live-Sendungsfenster inkl. Uhrzeit-Label ({@code 14:00–16:00}).
-   */
-  public CurrentSong withShowWindow(long playedAtEpoch, long durationSeconds, String clockLabel) {
-    return copy(
-        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, moderatorName,
-        onAir, twitch, playedAtEpoch, durationSeconds, 0L, System.currentTimeMillis(), adBreak,
-        clockLabel);
-  }
-
-  public CurrentSong withShowWindow(
-      long playedAtEpoch, long durationSeconds, String startHHmm, String endHHmm) {
-    return withShowWindow(playedAtEpoch, durationSeconds, formatShowClock(startHHmm, endHHmm));
+  public CurrentSong withShow(Show show) {
+    return new CurrentSong(this, stationShortcode, show);
   }
 
   public CurrentSong withStationShortcode(String shortcode) {
-    return copy(
-        stationId, stationName, shortcode, title, artist, imageUrl, songId, moderatorName,
-        onAir, twitch, playedAt, duration, elapsedAtUpdate, receivedAt, adBreak, liveClockLabel);
-  }
-
-  private static CurrentSong copy(
-      int stationId,
-      String stationName,
-      String stationShortcode,
-      String title,
-      String artist,
-      String imageUrl,
-      String songId,
-      String moderatorName,
-      boolean onAir,
-      boolean twitch,
-      long playedAt,
-      long duration,
-      long elapsedAtUpdate,
-      long receivedAt,
-      boolean adBreak,
-      String liveClockLabel
-  ) {
-    return new CurrentSong(
-        stationId, stationName, stationShortcode, title, artist, imageUrl, songId, moderatorName,
-        onAir, twitch, playedAt, duration, elapsedAtUpdate, receivedAt, adBreak, liveClockLabel);
+    return new CurrentSong(this, shortcode, show);
   }
 
   public String getFormatted() {
@@ -387,5 +328,105 @@ public final class CurrentSong {
       return String.format("%d:%02d:%02d", hours, minutes, rem);
     }
     return String.format("%d:%02d", minutes, rem);
+  }
+
+  @Override
+  public String toString() {
+    return "CurrentSong{" +
+        "stationId=" + stationId +
+        ", stationName='" + stationName + '\'' +
+        ", stationShortcode='" + stationShortcode + '\'' +
+        ", title='" + title + '\'' +
+        ", artist='" + artist + '\'' +
+        ", imageUrl='" + imageUrl + '\'' +
+        ", songId='" + songId + '\'' +
+        ", playedAt=" + playedAt +
+        ", duration=" + duration +
+        ", elapsedAtUpdate=" + elapsedAtUpdate +
+        ", receivedAt=" + receivedAt +
+        ", adBreak=" + adBreak +
+        ", show=" + show  +
+        '}';
+  }
+
+  /**
+   * Sendungsdaten – ausschließlich aus der Evil-Radio-REST-API ({@code radioInfo} → {@code show}),
+   * nie aus dem AzuraCast-WebSocket.
+   *
+   * @param onAir          {@code live}
+   * @param twitch         {@code twitch}
+   * @param stream         {@code stream}, z. B. {@code Mashup}
+   * @param name           {@code name}, Titel der Sendung
+   * @param pictureUrl     {@code picture}, Flyer der Sendung
+   * @param moderatorName  {@code dj}
+   * @param moderatorImage {@code djImage}, Avatar des DJs
+   * @param startHHmm      {@code start}, z. B. {@code 20:00}
+   * @param endHHmm        {@code end}, z. B. {@code 22:00}
+   * @param event          {@code event}
+   * @param wishBoxEnabled {@code wishBox}
+   * @param playedAtSec    Sendungsbeginn in Unix-Sekunden, {@code 0} wenn unbekannt
+   * @param durationSec    Sendungsdauer in Sekunden, {@code 0} wenn unbekannt
+   * @param clockLabel     z. B. {@code 20:00–22:00 Uhr}, sonst {@code null}
+   */
+  public record Show(
+      boolean onAir,
+      boolean twitch,
+      String stream,
+      String name,
+      String pictureUrl,
+      String moderatorName,
+      String moderatorImage,
+      String startHHmm,
+      String endHHmm,
+      boolean event,
+      boolean wishBoxEnabled,
+      long playedAtSec,
+      long durationSec,
+      String clockLabel
+  ) {
+
+    public static final Show NONE = new Show(
+        false, false, null, null, null, null, null, null, null, false, false, 0L, 0L, null);
+
+    public Show {
+      stream = blankToNull(stream);
+      name = blankToNull(name);
+      pictureUrl = blankToNull(pictureUrl);
+      moderatorName = blankToNull(moderatorName);
+      moderatorImage = blankToNull(moderatorImage);
+      startHHmm = blankToNull(startHHmm);
+      endHHmm = blankToNull(endHHmm);
+      playedAtSec = Math.max(0L, playedAtSec);
+      durationSec = Math.max(0L, durationSec);
+      clockLabel = blankToNull(clockLabel);
+    }
+
+    private static String blankToNull(String value) {
+      return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    public boolean hasWindow() {
+      return this.playedAtSec > 0L && this.durationSec > 0L;
+    }
+
+    @Override
+    public String toString() {
+      return "Show{" +
+          "onAir=" + onAir +
+          ", twitch=" + twitch +
+          ", stream='" + stream + '\'' +
+          ", name='" + name + '\'' +
+          ", pictureUrl='" + pictureUrl + '\'' +
+          ", moderatorName='" + moderatorName + '\'' +
+          ", moderatorImage='" + moderatorImage + '\'' +
+          ", startHHmm='" + startHHmm + '\'' +
+          ", endHHmm='" + endHHmm + '\'' +
+          ", event=" + event +
+          ", wishBoxEnabled=" + wishBoxEnabled +
+          ", playedAtSec=" + playedAtSec +
+          ", durationSec=" + durationSec +
+          ", clockLabel='" + clockLabel + '\'' +
+          '}';
+    }
   }
 }
