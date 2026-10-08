@@ -103,7 +103,7 @@ LabyCurrentSong {
         }
 
         .status {
-          margin-left: 6;
+          margin-left: 2;
           font-size: 0.7;
           max-lines: 1;
           overflow-strategy: clip;
