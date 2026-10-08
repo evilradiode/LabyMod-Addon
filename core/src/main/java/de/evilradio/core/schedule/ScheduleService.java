@@ -29,8 +29,6 @@ import org.jetbrains.annotations.Nullable;
 
 public class ScheduleService {
 
-  private static final String SCHEDULE_API_URL = "https://api.evil-radio.de/sp?opt=sendeplan";
-
   /**
    * Wie auf evil-radio.de/sendeplan: Banner kommt aus {@code beschreibung} (Landscape),
    * nicht aus dem Hochformat-{@code showpicture}.
@@ -194,7 +192,7 @@ public class ScheduleService {
 
   private void loadAndCacheSchedule(@Nullable Runnable onDone) {
     Request.ofGson(JsonArray.class)
-        .url(SCHEDULE_API_URL)
+        .url(EvilConstants.SCHEDULE_API_URL)
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
@@ -222,7 +220,7 @@ public class ScheduleService {
     }
 
     Request.ofGson(JsonArray.class)
-        .url(SCHEDULE_API_URL)
+        .url(EvilConstants.SCHEDULE_API_URL)
         .async()
         .connectTimeout(5000)
         .readTimeout(5000)
