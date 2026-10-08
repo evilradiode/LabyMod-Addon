@@ -388,6 +388,18 @@ public final class CurrentSong {
     public static final Show NONE = new Show(
         false, false, null, null, null, null, null, null, null, false, false, 0L, 0L, null);
 
+    /** Abgesagte Sendungen tragen im Namen das Präfix {@code (Entfällt)}. */
+    private static final java.util.regex.Pattern CANCELLED_NAME = java.util.regex.Pattern.compile(
+        "^\\(\\s*entf(ä|ae)llt\\s*\\)",
+        java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.UNICODE_CASE);
+
+    /**
+     * @return {@code true}, wenn der Sendungsname mit {@code (Entfällt)} beginnt
+     */
+    public static boolean isCancelledName(String name) {
+      return name != null && CANCELLED_NAME.matcher(name.trim()).find();
+    }
+
     public Show {
       stream = blankToNull(stream);
       name = blankToNull(name);

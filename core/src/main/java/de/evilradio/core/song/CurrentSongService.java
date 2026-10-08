@@ -522,6 +522,10 @@ public class CurrentSongService {
     JsonObject showObject = object.has("show") && object.get("show").isJsonObject()
         ? object.get("show").getAsJsonObject()
         : new JsonObject();
+    // Abgesagte Sendung („(Entfällt) …“) wie „keine Sendung“ behandeln – keine Badges/DJ/Sendezeit.
+    if (CurrentSong.Show.isCancelledName(showString(showObject, "name"))) {
+      showObject = new JsonObject();
+    }
     String start = showString(showObject, "start");
     String end = showString(showObject, "end");
     long[] window = resolveShowWindow(start, end);
