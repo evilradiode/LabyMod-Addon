@@ -3,6 +3,7 @@ LabyCurrentSong {
   top: 0;
   width: fit-content;
   height: fit-content;
+  opacity: var(--song-widget-opacity);
 
   .before-song-container {
     left: 0;
