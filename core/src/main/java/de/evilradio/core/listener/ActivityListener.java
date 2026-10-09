@@ -256,7 +256,7 @@ public class ActivityListener implements Updatable {
             Laby.labyAPI().minecraft().minecraftWindow().currentScreen()
         ));
       });
-    }, () -> openUrl(EvilConstants.TWITCH_URL));
+    }, () -> OperatingSystem.getPlatform().openUrl(EvilConstants.TWITCH_URL));
     this.lastBannerMode = this.currentBannerMode();
     this.mashupLiveBanner.apply(
         this.lastBannerMode,
@@ -704,10 +704,6 @@ public class ActivityListener implements Updatable {
     if (this.debugForceMashupLive()) return true;
     ScheduleService.ScheduleShow liveShow = this.addon.scheduleService().currentOnAirShow();
     return liveShow != null && liveShow.grussbox();
-  }
-
-  private static void openUrl(String url) {
-    OperatingSystem.getPlatform().openUrl(url);
   }
 
   private ScheduleService.ScheduleShow upcomingShow() {
