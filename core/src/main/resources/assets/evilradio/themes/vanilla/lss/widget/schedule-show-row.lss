@@ -156,6 +156,7 @@ ScheduleShowRow .schedule-banner {
   top: 13;
   width: 214;
   height: fit-content;
+  max-height: 120;
   border-radius: 3;
   object-fit: contain;
 }
