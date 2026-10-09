@@ -137,8 +137,7 @@ public class MusicWishBoxActivity extends SimpleActivity {
       } else {
         if(!currentSong.isOnAir()) {
           content.addContent(ComponentWidget.i18n("evilradio.form.wishbox.submit.error.noModerator", NamedTextColor.GRAY).addId("error-message"));
-        }
-        if(!currentSong.isWishBoxEnabled()) {
+        } else if(!currentSong.isWishBoxEnabled()) {
           content.addContent(ComponentWidget.i18n("evilradio.form.wishbox.submit.error.moderatorDisabled", NamedTextColor.GRAY).addId("error-message"));
         }
       }
