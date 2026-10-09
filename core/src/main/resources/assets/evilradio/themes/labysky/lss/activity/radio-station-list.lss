@@ -240,7 +240,7 @@
   Icon {
     height: 14;
     width: 14;
-    margin: 0 1 0 0;
+    margin: 0 1 1 0;
   }
 
 }
