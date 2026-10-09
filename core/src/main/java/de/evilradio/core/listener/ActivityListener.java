@@ -6,6 +6,7 @@ import de.evilradio.core.EvilTextures;
 import de.evilradio.core.EvilTextures.SpriteCommon;
 import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.activity.picker.StationPickerController;
+import de.evilradio.core.activity.popup.MusicWishBoxActivity;
 import de.evilradio.core.activity.widget.MashupLiveBannerWidget;
 import de.evilradio.core.configuration.EvilRadioConfiguration.MenuPlayerPosition;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
@@ -17,6 +18,7 @@ import de.evilradio.core.song.CurrentSongService.ShowStatus;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import de.evilradio.core.song.azuracast.AzuraCastNowPlayingService;
+import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.gui.tooltip.Tooltip;
@@ -247,7 +249,14 @@ public class ActivityListener implements Updatable {
 
     this.mashupLiveBanner = new MashupLiveBannerWidget();
     this.mashupLiveBanner.addId("mashup-live-banner");
-    this.mashupLiveBanner.bind(this::playMashup, () -> openUrl(EvilConstants.WISH_BOX_URL), () -> openUrl(EvilConstants.TWITCH_URL));
+    this.mashupLiveBanner.bind(this::playMashup, () -> {
+      Laby.labyAPI().minecraft().executeNextTick(() -> {
+        Laby.labyAPI().minecraft().minecraftWindow().displayScreen(new MusicWishBoxActivity(
+            this.addon,
+            Laby.labyAPI().minecraft().minecraftWindow().currentScreen()
+        ));
+      });
+    }, () -> openUrl(EvilConstants.TWITCH_URL));
     this.lastBannerMode = this.currentBannerMode();
     this.mashupLiveBanner.apply(
         this.lastBannerMode,

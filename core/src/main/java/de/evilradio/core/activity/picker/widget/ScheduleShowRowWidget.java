@@ -1,8 +1,11 @@
 package de.evilradio.core.activity.picker.widget;
 
 import de.evilradio.core.EvilConstants;
+import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
+import de.evilradio.core.activity.popup.MusicWishBoxActivity;
 import de.evilradio.core.schedule.ScheduleService;
+import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.component.format.TextColor;
@@ -61,7 +64,14 @@ public class ScheduleShowRowWidget extends DivWidget {
       if (showGrussbox) {
         metaStack.addChild(ButtonWidget.component(
                 Component.translatable("evilradio.schedule.grussbox").color(NamedTextColor.WHITE),
-                () -> openUrl(EvilConstants.WISH_BOX_URL))
+                () -> {
+                  Laby.labyAPI().minecraft().executeNextTick(() -> {
+                    Laby.labyAPI().minecraft().minecraftWindow().displayScreen(new MusicWishBoxActivity(
+                        EvilRadioAddon.instance(),
+                        Laby.labyAPI().minecraft().minecraftWindow().currentScreen()
+                    ));
+                  });
+                })
             .addId("schedule-grussbox"));
       }
       if (showTwitch) {
