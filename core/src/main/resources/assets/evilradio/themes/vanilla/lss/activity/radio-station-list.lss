@@ -36,26 +36,11 @@
   border-radius: 4;
 }
 
-.picker-title {
-  left: 50%;
-  width: fit-content;
-  height: fit-content;
-  alignment-x: center;
-  alignment-y: center;
-  font-size: 1.05;
-  text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
-}
-
 .picker-close-x {
   right: 4;
   top: 50%;
   width: 12;
   alignment-y: center;
-  background-color: rgba(180, 40, 40, 0.45);
-  border-radius: 4;
-  border-thickness: 1;
-  border-color: rgba(255, 90, 90, 0.55);
-  text-align: center;
 
   Icon {
     width: 10;
@@ -74,14 +59,17 @@
 }
 
 .picker-tabs {
-  width: 100%;
+  width: 80%;
   height: 22;
   layout: spread;
+  alignment-x: center;
+  alignment-y: center;
+  margin-left: 5;
 }
 
 .picker-tab {
   top: 0;
-  width: 140;
+  width: 120;
   height: 20;
   padding: 0;
   background-color: rgba(100, 100, 100, 180);
@@ -92,8 +80,8 @@
 }
 
 .picker-tab.active {
-  background-color: rgba(230, 126, 34, 0.55);
-  border-color: rgba(230, 126, 34, 0.85);
+  background-color: var(--accent-button-color);
+  border-color: var(--accent-button-color-border);
 }
 
 .picker-now-playing {
@@ -106,8 +94,8 @@
 }
 
 .picker-eq {
-  left: 34;
-  width: 254;
+  left: 50;
+  width: 230;
   top: 2;
   bottom: 33;
   opacity: 0.45;
@@ -159,16 +147,16 @@
 .picker-cover {
   left: 0;
   top: 0;
-  width: 28;
-  height: 28;
+  width: 36;
+  height: 36;
   border-radius: 4;
 }
 
 .picker-cover-texts {
-  left: 34;
+  left: 50;
   top: 0;
   /* gleiche Breite wie Volume-Slider */
-  width: 240;
+  width: 225;
   height: fit-content;
   space-between-entries: 1;
   padding: 3 7 3 7;
@@ -206,7 +194,7 @@
 }
 
 .picker-cover-progress-track {
-  left: 34;
+  left: 50;
   bottom: 28;
   width: 200;
   height: 2;
@@ -239,21 +227,18 @@
 }
 
 .picker-eq-toggle {
-  right: -4;
+  right: -3;
   top: 20;
   width: 20;
   height: 20;
   padding: 0 0 0 1;
-  background-color: rgba(255, 70, 70, 0.4);
-  border: 1;
-  border-color: rgba(255, 120, 120, 0.55);
   text-align: center;
   font-size: 0.55;
 
   Icon {
     width: 14;
     height: 14;
-    margin: 0 1 0 0;
+    margin: 0 1 1 0;
   }
 
 }
@@ -281,6 +266,34 @@
   }
 
 }
+
+.picker-wish-box {
+  left: 0;
+  top: 38;
+  width: 20;
+  height: 20;
+  padding: 0 0 0 0;
+
+  Icon {
+    height: 18;
+    margin: 0 0 1 0;
+  }
+
+}
+
+.picker-twitch {
+  left: 22;
+  top: 38;
+  width: 20;
+  height: 20;
+  padding: 0 0 0 0;
+
+  Icon {
+    height: 16;
+  }
+
+}
+
 
 .picker-audio-eq-volume-container {
   left: 0;
@@ -388,8 +401,8 @@
 }
 
 .schedule-day-chip.active {
-  background-color: rgba(230, 126, 34, 180);
-  border-color: rgba(230, 126, 34, 0.85);
+  background-color: var(--accent-button-color) !important;
+  border-color: var(--accent-button-color-border) !important;
 }
 
 .schedule-scroll {

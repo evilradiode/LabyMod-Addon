@@ -1,17 +1,20 @@
 package de.evilradio.core.activity.picker;
 
+import de.evilradio.core.EvilConstants;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.EvilTextures.SpriteCommon;
 import de.evilradio.core.EvilTextures.SpriteControls;
 import de.evilradio.core.activity.picker.widget.RadioStationRowWidget;
 import de.evilradio.core.activity.picker.widget.ScheduleShowRowWidget;
+import de.evilradio.core.activity.popup.MusicWishBoxActivity;
 import de.evilradio.core.configuration.EvilRadioConfiguration;
 import de.evilradio.core.radio.AudioEqualizer;
 import de.evilradio.core.radio.AudioSpectrumAnalyzer;
 import de.evilradio.core.radio.RadioStream;
 import de.evilradio.core.schedule.ScheduleService;
 import de.evilradio.core.song.CurrentSong;
+import de.evilradio.core.song.CurrentSong.Show;
 import de.evilradio.core.song.CurrentSongService;
 import de.evilradio.core.song.azuracast.PickerNowPlayingSession;
 import java.time.LocalDate;
@@ -24,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
 import net.labymod.api.client.component.format.TextColor;
@@ -46,6 +50,8 @@ import net.labymod.api.client.gui.screen.widget.widgets.layout.ScrollWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.HorizontalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
+import net.labymod.api.client.gui.tooltip.Tooltip;
+import net.labymod.api.models.OperatingSystem;
 import net.labymod.api.util.I18n;
 import net.labymod.api.util.concurrent.task.Task;
 import org.jetbrains.annotations.Nullable;
@@ -189,29 +195,14 @@ public class RadioStationListActivity extends SimpleActivity {
 
     DivWidget header = new DivWidget().addId("picker-header");
     header.addChild(new IconWidget(EvilTextures.LOGO).addId("picker-logo"));
-    Component title;
-    if (this.activeTab == PickerTab.SCHEDULE) {
-      title = Component.translatable("evilradio.picker.tab.schedule").color(NamedTextColor.RED);
-    } else if (this.displayStreams.isEmpty()) {
-      title = Component.translatable("evilradio.picker.noStationsAvailable").color(NamedTextColor.DARK_RED);
-    } else {
-      title = Component.translatable("evilradio.picker.selectStation").color(NamedTextColor.RED);
-    }
-    header.addChild(ComponentWidget.component(title).addId("picker-title"));
-    header.addChild(ButtonWidget.icon(SpriteCommon.X, this::displayPreviousScreen).addId("picker-close-x"));
-    panel.addChild(header);
 
     HorizontalListWidget tabs = new HorizontalListWidget().addId("picker-tabs");
-    ButtonWidget stationsTabButton = ButtonWidget.text("Sender", () -> this.switchTab(PickerTab.STATIONS))
+    ButtonWidget stationsTabButton = ButtonWidget.i18n("evilradio.picker.tab.stations", () -> this.switchTab(PickerTab.STATIONS))
         .addId("picker-tab")
         .addId("picker-tab-stations");
-    ButtonWidget scheduleTabButton = ButtonWidget.text("Sendeplan", () -> this.switchTab(PickerTab.SCHEDULE))
+    ButtonWidget scheduleTabButton = ButtonWidget.i18n("evilradio.picker.tab.schedule", () -> this.switchTab(PickerTab.SCHEDULE))
         .addId("picker-tab")
         .addId("picker-tab-schedule");
-    stationsTabButton.updateComponent(
-        Component.translatable("evilradio.picker.tab.stations"));
-    scheduleTabButton.updateComponent(
-        Component.translatable("evilradio.picker.tab.schedule"));
     if (this.activeTab == PickerTab.STATIONS) {
       stationsTabButton.addId("active");
     } else {
@@ -220,7 +211,10 @@ public class RadioStationListActivity extends SimpleActivity {
 
     tabs.addEntry(stationsTabButton);
     tabs.addEntry(scheduleTabButton);
-    panel.addChild(tabs);
+    header.addChild(tabs);
+
+    header.addChild(ButtonWidget.icon(SpriteCommon.X, this::displayPreviousScreen).addId("picker-close-x"));
+    panel.addChild(header);
 
     // Reset tab-spezifische Referenzen
     this.nowPlayingStrip = null;
@@ -352,6 +346,39 @@ public class RadioStationListActivity extends SimpleActivity {
         }
     ).addId("picker-play-pause");
     coverStrip.addChild(this.playPauseButton);
+
+    if(this.addon.currentSongService().getCurrentSong() != null &&
+        this.addon.radioManager().getCurrentStream() != null && "mashup".equals(this.addon.radioManager().getCurrentStream().getAzuraCastShortcode())) {
+      Show show = this.addon.currentSongService().getCurrentSong().getShow();
+      if(show != null && show != Show.NONE) {
+        if(show.wishBoxEnabled()) {
+          ButtonWidget wishBoxButton = ButtonWidget.icon(SpriteCommon.WISH_BOX_ICON).addId("picker-wish-box");
+          wishBoxButton.setPressable(() -> {
+            Laby.labyAPI().minecraft().executeNextTick(() -> {
+              Laby.labyAPI().minecraft().minecraftWindow().displayScreen(new MusicWishBoxActivity(
+                  EvilRadioAddon.instance(),
+                  Laby.labyAPI().minecraft().minecraftWindow().currentScreen()
+              ));
+            });
+          });
+          wishBoxButton.tooltip(Tooltip.text(
+              Component.translatable("evilradio.schedule.grussboxHover").color(NamedTextColor.GRAY)
+          ));
+          coverStrip.addChild(wishBoxButton);
+        }
+        if(show.twitch()) {
+          ButtonWidget twitchButton = ButtonWidget.icon(SpriteCommon.TWITCH_ICON).addId("picker-twitch");
+          twitchButton.setPressable(() -> {
+            OperatingSystem.getPlatform().openUrl(EvilConstants.TWITCH_URL);
+          });
+          twitchButton.tooltip(Tooltip.text(
+              Component.translatable("evilradio.schedule.twitchButtonHover")
+                  .color(NamedTextColor.GRAY)
+          ));
+          coverStrip.addChild(twitchButton);
+        }
+      }
+    }
 
     HorizontalListWidget eqVolumeContainer = new HorizontalListWidget().addId("picker-audio-eq-volume-container");
 
