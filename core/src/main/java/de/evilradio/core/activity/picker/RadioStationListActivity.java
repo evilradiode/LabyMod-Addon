@@ -345,6 +345,7 @@ public class RadioStationListActivity extends SimpleActivity {
     coverStrip.addChild(this.equalizerStyleButton);
     this.playPauseButton = ButtonWidget.icon(
         this.playPauseIcon(), () -> {
+          this.controller.radioManager().togglePlayStop();
           this.syncControls();
           this.reload();
           this.startNowPlayingSession();
