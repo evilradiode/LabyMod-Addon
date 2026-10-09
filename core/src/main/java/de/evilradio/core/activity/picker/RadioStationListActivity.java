@@ -35,7 +35,6 @@ import net.labymod.api.client.gui.screen.activity.Link;
 import net.labymod.api.client.gui.screen.activity.types.SimpleActivity;
 import net.labymod.api.client.gui.screen.key.InputType;
 import net.labymod.api.client.gui.screen.key.Key;
-import net.labymod.api.client.gui.screen.key.MouseButton;
 import net.labymod.api.client.gui.screen.widget.Widget;
 import net.labymod.api.client.gui.screen.widget.attributes.bounds.BoundsType;
 import net.labymod.api.client.gui.screen.widget.widgets.ComponentWidget;
@@ -345,8 +344,11 @@ public class RadioStationListActivity extends SimpleActivity {
         .addId("picker-eq-toggle");
     coverStrip.addChild(this.equalizerStyleButton);
     this.playPauseButton = ButtonWidget.icon(
-        this.playPauseIcon(),
-        this::togglePlayPause
+        this.playPauseIcon(), () -> {
+          this.syncControls();
+          this.reload();
+          this.startNowPlayingSession();
+        }
     ).addId("picker-play-pause");
     coverStrip.addChild(this.playPauseButton);
 
@@ -386,7 +388,10 @@ public class RadioStationListActivity extends SimpleActivity {
 
     this.syncEqualizerStyleButton();
 
-    this.volumeSlider = new SliderWidget(1.0F, this::onVolumeSliderChanged)
+    this.volumeSlider = new SliderWidget(1.0F, (value) -> {
+      float rounded = Math.round(value);
+      this.addon.configuration().volume().set(rounded);
+    })
         .range(0.0F, 100.0F)
         .withFormatter(value -> Component.text(Math.round(value) + "%"))
         .addId("picker-volume-slider");
@@ -1186,74 +1191,13 @@ public class RadioStationListActivity extends SimpleActivity {
         : SpriteControls.PLAY;
   }
 
-  private void togglePlayPause() {
-    this.controller.handleMiddleClick();
-    this.syncControls();
-    this.reload();
-    this.startNowPlayingSession();
-  }
-
-  private void onVolumeSliderChanged(float value) {
-    float rounded = Math.round(value);
-    this.addon.configuration().volume().set(rounded);
-  }
-
   @Override
   public boolean keyPressed(Key key, InputType type) {
     if (key == Key.ESCAPE) {
       this.displayPreviousScreen();
       return true;
     }
-    if (this.activeTab == PickerTab.SCHEDULE) {
-      if (key == Key.ARROW_LEFT || key == Key.A) {
-        this.selectScheduleDay(this.selectedScheduleDayIndex - 1);
-        return true;
-      }
-      if (key == Key.ARROW_RIGHT || key == Key.D) {
-        this.selectScheduleDay(this.selectedScheduleDayIndex + 1);
-        return true;
-      }
-      return super.keyPressed(key, type);
-    }
-    if (key == Key.ENTER || key == Key.NUMPAD_ENTER) {
-      this.playAndClose(this.selectedIndex);
-      return true;
-    }
-    if (key == Key.ARROW_UP || key == Key.W) {
-      this.moveSelection(-1);
-      return true;
-    }
-    if (key == Key.ARROW_DOWN || key == Key.S) {
-      this.moveSelection(1);
-      return true;
-    }
-    if (key == Key.PAGE_UP) {
-      this.moveSelection(-5);
-      return true;
-    }
-    if (key == Key.PAGE_DOWN) {
-      this.moveSelection(5);
-      return true;
-    }
-
-    int hotkey = this.hotkeyIndex(key);
-    if (hotkey >= 0) {
-      if (hotkey < this.displayStreams.size()) {
-        this.playAndClose(hotkey);
-      }
-      return true;
-    }
-
     return super.keyPressed(key, type);
-  }
-
-  @Override
-  public boolean mouseClicked(MutableMouse mouse, MouseButton mouseButton) {
-    if (mouseButton == MouseButton.MIDDLE) {
-      this.togglePlayPause();
-      return true;
-    }
-    return super.mouseClicked(mouse, mouseButton);
   }
 
   @Override
@@ -1308,19 +1252,6 @@ public class RadioStationListActivity extends SimpleActivity {
         this.controller.playStream(stream, null));
   }
 
-  private void moveSelection(int delta) {
-    if (this.displayStreams.isEmpty()) {
-      return;
-    }
-    int next = Math.max(0, Math.min(this.displayStreams.size() - 1, this.selectedIndex + delta));
-    if (next == this.selectedIndex && this.keyboardFocus) {
-      return;
-    }
-    this.selectedIndex = next;
-    this.keyboardFocus = true;
-    this.refreshFocusStyles();
-  }
-
   private void updateHoverSelection() {
     if (this.activeTab != PickerTab.STATIONS) {
       return;
@@ -1361,37 +1292,6 @@ public class RadioStationListActivity extends SimpleActivity {
   private boolean isPlaying(RadioStream stream) {
     RadioStream current = this.controller.radioManager().getCurrentStream();
     return current != null && current.equals(stream) && this.controller.radioManager().isPlaying();
-  }
-
-  private int hotkeyIndex(Key key) {
-    if (key == Key.NUM1 || key == Key.NUMPAD1) {
-      return 0;
-    }
-    if (key == Key.NUM2 || key == Key.NUMPAD2) {
-      return 1;
-    }
-    if (key == Key.NUM3 || key == Key.NUMPAD3) {
-      return 2;
-    }
-    if (key == Key.NUM4 || key == Key.NUMPAD4) {
-      return 3;
-    }
-    if (key == Key.NUM5 || key == Key.NUMPAD5) {
-      return 4;
-    }
-    if (key == Key.NUM6 || key == Key.NUMPAD6) {
-      return 5;
-    }
-    if (key == Key.NUM7 || key == Key.NUMPAD7) {
-      return 6;
-    }
-    if (key == Key.NUM8 || key == Key.NUMPAD8) {
-      return 7;
-    }
-    if (key == Key.NUM9 || key == Key.NUMPAD9) {
-      return 8;
-    }
-    return -1;
   }
 
   private void startMashupUpdates() {

@@ -16,11 +16,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class StationPickerController {
 
-  private static final long MIDDLE_CLICK_DEBOUNCE_MS = 200L;
-
   private final EvilRadioAddon addon;
   private final RadioManager radioManager;
-  private long lastMiddleClickTime;
 
   public StationPickerController(EvilRadioAddon addon) {
     this.addon = addon;
@@ -40,15 +37,6 @@ public final class StationPickerController {
     int direction = scrollDelta > 0 ? 1 : -1;
     float newVolume = Math.round(Math.clamp(currentVolume + direction, 0.0f, 100.0f));
     this.addon.configuration().volume().set(newVolume);
-  }
-
-  public void handleMiddleClick() {
-    long currentTime = System.currentTimeMillis();
-    if (currentTime - this.lastMiddleClickTime < MIDDLE_CLICK_DEBOUNCE_MS) {
-      return;
-    }
-    this.lastMiddleClickTime = currentTime;
-    this.radioManager.togglePlayStop();
   }
 
   public void playStream(@Nullable RadioStream stream, @Nullable Runnable closeMenu) {

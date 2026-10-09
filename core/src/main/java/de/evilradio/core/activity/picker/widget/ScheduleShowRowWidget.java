@@ -36,10 +36,6 @@ public class ScheduleShowRowWidget extends DivWidget {
     this.mashupLive = mashupLive;
   }
 
-  public ScheduleService.ScheduleShow getShow() {
-    return this.show;
-  }
-
   @Override
   public void initialize(Parent parent) {
     super.initialize(parent);
@@ -77,7 +73,7 @@ public class ScheduleShowRowWidget extends DivWidget {
       if (showTwitch) {
         ButtonWidget twitchButton = ButtonWidget.component(
                 Component.translatable("evilradio.widget.twitch").color(TWITCH_PURPLE),
-                () -> openUrl(EvilConstants.TWITCH_URL))
+                () -> OperatingSystem.getPlatform().openUrl(EvilConstants.TWITCH_URL))
             .addId("schedule-twitch");
         if (!showGrussbox) {
           twitchButton.addId("alone");
@@ -110,10 +106,6 @@ public class ScheduleShowRowWidget extends DivWidget {
       this.addId("no-banner");
     }
     this.addChild(main);
-  }
-
-  private static void openUrl(String url) {
-    OperatingSystem.getPlatform().openUrl(url);
   }
 
   private Icon iconFromUrl(@Nullable String url) {
