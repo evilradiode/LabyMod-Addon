@@ -31,6 +31,9 @@ public class EvilTextures {
     public static final Icon EQ_ICON = Icon.sprite(COMMON, 0, 1, 16);
     public static final Icon SETTINGS = Icon.sprite(COMMON, 1, 1, 16);
 
+    public static final Icon TWITCH_ICON = Icon.sprite(COMMON, 1, 2, 16);
+    public static final Icon WISH_BOX_ICON = Icon.sprite(COMMON, 2, 2, 16);
+
   }
 
 }
