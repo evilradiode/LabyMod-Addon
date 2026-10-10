@@ -288,7 +288,7 @@ public class RadioStationListActivity extends SimpleActivity {
   }
 
   private static float clamp(float value, float min, float max) {
-    return Math.max(min, Math.min(max, value));
+    return Math.clamp(value, min, max);
   }
 
   private void buildStationsContent(VerticalListWidget<Widget> panel) {
