@@ -367,6 +367,7 @@
       "grussbox": "Greeting box",
       "grussboxHover": "Send a greeting",
       "twitch": "Twitch",
+      "twitchMessage": "We are also live on Twitch.",
       "twitchButtonHover": "Open stream"
     }
   }

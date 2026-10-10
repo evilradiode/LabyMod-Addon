@@ -471,54 +471,43 @@ public class ScheduleService {
           : show.showName().trim();
       String timeLabel = formatScheduleTimeLabel(show);
 
-      Component prefix = Component.text("[Evil-Radio] ")
-          .color(NamedTextColor.DARK_RED)
+      Component prefix = Component.text("[",NamedTextColor.DARK_GRAY)
+          .append(Component.text("Evil-Radio", NamedTextColor.DARK_RED))
+          .append(Component.text("] ", NamedTextColor.DARK_GRAY))
           .decorate(TextDecoration.BOLD);
 
       Component listenButton = Component.translatable("evilradio.schedule.listenButton")
           .color(NamedTextColor.GREEN)
-          .decorate(TextDecoration.BOLD, TextDecoration.UNDERLINED)
           .clickEvent(ClickEvent.runCommand("/" + ListenMashupCommand.COMMAND_NAME))
           .hoverEvent(HoverEvent.showText(
               Component.translatable("evilradio.schedule.listenHover")
                   .color(NamedTextColor.GRAY)));
 
-      Component message = Component.empty()
-          .append(prefix)
+      this.addon.displayMessage(prefix.copy().undecorate(TextDecoration.BOLD)
           .append(Component.translatable(
                   "evilradio.schedule.liveMessage",
                   Component.text(moderator).color(NamedTextColor.GOLD),
                   Component.text(showName).color(NamedTextColor.AQUA),
                   Component.text(timeLabel).color(NamedTextColor.YELLOW))
-              .color(NamedTextColor.GRAY))
-          .append(Component.newline())
-          .append(prefix)
+              .color(NamedTextColor.GRAY)));
+      this.addon.displayMessage(prefix.copy().undecorate(TextDecoration.BOLD)
           .append(Component.translatable("evilradio.schedule.liveHint")
               .color(NamedTextColor.GRAY))
           .append(Component.space())
-          .append(listenButton);
+          .append(listenButton));
 
       if (show.twitch()) {
-        message = message.append(Component.space())
+        this.addon.displayMessage(prefix.copy().undecorate(TextDecoration.BOLD)
+            .append(Component.translatable("evilradio.schedule.twitchMessage", NamedTextColor.GRAY))
+            .append(Component.space())
             .append(Component.text(EvilConstants.TWITCH_URL)
                 .color(TextColor.color(145, 70, 255))
-                .clickEvent(ClickEvent.openUrl("https://www.twitch.tv/evilradiode"))
+                .clickEvent(ClickEvent.openUrl(EvilConstants.TWITCH_URL))
                 .hoverEvent(HoverEvent.showText(
                     Component.translatable("evilradio.schedule.twitchHover")
-                        .color(NamedTextColor.LIGHT_PURPLE))));
+                        .color(NamedTextColor.LIGHT_PURPLE)))));
       }
-
-      this.addon.labyAPI().minecraft().chatExecutor().displayClientMessage(message);
     });
-
-    this.logging.info(
-        "Live-Benachrichtigung gesendet für Sendung: "
-            + show.showName()
-            + " / "
-            + show.moderator()
-            + " um "
-            + show.startTime()
-            + (show.twitch() ? " (mit Twitch-Link)" : ""));
   }
 
   private static String formatScheduleTimeLabel(ScheduleShow show) {
