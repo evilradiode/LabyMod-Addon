@@ -6,8 +6,9 @@ import net.labymod.api.client.resources.texture.ThemeTextureLocation;
 
 public class EvilTextures {
 
-  public static final Icon LOGO = Icon.texture(
-      ResourceLocation.create("evilradio", "textures/logo.png"));
+  public static final ResourceLocation LOGO_LOCATION = ResourceLocation.create("evilradio", "textures/logo.png");
+
+  public static final Icon LOGO = Icon.texture(LOGO_LOCATION);
 
   public static class SpriteControls {
 

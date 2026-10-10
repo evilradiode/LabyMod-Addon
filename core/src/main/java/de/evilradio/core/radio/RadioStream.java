@@ -3,12 +3,8 @@ package de.evilradio.core.radio;
 import de.evilradio.core.EvilTextures;
 import java.util.Locale;
 import net.labymod.api.client.gui.icon.Icon;
-import net.labymod.api.client.resources.ResourceLocation;
 
 public class RadioStream {
-
-  private static final ResourceLocation FALLBACK_ICON =
-      ResourceLocation.create("evilradio", "textures/logo.png");
 
   private final int id;
   private final String azuraCastShortcode;
@@ -41,7 +37,7 @@ public class RadioStream {
   public RadioStream initialize() {
     String resolved = resolveIconUrl(this.iconUrl, this.iconWithLogoUrl);
     if (resolved != null) {
-      this.icon = Icon.url(resolved, FALLBACK_ICON);
+      this.icon = Icon.url(resolved, EvilTextures.LOGO_LOCATION);
     } else {
       this.icon = EvilTextures.LOGO;
     }
