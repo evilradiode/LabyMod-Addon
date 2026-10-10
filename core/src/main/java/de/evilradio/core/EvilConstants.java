@@ -4,12 +4,15 @@ public class EvilConstants {
 
   public static final String API_BASE_URL = "https://api.evil-radio.de";
   public static final String API_RADIO_INFO = "https://api.evil-radio.de/?radioInfo=";
-  public static final String AZURACAST_NOWPLAYING_URL =
-      "https://broadcast.evil-radio.de/api/nowplaying";
+  public static final String AZURACAST_NOW_PLAYING_URL = "https://broadcast.evil-radio.de/api/nowplaying";
   public static final String SCHEDULE_ENDPOINT = "https://api.evil-radio.de/sp";
   public static final String SCHEDULE_API_URL = "https://api.evil-radio.de/sp?opt=sendeplan";
 
   public static final String TWITCH_URL = "https://www.twitch.tv/evilradiode";
+
+
+  public static final String AD_BREAK_MARKER = "START_AD_BREAK";
+
 
   public static class HudWidgetVariables {
 

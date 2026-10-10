@@ -792,7 +792,7 @@ public class CurrentSongService {
    */
   public void fetchAllNowPlaying(Consumer<Map<String, CurrentSong>> callback) {
     if (callback == null) return;
-    HttpRequest request = HttpRequest.newBuilder(URI.create(EvilConstants.AZURACAST_NOWPLAYING_URL))
+    HttpRequest request = HttpRequest.newBuilder(URI.create(EvilConstants.AZURACAST_NOW_PLAYING_URL))
         .timeout(Duration.ofSeconds(8))
         .header("User-Agent", this.addon.apiUserAgent())
         .GET()

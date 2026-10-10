@@ -1,5 +1,6 @@
 package de.evilradio.core.song;
 
+import de.evilradio.core.EvilConstants;
 import net.labymod.api.util.I18n;
 
 /**
@@ -9,8 +10,6 @@ import net.labymod.api.util.I18n;
  * aus der Evil-Radio-REST-API ({@code radioInfo}).
  */
 public final class CurrentSong {
-
-  private static final String AD_BREAK_MARKER = "START_AD_BREAK";
 
   private final int stationId;
   private final String stationName;
@@ -83,7 +82,7 @@ public final class CurrentSong {
   }
 
   private static boolean isAdBreakMarker(String value) {
-    return value != null && value.trim().equalsIgnoreCase(AD_BREAK_MARKER);
+    return value != null && value.trim().equalsIgnoreCase(EvilConstants.AD_BREAK_MARKER);
   }
 
   public int getStationId() {
