@@ -144,7 +144,7 @@ public class RadioStationRowWidget extends DivWidget {
     String title = this.song.getDisplayTitle();
     String artist = this.song.getArtist();
     this.songWidget.setComponent(
-        Component.text(title == null || title.isBlank() ? "—" : title).color(RadioStationListActivity.SONG_COLOR));
+        Component.text(title.isBlank() ? "—" : title).color(RadioStationListActivity.SONG_COLOR));
     if (artist == null || artist.isBlank()) {
       this.artistWidget.setComponent(Component.empty());
     } else {
