@@ -4,7 +4,6 @@ import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.activity.picker.RadioStationListActivity;
 import net.labymod.api.Laby;
 import net.labymod.api.client.gui.screen.LabyScreen;
-import net.labymod.api.client.gui.screen.key.Key;
 import net.labymod.api.event.Subscribe;
 import net.labymod.api.event.client.input.KeyEvent;
 import net.labymod.api.event.client.input.KeyEvent.State;
@@ -24,9 +23,7 @@ public class GameListener {
   public void onKey(KeyEvent event) {
     if (event.state() != State.PRESS) return;
     if (!this.addon.configuration().enabled().get()) return;
-
-    Key openKey = this.addon.configuration().radioMenuKeybind().get();
-    if (event.key() != openKey) return;
+    if (event.key() != this.addon.configuration().radioMenuKeybind().get()) return;
 
     LabyScreen current = Laby.labyAPI().minecraft().minecraftWindow().currentLabyScreen();
     if (current instanceof RadioStationListActivity) {
