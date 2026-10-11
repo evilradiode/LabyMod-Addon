@@ -33,13 +33,13 @@ public class EvilRadioConfiguration extends AddonConfig {
   private final ConfigProperty<Float> volume = new ConfigProperty<>(25f);
 
   @SpriteSlot(x = 7)
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   private final AudioEqualizerSubSettings audioEqualizer = new AudioEqualizerSubSettings();
 
   @SettingSection("customization")
 
   @SpriteSlot(x = 3)
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   @DropdownSetting
   @DropdownEntryTranslationPrefix("evilradio.settings.menuPlayerPosition.type")
   private final ConfigProperty<MenuPlayerPosition> menuPlayerPosition = new ConfigProperty<>(MenuPlayerPosition.BOTTOM_RIGHT);
@@ -48,7 +48,7 @@ public class EvilRadioConfiguration extends AddonConfig {
   private final ConfigProperty<Boolean> menuPlayerMinimized = new ConfigProperty<>(false);
 
   @SpriteSlot(y = 2)
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   private final NameTagSettings nameTagSettings = new NameTagSettings();
 
   @Exclude
@@ -91,7 +91,7 @@ public class EvilRadioConfiguration extends AddonConfig {
     EvilRadioAddon.instance().radioStreamService().loadStreams();
   }
 
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   @SwitchSetting
   private final ConfigProperty<Boolean> debugForceMashupLive = new ConfigProperty<>(false);
 

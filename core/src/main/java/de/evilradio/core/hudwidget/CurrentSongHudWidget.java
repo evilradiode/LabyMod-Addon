@@ -150,49 +150,49 @@ public class CurrentSongHudWidget extends WidgetHudWidget<CurrentSongHudWidgetCo
     @SwitchSetting
     private final ConfigProperty<Boolean> showCover = ConfigProperty.create(true);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @DropdownEntryTranslationPrefix("evilradio.hudWidget.evilradio_full_widget.hudWidgetDesign.style")
     @DropdownSetting
     private final ConfigProperty<SongHudWidgetDesign> hudWidgetDesign = ConfigProperty.create(SongHudWidgetDesign.CLASSIC);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @SettingRequires(value = "hudWidgetDesign", required = "LABY")
     @SwitchSetting
     private final ConfigProperty<Boolean> seeThrough = ConfigProperty.create(false);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @SwitchSetting
     private final ConfigProperty<Boolean> showLastSong = ConfigProperty.create(false);
 
     @SettingSection("customization")
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @SettingRequires(value = "hudWidgetDesign", required = "GLASS")
     @SliderSetting(min = 0, max = 100)
     private final ConfigProperty<Integer> backgroundBlur = ConfigProperty.create(25);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @ColorPickerSetting(alpha = true)
     private final ConfigProperty<Color> backgroundColor = ConfigProperty.create(DEFAULT_BACKGROUND_COLOR);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @ColorPickerSetting(alpha = true)
     private final ConfigProperty<Color> borderColor = ConfigProperty.create(DEFAULT_BORDER_COLOR);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @ColorPickerSetting(alpha = true)
     private final ConfigProperty<Color> progressBarColor = ConfigProperty.create(DEFAULT_PROGRESS_BAR_COLOR);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @ColorRowBreak
     @ColorPickerSetting
     private final ConfigProperty<Color> stationColor = ConfigProperty.create(DEFAULT_STATION_COLOR);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @ColorPickerSetting
     private final ConfigProperty<Color> songColor = ConfigProperty.create(DEFAULT_SONG_COLOR);
 
-    @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+    @IntroducedIn(namespace = "evilradio", value = "2.0.0")
     @ColorPickerSetting
     private final ConfigProperty<Color> artistColor = ConfigProperty.create(DEFAULT_ARTIST_COLOR);
 

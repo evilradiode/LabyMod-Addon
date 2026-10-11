@@ -14,28 +14,28 @@ import net.labymod.api.configuration.settings.annotation.SettingRequires;
 public class AudioEqualizerSubSettings extends Config {
 
   @ShowSettingInParent
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   @DropdownSetting
   @DropdownEntryTranslationPrefix("evilradio.settings.audioEqualizer.preset.type")
   private final ConfigProperty<AudioEqualizer.EqualizerPreset> preset = new ConfigProperty<>(AudioEqualizer.EqualizerPreset.NORMAL);
 
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   @SliderSetting(min = -12, max = 12, steps = 0.5f)
   private final ConfigProperty<Float> customSubBass = new ConfigProperty<>(0.0F);
 
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   @SliderSetting(min = -12, max = 12, steps = 0.5f)
   private final ConfigProperty<Float> customBass = new ConfigProperty<>(0.0F);
 
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   @SliderSetting(min = -12, max = 12, steps = 0.5f)
   private final ConfigProperty<Float> customMid = new ConfigProperty<>(0.0F);
 
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   @SliderSetting(min = -12, max = 12, steps = 0.5f)
   private final ConfigProperty<Float> customPresence = new ConfigProperty<>(0.0F);
 
-  @IntroducedIn(namespace = "evilradio", value = "1.1.0")
+  @IntroducedIn(namespace = "evilradio", value = "2.0.0")
   @SliderSetting(min = -12, max = 12, steps = 0.5f)
   private final ConfigProperty<Float> customTreble = new ConfigProperty<>(0.0F);
 
