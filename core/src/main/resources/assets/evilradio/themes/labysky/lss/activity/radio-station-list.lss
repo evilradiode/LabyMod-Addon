@@ -15,6 +15,7 @@
   alignment-x: center;
   alignment-y: center;
   filter: blur(25);
+  renderer: "Card";
   background-color: var(--background-color);
   border-color: var(--background-color-border);
   border-radius: var(--border-radius);
