@@ -43,6 +43,7 @@ public class MusicWishBoxActivity extends SimpleActivity {
   private TextFieldWidget wishInput;
 
   private boolean anonymous = false;
+  private final AtomicBoolean submitting = new AtomicBoolean(false);
 
   public MusicWishBoxActivity(EvilRadioAddon addon, ScreenInstance previousScreen) {
     this.addon = addon;
@@ -124,11 +125,7 @@ public class MusicWishBoxActivity extends SimpleActivity {
       content.addContent(greetContainer);
 
       sendButton = ButtonWidget.i18n("evilradio.form.wishbox.submit.button").addId("submit-button");
-      sendButton.setPressable(() -> {
-        if(this.submitWish()) {
-          this.addon.labyAPI().minecraft().executeNextTick(() -> Laby.labyAPI().minecraft().minecraftWindow().displayScreen(this.previousScreen));
-        }
-      });
+      sendButton.setPressable(this::submitWish);
 
     } else {
 
@@ -176,7 +173,8 @@ public class MusicWishBoxActivity extends SimpleActivity {
     }
   }
 
-  private boolean submitWish() {
+  private void submitWish() {
+    if(this.submitting.get()) return;
 
     String interpret = this.artistInput.getText();
     String title = this.songInput.getText();
@@ -188,7 +186,7 @@ public class MusicWishBoxActivity extends SimpleActivity {
           Component.translatable("evilradio.form.wishbox.submit.error.title", NamedTextColor.RED),
           Component.translatable("evilradio.form.wishbox.submit.error.empty", NamedTextColor.GRAY)
       );
-      return false;
+      return;
     }
 
     String finalName = name;
@@ -213,7 +211,8 @@ public class MusicWishBoxActivity extends SimpleActivity {
     body.put("mc_username", this.addon.labyAPI().getName());
     body.put("mc_uuid", this.addon.labyAPI().getUniqueId().toString());
 
-    AtomicBoolean success = new AtomicBoolean(false);
+    if(!this.submitting.compareAndSet(false, true)) return;
+
     Request.ofString()
         .url(EvilConstants.SCHEDULE_ENDPOINT)
         .userAgent("EvilRadio Laby Addon (" + this.addon.addonVersion() + ")")
@@ -227,6 +226,7 @@ public class MusicWishBoxActivity extends SimpleActivity {
                 Component.text(decodeErrorMessage(response.getStatusCode()), NamedTextColor.GRAY)
             );
             this.addon.logger().info("Wishbox Status: {}", response.getStatusCode());
+            this.submitting.set(false);
             return;
           }
           this.addon.notification(
@@ -239,10 +239,9 @@ public class MusicWishBoxActivity extends SimpleActivity {
                 Component.translatable("evilradio.form.wishbox.submit.nameInformation", NamedTextColor.GRAY)
             );
           }
-          success.set(true);
+          this.addon.labyAPI().minecraft().executeNextTick(
+              () -> Laby.labyAPI().minecraft().minecraftWindow().displayScreen(this.previousScreen));
         });
-
-    return success.get();
   }
 
   private String decodeErrorMessage(int statusCode) {
