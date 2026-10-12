@@ -248,7 +248,7 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
         Math.max(streamNameWidth, trackWidth),
         Math.max(artistWidth, statusWidth)
     );
-    float playerWidth = Math.clamp(naturalWidth + 4f, 160f, HudWidgetVariables.MAX_PLAYER_WIDTH);
+    float playerWidth = Math.max(naturalWidth + 4f, HudWidgetVariables.MAX_PLAYER_WIDTH);
 
     this.progressTrackMaxWidth = Math.max(40f, playerWidth);
 

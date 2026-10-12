@@ -323,7 +323,7 @@ public class LabyCurrentSongWidget extends FlexibleContentWidget implements Upda
         Math.max(streamNameWidth, trackWidth),
         Math.max(artistWidth, timeWidth > 0 ? timeWidth + 40f : 0)
     );
-    float playerWidth = Math.clamp(naturalWidth + 4f, 160f, HudWidgetVariables.MAX_PLAYER_WIDTH);
+    float playerWidth = Math.max(naturalWidth + 4f, HudWidgetVariables.MAX_PLAYER_WIDTH);
 
     this.progressTrackMaxWidth = Math.max(40f, playerWidth - timeWidth);
 
