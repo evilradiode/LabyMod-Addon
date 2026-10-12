@@ -825,7 +825,7 @@ public class RadioStationListActivity extends SimpleActivity {
         }
         if (this.mashupTwitch) {
           stationLine = stationLine
-              .append(Component.translatable(" | ").color(NamedTextColor.GRAY))
+              .append(Component.text(" | ").color(NamedTextColor.GRAY))
               .append(Component.translatable("evilradio.widget.twitch")
                   .color(TextColor.color(145, 70, 255)));
         }
