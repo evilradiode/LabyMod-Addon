@@ -179,7 +179,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
 
   public void requestHudWidgetUpdate(String reason) {
     this.labyAPI().minecraft().executeOnRenderThread(() -> {
-      if(this.currentSongHudWidget.isEnabled()) {
+      if(this.currentSongHudWidget != null && this.currentSongHudWidget.isEnabled()) {
         this.currentSongHudWidget.requestUpdate(reason);
       }
       if(this.activityListener != null) {
