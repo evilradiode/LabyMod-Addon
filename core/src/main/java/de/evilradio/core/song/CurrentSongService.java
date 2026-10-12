@@ -498,7 +498,7 @@ public class CurrentSongService {
             callback.accept(null);
             return;
           }
-          callback.accept(parseShowStatus(response.get()));
+          callback.accept(parseShowStatus(response.get(), streamName));
         });
   }
 
@@ -516,12 +516,22 @@ public class CurrentSongService {
     });
   }
 
-  private static ShowStatus parseShowStatus(JsonObject object) {
+  /**
+   * @param requestedStream Sendername der Anfrage; {@code radioInfo} liefert die aktuelle Sendung
+   *                        für jeden Sender – gehört sie zu einem anderen ({@code show.stream}),
+   *                        wie „keine Sendung“ behandeln. {@code null} = nicht filtern.
+   */
+  private static ShowStatus parseShowStatus(JsonObject object, String requestedStream) {
     JsonObject showObject = object.has("show") && object.get("show").isJsonObject()
         ? object.get("show").getAsJsonObject()
         : new JsonObject();
     // Abgesagte Sendung („(Entfällt) …“) wie „keine Sendung“ behandeln – keine Badges/DJ/Sendezeit.
     if (CurrentSong.Show.isCancelledName(showString(showObject, "name"))) {
+      showObject = new JsonObject();
+    }
+    String showStream = showString(showObject, "stream");
+    if (requestedStream != null && showStream != null
+        && !showStream.equalsIgnoreCase(requestedStream.trim())) {
       showObject = new JsonObject();
     }
     String start = showString(showObject, "start");
@@ -702,7 +712,7 @@ public class CurrentSongService {
     this.addon.requestHudWidgetUpdate(CurrentSongHudWidget.SONG_CHANGE_REASON);
   }
 
-  private CurrentSong getSongFromJson(JsonObject object) {
+  private CurrentSong getSongFromJson(JsonObject object, String streamName) {
     if (!object.has("current")) {
       return null;
     }
@@ -716,7 +726,7 @@ public class CurrentSongService {
     String title = currentSongObject.get("title").getAsString();
     String artist = currentSongObject.get("artist").getAsString();
     String image = currentSongObject.get("image").getAsString();
-    return new CurrentSong(title, artist, image).withShow(toShow(parseShowStatus(object)));
+    return new CurrentSong(title, artist, image).withShow(toShow(parseShowStatus(object, streamName)));
   }
 
   /**
@@ -780,7 +790,7 @@ public class CurrentSongService {
             return;
           }
           JsonObject object = response.get();
-          callback.accept(getSongFromJson(object));
+          callback.accept(getSongFromJson(object, streamName));
         });
   }
 
