@@ -48,8 +48,10 @@ public class ActivityListener implements Updatable {
   public ActivityListener(EvilRadioAddon addon) {
     this.addon = addon;
     this.addon.configuration().menuPlayerPosition().addChangeListener(menuPlayerPosition ->
-        this.addon.labyAPI().minecraft().executeOnRenderThread(
-        () -> this.applyMainMenuPlayerVisibility(menuPlayerPosition != MenuPlayerPosition.DISABLED)));
+        this.addon.labyAPI().minecraft().executeOnRenderThread(this::syncMenuPlayerVisibility));
+
+    this.addon.configuration().enabled().addChangeListener(enabled ->
+        this.addon.labyAPI().minecraft().executeOnRenderThread(this::syncMenuPlayerVisibility));
 
     this.addon.configuration().debugForceMashupLive().addChangeListener(enabled ->
         this.addon.labyAPI().minecraft().executeOnRenderThread(() -> {
@@ -67,13 +69,14 @@ public class ActivityListener implements Updatable {
     if (!isMenuPlayerHost(event.getIdentifier())) return;
     this.mainMenuActivity = event.activity();
     this.detachMenuPlayerWidgets();
-    if (this.addon.configuration().menuPlayerPosition().get() == MenuPlayerPosition.DISABLED) return;
+    if (!this.shouldShowMenuPlayer()) return;
     this.addRadioController(event.activity());
   }
 
   @Subscribe
   public void onGameTick(GameTickEvent event) {
     if (event.phase() != Phase.PRE || this.songContainer == null) return;
+    if (!this.addon.configuration().enabled().get()) return;
 
     CurrentSong song = this.addon.currentSongService().getCurrentSong();
     if (song != null) {
@@ -91,6 +94,7 @@ public class ActivityListener implements Updatable {
 
   @Override
   public void update(String reason) {
+    if (!this.addon.configuration().enabled().get() || this.songContainer == null) return;
     if (reason == null || reason.equals(CurrentSongHudWidget.SONG_CHANGE_REASON)) {
       this.refreshPlayPauseIcon();
       this.updateTrack(this.addon.currentSongService().getCurrentSong());
@@ -139,6 +143,15 @@ public class ActivityListener implements Updatable {
         && this.addon.isUuidAllowed(this.addon.labyAPI().getUniqueId());
   }
 
+  private boolean shouldShowMenuPlayer() {
+    return this.addon.configuration().enabled().get()
+        && this.addon.configuration().menuPlayerPosition().get() != MenuPlayerPosition.DISABLED;
+  }
+
+  private void syncMenuPlayerVisibility() {
+    this.applyMainMenuPlayerVisibility(this.shouldShowMenuPlayer());
+  }
+
   private void applyMainMenuPlayerVisibility(boolean enabled) {
     if (this.mainMenuActivity == null) return;
     if (enabled) {
@@ -151,8 +164,7 @@ public class ActivityListener implements Updatable {
   }
 
   private void rebuildMenuPlayer() {
-    if (this.mainMenuActivity == null ||
-        this.addon.configuration().menuPlayerPosition().get() == MenuPlayerPosition.DISABLED) return;
+    if (this.mainMenuActivity == null || !this.shouldShowMenuPlayer()) return;
     this.removeMenuPlayerFromDocument();
     this.detachMenuPlayerWidgets();
     this.addRadioController(this.mainMenuActivity);
