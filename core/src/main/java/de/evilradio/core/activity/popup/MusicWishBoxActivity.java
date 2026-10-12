@@ -252,47 +252,4 @@ public class MusicWishBoxActivity extends SimpleActivity {
     return "Unknown Error (" + statusCode + ")";
   }
 
-  /*
-  void submitWish() async {
-
-    var response = await http.post(Uri.parse(Constants.SENDEPLAN_ENDPOINT),
-        headers: <String, String> {
-          'User-Agent': 'App',
-        },
-        body: body
-    );
-
-    if(response.statusCode == 200) {
-      setState(() {
-        //Internal.wishSent = true;
-      });
-      Navigator.of(context).pop();
-      Util.dialog(context, AppLocalizations.of(context)!.success, TextStyle(color: Colors.green), AppLocalizations.of(context)!.wishbox_success, TextStyle(color: AppColor.fontColor()));
-    } else {
-      Navigator.of(context).pop();
-      String errorMessage = decodeErrorMessage(response.statusCode);
-      Util.dialog(context, AppLocalizations.of(context)!.error, TextStyle(color: AppColor.errorColor()), AppLocalizations.of(context)!.error_occurred + "\n${errorMessage}", TextStyle(color: AppColor.errorColor()));
-    }
-
-  }
-
-  bool anonymous = false;
-  String userName = '';
-  String userAge = '';
-  String userInterpret = '';
-  String userTitle = '';
-  String userWish = '';
-
-  void resetData() {
-    setState(() {
-      userName = '';
-      userAge = '';
-      userInterpret = '';
-      userTitle = '';
-      userWish = '';
-      anonymous = false;
-    });
-  }
-   */
-
 }
