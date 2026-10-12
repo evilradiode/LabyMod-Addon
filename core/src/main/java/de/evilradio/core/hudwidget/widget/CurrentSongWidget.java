@@ -264,9 +264,10 @@ public class CurrentSongWidget extends FlexibleContentWidget implements Updatabl
     boolean isMashup = streamName != null && streamName.equalsIgnoreCase("Mashup");
     boolean hasLive = isMashup && (song.isOnAir() || song.isTwitch());
 
+    // Frische Component-Kette bauen – append auf lastLivePrefix würde mutieren und die Zeit stapeln
     Component status;
     if (hasLive) {
-      status = this.lastLivePrefix;
+      status = Component.empty().append(this.lastLivePrefix);
       if (!timeLabel.isEmpty()) {
         status = status
             .append(Component.text(" | ").color(NamedTextColor.GRAY))
