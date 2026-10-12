@@ -70,7 +70,6 @@ public class CurrentSongService {
   private final ConcurrentHashMap<String, LiveGrace> liveGraceByStation = new ConcurrentHashMap<>();
 
   private EvilRadioAddon addon;
-  private boolean twitchNotificationSent = false;
   private final AtomicReference<Boolean> pendingStreamSelectedNotification =
       new AtomicReference<>(false);
 
@@ -118,7 +117,6 @@ public class CurrentSongService {
 
     if (stationChanged) {
       this.clearLiveGrace(previousStreamName);
-      this.twitchNotificationSent = false;
     }
 
     this.currentStreamName.set(stream.getName());
@@ -747,7 +745,6 @@ public class CurrentSongService {
     this.currentStreamName.set(null);
     this.currentShortcode.set(null);
     this.connectionState.set(AzuraCastNowPlayingService.NowPlayingConnectionState.IDLE);
-    this.twitchNotificationSent = false;
     this.pendingStreamSelectedNotification.set(false);
     this.lastShowStatusFetchAt.set(0L);
     this.lastStuckRefreshAt.set(0L);
