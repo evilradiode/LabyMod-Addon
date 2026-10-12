@@ -582,7 +582,7 @@ public class RadioStationListActivity extends SimpleActivity {
     // Zeile 1: Wochentag, Zeile 2: dd.mm
     String line1;
     if (weekdayApi.equalsIgnoreCase("Heute") || weekdayApi.equalsIgnoreCase("Today")) {
-      line1 = "Heute";
+      line1 = I18n.translate("evilradio.picker.schedule.today");
     } else {
       line1 = this.chipDayLabel(date);
     }
