@@ -68,7 +68,7 @@ public class MusicWishBoxActivity extends SimpleActivity {
     ButtonWidget sendButton = null;
 
     CurrentSong currentSong = this.addon.currentSongService().getCurrentSong();
-    if(currentSong != null && (currentSong.getModeratorName() != null && !currentSong.getModeratorName().isEmpty()) && currentSong.isOnAir() && currentSong.isWishBoxEnabled()) {
+    if(currentSong != null && currentSong.isOnAir() && currentSong.isWishBoxEnabled()) {
 
       HorizontalListWidget nameAgeContainer = new HorizontalListWidget().addId("name-age-container");
 
