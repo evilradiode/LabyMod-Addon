@@ -79,6 +79,3 @@ access_widener_index.json
 
 # Don't ignore libraries
 !libs/*.jar
-
-# Local decompiled LabyMod API/core stubs (not part of the addon)
-/net/
