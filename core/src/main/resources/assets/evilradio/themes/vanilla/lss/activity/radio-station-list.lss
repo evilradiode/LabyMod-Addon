@@ -20,6 +20,7 @@
   padding: 10 12 10 12;
   space-between-entries: 7;
   animation-duration: 180;
+  renderer: "PopupWindow";
 }
 
 .picker-header {
@@ -87,9 +88,9 @@
 .picker-now-playing {
   width: 100%;
   height: 85;
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: #474747;
   border: 1;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: #000000;
   padding: 4;
 }
 
@@ -435,10 +436,9 @@
 .schedule-empty-box {
   width: 100%;
   height: 60;
-  background-color: rgba(255, 255, 255, 0.04);
-  border-radius: 6;
-  border-thickness: 1;
-  border-color: rgba(255, 255, 255, 0.1);
+  background-color: #474747;
+  border: 1;
+  border-color: #000000;
 }
 
 .schedule-empty {

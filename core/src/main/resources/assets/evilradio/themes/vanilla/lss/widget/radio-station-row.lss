@@ -2,10 +2,10 @@ RadioStationRow {
   width: 100%;
   /* Cover 36 + Padding → alles Text/Progress daneben in derselben Höhe */
   height: 44;
-  background-color: var(--background-color);
+  background-color: #474747;
   background-color-transition-duration: 120;
   border: 1;
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: #000000;
   padding: 4 6 4 6;
 }
 
