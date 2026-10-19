@@ -27,7 +27,6 @@ public class UsageStatisticsSubSettings extends Config {
     return this.enabled;
   }
 
-  /** Laby liefert zur Laufzeit eine TrackedMap – Interface Map statt HashMap. */
   public ConfigProperty<Map<Integer, Integer>> streamUsageCount = new ConfigProperty<>(new HashMap<>());
 
   public void resetStreamUsageCount() {
