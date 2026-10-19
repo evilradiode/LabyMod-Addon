@@ -46,7 +46,7 @@ public class RadioManager {
     if (isSameStream && playbackActive) {
       currentStream = stream;
       this.addon.radioStreamService().setLastSelectedStream(stream);
-      addon.configuration().lastStreamId().set(stream.getId());
+      addon.configuration().lastStreamName().set(stream.getName());
       return;
     }
 
@@ -54,7 +54,7 @@ public class RadioManager {
     stopStream(false);
     currentStream = stream;
     this.addon.radioStreamService().setLastSelectedStream(stream);
-    addon.configuration().lastStreamId().set(stream.getId());
+    addon.configuration().lastStreamName().set(stream.getName());
 
     if (addon.configuration().usageStatistics().enabled().get()) {
       addon.configuration().usageStatistics().incrementStreamUsage(stream.getId());
