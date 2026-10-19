@@ -33,6 +33,7 @@ public class RadioStreamSharedTag extends ComponentNameTag {
 
   private static final boolean INVERSE_DEPTH = MinecraftVersions.V1_20_6.orOlder();
   private static final float BACKGROUND_DEPTH = -0.03F;
+  private Material guiMaterial = LevelMaterial.builder(RenderStates.GUI).build();
 
   private Icon icon;
   private HorizontalAlignment alignment = HorizontalAlignment.CENTER;
@@ -47,7 +48,6 @@ public class RadioStreamSharedTag extends ComponentNameTag {
     if (!(this.snapshot instanceof AvatarSnapshot avatar) || avatar.isDiscrete()) {
       return super.buildComponents(snapshot);
     }
-
     if (!this.snapshot.has(EvilRadioKeys.USER)) return super.buildComponents(snapshot);
 
     EvilRadioUser evilRadioUser = this.snapshot.get(EvilRadioKeys.USER);
@@ -77,8 +77,6 @@ public class RadioStreamSharedTag extends ComponentNameTag {
   ) {
     float size = this.getHeight();
     float backgroundWidth = this.getWidth();
-
-    Material guiMaterial = LevelMaterial.builder(RenderStates.GUI).build();
 
     int backgroundArgb = Laby.labyAPI()
         .minecraft()
