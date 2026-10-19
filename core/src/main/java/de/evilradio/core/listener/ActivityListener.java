@@ -419,6 +419,13 @@ public class ActivityListener implements Updatable {
 
     this.refreshPlayPauseIcon();
     this.updateTrack(this.addon.currentSongService().getCurrentSong());
+    // Banner/Grußbox nach Stop↔Start neu anbinden (Mode/Buttons können sonst hängen bleiben)
+    if (this.menuPlayerAttached) {
+      this.applyMashupLiveBanner(this.mashupShowStatus);
+      if (startPlayback) {
+        this.refreshMashupLiveBanner();
+      }
+    }
   }
 
   private void refreshLiveLine(CurrentSong currentSong) {
@@ -718,6 +725,10 @@ public class ActivityListener implements Updatable {
 
   private boolean showWishBoxButton() {
     if (this.debugForceMashupLive()) return true;
+    // radioInfo / Show-Status (wie Twitch) – Schedule allein kann nach Stop/Start kurz fehlen
+    if (this.mashupShowStatus != null && this.mashupShowStatus.wishBoxEnabled()) return true;
+    CurrentSong song = this.addon.currentSongService().getCurrentSong();
+    if (song != null && this.isListeningToMashup() && song.isWishBoxEnabled()) return true;
     ScheduleService.ScheduleShow liveShow = this.addon.scheduleService().currentOnAirShow();
     return liveShow != null && liveShow.grussbox();
   }
