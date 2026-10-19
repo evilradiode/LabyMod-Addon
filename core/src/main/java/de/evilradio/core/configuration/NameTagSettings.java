@@ -20,7 +20,7 @@ public class NameTagSettings extends Config {
 
   @SpriteSlot(y = 2, x = 1)
   @SwitchSetting
-  private final ConfigProperty<Boolean> shareCurrentStream = new ConfigProperty<>(true);
+  private final ConfigProperty<Boolean> shareCurrentStream = new ConfigProperty<>(false);
 
   @SettingSection("staffNameTag")
 
