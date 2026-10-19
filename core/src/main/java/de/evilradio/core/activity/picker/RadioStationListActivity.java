@@ -102,6 +102,8 @@ public class RadioStationListActivity extends SimpleActivity {
   private ScrollWidget scheduleScroll;
   private SliderWidget volumeSlider;
   private ButtonWidget playPauseButton;
+  private ButtonWidget wishBoxButton;
+  private ButtonWidget twitchButton;
   private ButtonWidget equalizerStyleButton;
   private ButtonWidget audioEqualizerSettingsButton;
   private IconWidget coverWidget;
@@ -221,6 +223,8 @@ public class RadioStationListActivity extends SimpleActivity {
     this.stationScroll = null;
     this.volumeSlider = null;
     this.playPauseButton = null;
+    this.wishBoxButton = null;
+    this.twitchButton = null;
     this.equalizerStyleButton = null;
     this.audioEqualizerSettingsButton = null;
     this.coverWidget = null;
@@ -347,38 +351,28 @@ public class RadioStationListActivity extends SimpleActivity {
     ).addId("picker-play-pause");
     coverStrip.addChild(this.playPauseButton);
 
-    if(this.addon.currentSongService().getCurrentSong() != null &&
-        this.addon.radioManager().getCurrentStream() != null && "mashup".equals(this.addon.radioManager().getCurrentStream().getAzuraCastShortcode())) {
-      Show show = this.addon.currentSongService().getCurrentSong().getShow();
-      if(show != null && show != Show.NONE) {
-        if(show.wishBoxEnabled()) {
-          ButtonWidget wishBoxButton = ButtonWidget.icon(SpriteCommon.WISH_BOX_ICON).addId("picker-wish-box");
-          wishBoxButton.setPressable(() -> {
-            Laby.labyAPI().minecraft().executeNextTick(() -> {
-              Laby.labyAPI().minecraft().minecraftWindow().displayScreen(new MusicWishBoxActivity(
-                  EvilRadioAddon.instance(),
-                  Laby.labyAPI().minecraft().minecraftWindow().currentScreen()
-              ));
-            });
-          });
-          wishBoxButton.tooltip(Tooltip.text(
-              Component.translatable("evilradio.schedule.grussboxHover").color(NamedTextColor.GRAY)
-          ));
-          coverStrip.addChild(wishBoxButton);
-        }
-        if(show.twitch()) {
-          ButtonWidget twitchButton = ButtonWidget.icon(SpriteCommon.TWITCH_ICON).addId("picker-twitch");
-          twitchButton.setPressable(() -> {
-            OperatingSystem.getPlatform().openUrl(EvilConstants.TWITCH_URL);
-          });
-          twitchButton.tooltip(Tooltip.text(
-              Component.translatable("evilradio.schedule.twitchButtonHover")
-                  .color(NamedTextColor.GRAY)
-          ));
-          coverStrip.addChild(twitchButton);
-        }
-      }
-    }
+    // Buttons immer anlegen – Sichtbarkeit über syncCoverActionButtons() (Stop/Start & Senderwechsel)
+    this.wishBoxButton = ButtonWidget.icon(SpriteCommon.WISH_BOX_ICON).addId("picker-wish-box");
+    this.wishBoxButton.setPressable(() -> {
+      Laby.labyAPI().minecraft().executeNextTick(() -> {
+        Laby.labyAPI().minecraft().minecraftWindow().displayScreen(new MusicWishBoxActivity(
+            EvilRadioAddon.instance(),
+            Laby.labyAPI().minecraft().minecraftWindow().currentScreen()
+        ));
+      });
+    });
+    this.wishBoxButton.tooltip(Tooltip.text(
+        Component.translatable("evilradio.schedule.grussboxHover").color(NamedTextColor.GRAY)
+    ));
+    coverStrip.addChild(this.wishBoxButton);
+
+    this.twitchButton = ButtonWidget.icon(SpriteCommon.TWITCH_ICON).addId("picker-twitch");
+    this.twitchButton.setPressable(() -> OperatingSystem.getPlatform().openUrl(EvilConstants.TWITCH_URL));
+    this.twitchButton.tooltip(Tooltip.text(
+        Component.translatable("evilradio.schedule.twitchButtonHover").color(NamedTextColor.GRAY)
+    ));
+    coverStrip.addChild(this.twitchButton);
+    this.syncCoverActionButtons();
 
     HorizontalListWidget eqVolumeContainer = new HorizontalListWidget().addId("picker-audio-eq-volume-container");
 
@@ -860,6 +854,44 @@ public class RadioStationListActivity extends SimpleActivity {
 
     this.updateNowPlayingPlaytime(song, true);
     this.updateEqualizer(playing);
+    this.syncCoverActionButtons();
+  }
+
+  /**
+   * Grußbox-/Twitch-Icons im Now-Playing-Strip. Werden nicht nur beim initialize gesetzt,
+   * sonst fehlen sie nach Stop/Start oder Senderwechsel bis zum manuellen Neuöffnen.
+   */
+  private void syncCoverActionButtons() {
+    if (this.wishBoxButton == null || this.twitchButton == null) {
+      return;
+    }
+    RadioStream current = this.controller.radioManager().getCurrentStream();
+    boolean mashup = StationPickerController.isMashup(current);
+    boolean showWishBox = false;
+    boolean showTwitch = false;
+    if (mashup) {
+      CurrentSong song = this.resolveSongFor(current);
+      Show show = song != null ? song.getShow() : null;
+      if (show != null && show != Show.NONE) {
+        showWishBox = show.wishBoxEnabled();
+        showTwitch = show.twitch();
+      }
+      if (this.mashupShowStatus != null) {
+        showWishBox = showWishBox || this.mashupShowStatus.wishBoxEnabled();
+        showTwitch = showTwitch || this.mashupShowStatus.twitch();
+      }
+      if (!showWishBox) {
+        ScheduleService.ScheduleShow liveShow = this.addon.scheduleService().currentOnAirShow();
+        if (liveShow != null && liveShow.grussbox()) {
+          showWishBox = true;
+        }
+      }
+      if (!showTwitch && this.mashupTwitch) {
+        showTwitch = true;
+      }
+    }
+    this.wishBoxButton.setVisible(showWishBox);
+    this.twitchButton.setVisible(showTwitch);
   }
 
   private void updateNowPlayingPlaytime(@Nullable CurrentSong song, boolean force) {

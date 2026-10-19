@@ -24,16 +24,22 @@ import net.labymod.api.loader.MinecraftVersions;
 import net.labymod.laby3d.api.vertex.VertexConsumer;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RadioStreamSharedTag extends ComponentNameTag {
 
-  private final EvilRadioAddon addon;
-
   private static final boolean INVERSE_DEPTH = MinecraftVersions.V1_20_6.orOlder();
   private static final float BACKGROUND_DEPTH = -0.03F;
-  private Material guiMaterial = LevelMaterial.builder(RenderStates.GUI).build();
+  private static final Material GUI_MATERIAL = LevelMaterial.builder(RenderStates.GUI).build();
+  private static final Component LISTENING_COMPONENT =
+      Component.translatable("evilradio.widget.currentlyListening");
+  private static final Map<String, CachedSharedTag> COMPONENT_CACHE = new ConcurrentHashMap<>();
+  private static final ArrayDeque<ColoredRectangle> RECTANGLE_POOL = new ArrayDeque<>();
+
+  private final EvilRadioAddon addon;
 
   private Icon icon;
   private HorizontalAlignment alignment = HorizontalAlignment.CENTER;
@@ -44,29 +50,44 @@ public class RadioStreamSharedTag extends ComponentNameTag {
 
   @Override
   protected @NotNull List<Component> buildComponents(EntitySnapshot snapshot) {
-    if(!this.addon.configuration().enabled().get()) return super.buildComponents(snapshot);
+    this.icon = null;
+    this.alignment = HorizontalAlignment.CENTER;
+
+    if (!this.addon.configuration().enabled().get()) {
+      return super.buildComponents(snapshot);
+    }
     if (!(this.snapshot instanceof AvatarSnapshot avatar) || avatar.isDiscrete()) {
       return super.buildComponents(snapshot);
     }
-    if (!this.snapshot.has(EvilRadioKeys.USER)) return super.buildComponents(snapshot);
+    if (!this.snapshot.has(EvilRadioKeys.USER)) {
+      return super.buildComponents(snapshot);
+    }
 
     EvilRadioUser evilRadioUser = this.snapshot.get(EvilRadioKeys.USER);
-    RadioStreamSharingController.SharedRadioStream sharedRadioStream = evilRadioUser.getSharedRadioStream();
-    if (sharedRadioStream == null) return super.buildComponents(snapshot);
+    RadioStreamSharingController.SharedRadioStream sharedRadioStream =
+        evilRadioUser.getSharedRadioStream();
+    if (sharedRadioStream == null) {
+      return super.buildComponents(snapshot);
+    }
 
-    RadioStream radioStream = this.addon.radioStreamService().findStreamByName(
-        sharedRadioStream.streamId());
-    if (radioStream == null) return super.buildComponents(snapshot);
+    String streamId = sharedRadioStream.streamId();
+    RadioStream radioStream = this.addon.radioStreamService().findStreamByName(streamId);
+    if (radioStream == null) {
+      COMPONENT_CACHE.remove(streamId);
+      return super.buildComponents(snapshot);
+    }
 
-    this.icon = radioStream.getIcon();
+    CachedSharedTag cached = COMPONENT_CACHE.get(streamId);
+    String displayName = radioStream.getDisplayName();
+    if (cached == null || !cached.displayName.equals(displayName)
+        || cached.icon != radioStream.getIcon()) {
+      cached = new CachedSharedTag(displayName, radioStream.getIcon());
+      COMPONENT_CACHE.put(streamId, cached);
+    }
+
+    this.icon = cached.icon;
     this.alignment = this.icon == null ? HorizontalAlignment.CENTER : HorizontalAlignment.LEFT;
-
-    List<Component> components = new ArrayList<>();
-
-    components.add(Component.translatable("evilradio.widget.currentlyListening"));
-    components.add(Component.text(radioStream.getDisplayName()));
-
-    return components;
+    return cached.components;
   }
 
   @Override
@@ -84,8 +105,8 @@ public class RadioStreamSharedTag extends ComponentNameTag {
         .getBackgroundColorWithOpacity(DEFAULT_BACKGROUND_COLOR);
     submissionCollector.submitCustomGeometry(
         stack,
-        guiMaterial,
-        new ColoredRectangle(
+        GUI_MATERIAL,
+        ColoredRectangle.obtain(
             -3.0F, -1.0F,
             backgroundWidth + 2.0F, size + 1.0F,
             INVERSE_DEPTH ? -BACKGROUND_DEPTH : BACKGROUND_DEPTH,
@@ -157,26 +178,44 @@ public class RadioStreamSharedTag extends ComponentNameTag {
     return true;
   }
 
+  private static final class CachedSharedTag {
+
+    private final String displayName;
+    private final Icon icon;
+    private final List<Component> components;
+
+    private CachedSharedTag(String displayName, Icon icon) {
+      this.displayName = displayName;
+      this.icon = icon;
+      this.components = List.of(LISTENING_COMPONENT, Component.text(displayName));
+    }
+  }
+
   static class ColoredRectangle implements CustomGeometryRenderer {
 
-    private final float left;
-    private final float top;
-    private final float right;
-    private final float bottom;
-    private final float depth;
-    private final int argb;
+    private float left;
+    private float top;
+    private float right;
+    private float bottom;
+    private float depth;
+    private int argb;
 
-    public ColoredRectangle(
+    static ColoredRectangle obtain(
         float left, float top, float right, float bottom,
         float depth,
         int argb
     ) {
-      this.left = left;
-      this.top = top;
-      this.right = right;
-      this.bottom = bottom;
-      this.depth = depth;
-      this.argb = argb;
+      ColoredRectangle rectangle = RECTANGLE_POOL.pollFirst();
+      if (rectangle == null) {
+        rectangle = new ColoredRectangle();
+      }
+      rectangle.left = left;
+      rectangle.top = top;
+      rectangle.right = right;
+      rectangle.bottom = bottom;
+      rectangle.depth = depth;
+      rectangle.argb = argb;
+      return rectangle;
     }
 
     @Override
@@ -186,6 +225,7 @@ public class RadioStreamSharedTag extends ComponentNameTag {
       consumer.addVertex(pose, this.right, this.bottom, this.depth).setBlankUv()
           .setColor(this.argb);
       consumer.addVertex(pose, this.right, this.top, this.depth).setBlankUv().setColor(this.argb);
+      RECTANGLE_POOL.offerLast(this);
     }
   }
 
