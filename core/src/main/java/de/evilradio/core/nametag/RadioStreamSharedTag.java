@@ -43,6 +43,7 @@ public class RadioStreamSharedTag extends ComponentNameTag {
 
   @Override
   protected @NotNull List<Component> buildComponents(EntitySnapshot snapshot) {
+    if(!this.addon.configuration().enabled().get()) return super.buildComponents(snapshot);
     if (!(this.snapshot instanceof AvatarSnapshot avatar) || avatar.isDiscrete()) {
       return super.buildComponents(snapshot);
     }
