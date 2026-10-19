@@ -71,6 +71,10 @@ public class ActivityListener implements Updatable {
     this.detachMenuPlayerWidgets();
     if (!this.shouldShowMenuPlayer()) return;
     this.addRadioController(event.activity());
+    mainMenuActivity.addCloseRunnable(() -> {
+      this.mainMenuActivity = null;
+      this.clearMainMenuPlayerWidgets();
+    });
   }
 
   @Subscribe
