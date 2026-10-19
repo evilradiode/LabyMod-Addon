@@ -8,6 +8,7 @@ import net.labymod.api.configuration.loader.annotation.ShowSettingInParent;
 import net.labymod.api.configuration.loader.property.ConfigProperty;
 import net.labymod.api.util.MethodOrder;
 import java.util.HashMap;
+import java.util.Map;
 
 public class UsageStatisticsSubSettings extends Config {
 
@@ -26,7 +27,8 @@ public class UsageStatisticsSubSettings extends Config {
     return this.enabled;
   }
 
-  public ConfigProperty<HashMap<Integer, Integer>> streamUsageCount = new ConfigProperty<>(new HashMap<>());
+  /** Laby liefert zur Laufzeit eine TrackedMap – Interface Map statt HashMap. */
+  public ConfigProperty<Map<Integer, Integer>> streamUsageCount = new ConfigProperty<>(new HashMap<>());
 
   public void resetStreamUsageCount() {
     if (streamUsageCount != null) {
@@ -35,7 +37,8 @@ public class UsageStatisticsSubSettings extends Config {
   }
 
   public void incrementStreamUsage(int streamId) {
-    streamUsageCount.get().put(streamId, streamUsageCount.get().getOrDefault(streamId, 0) + 1);
+    Map<Integer, Integer> usage = streamUsageCount.get();
+    usage.put(streamId, usage.getOrDefault(streamId, 0) + 1);
   }
 
   public int getStreamUsageCount(int streamId) {

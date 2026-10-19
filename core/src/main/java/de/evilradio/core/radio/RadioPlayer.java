@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongSupplier;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
@@ -39,7 +38,6 @@ public class RadioPlayer {
   private static final float VOLUME_CURVE_EXPONENT = 2.2f;
 
   private SourceDataLine audioLine;
-  private OpenAlAudioSession openAlSession;
   private InputStream audioStream;
   private volatile Bitstream bitstream;
   private ExecutorService executorService;
@@ -50,8 +48,6 @@ public class RadioPlayer {
   private final AtomicLong playbackEpoch = new AtomicLong(0L);
   private volatile float volume = 0.5f;
   private volatile String currentStreamUrl;
-  private volatile String outputDeviceName;
-  private volatile LongSupplier sharedContextSupplier;
   private final AudioSpectrumAnalyzer spectrum = new AudioSpectrumAnalyzer();
   private final AudioEqualizer equalizer = new AudioEqualizer();
 
@@ -132,43 +128,7 @@ public class RadioPlayer {
           false
       );
 
-      // SourceDataLine zuerst: komplett getrennt von Minecraft-OpenAL.
-      boolean openAlPlayback = false;
       if (!openSourceDataLine(audioFormat)) {
-        if (OpenAlAudioSession.isAvailable()) {
-          try {
-            openAlSession = OpenAlAudioSession.openDevice(outputDeviceName, toOutputGain(volume));
-            openAlSession.configureFormat(sampleRate, channels);
-            openAlPlayback = true;
-          } catch (Exception openDeviceException) {
-            LOGGING.warn(
-                "OpenAL Device failed, trying Shared: "
-                    + openDeviceException.getMessage());
-          }
-
-          if (!openAlPlayback) {
-            long sharedOpenAlContext =
-                sharedContextSupplier != null ? sharedContextSupplier.getAsLong() : 0L;
-            if (sharedOpenAlContext != 0L) {
-              try {
-                openAlSession = OpenAlAudioSession.openShared(
-                    sharedOpenAlContext, toOutputGain(volume));
-                openAlSession.configureFormat(sampleRate, channels);
-                openAlPlayback = true;
-              } catch (Exception openSharedException) {
-                LOGGING.warn(
-                    "OpenAL Shared failed: " + openSharedException.getMessage());
-              }
-            } else {
-              LOGGING.warn("No Shared-OpenAL context available");
-            }
-          }
-        } else {
-          LOGGING.warn("LWJGL OpenAL not available");
-        }
-      }
-
-      if (!openAlPlayback && audioLine == null) {
         throw new Exception("No Audio Output Path available");
       }
 
@@ -255,7 +215,7 @@ public class RadioPlayer {
           }
 
           try {
-            // Ausgabe (SDL/OpenAL) bleibt offen – nur Netz/Decoder neu
+            // SourceDataLine bleibt offen – nur Netz/Decoder neu
             openNetworkStream(url);
             decoder = new Decoder();
             header = bitstream.readFrame();
@@ -345,7 +305,7 @@ public class RadioPlayer {
     this.spectrum.reset();
     this.equalizer.reset();
 
-    // Streams schließen, damit blockierende Reads/OpenAL abbrechen
+    // Streams schließen, damit blockierende Reads abbrechen
     closeNetworkStream();
 
     if (playbackTask != null && !playbackTask.isDone()) {
@@ -354,31 +314,13 @@ public class RadioPlayer {
     cleanupAudioOutput();
   }
 
-  public void setOutputDeviceName(String outputDeviceName) {
-    this.outputDeviceName = outputDeviceName;
-  }
-
-  public void setSharedContextSupplier(LongSupplier sharedContextSupplier) {
-    this.sharedContextSupplier = sharedContextSupplier;
-  }
-
   public void setVolume(float volume) {
     this.volume = Math.clamp(volume, 0.0f, 1.0f);
-    float gain = toOutputGain(this.volume);
-
-    if (openAlSession != null) {
-      try {
-        openAlSession.setVolume(gain);
-      } catch (Exception e) {
-        LOGGING.warn("Error while setting OpenAL Volume: " + e.getMessage());
-      }
-    }
-
-    applySourceDataLineVolume(gain);
+    applySourceDataLineVolume(toOutputGain(this.volume));
   }
 
   /**
-   * UI-Slider 0..1 → linearer Ausgangs-Gain für OpenAL / SourceDataLine.
+   * UI-Slider 0..1 → linearer Ausgangs-Gain für SourceDataLine.
    */
   static float toOutputGain(float slider) {
     if (slider <= 0.0001f) {
@@ -456,9 +398,6 @@ public class RadioPlayer {
   }
 
   private boolean isOutputActive() {
-    if (openAlSession != null) {
-      return true;
-    }
     return audioLine != null && audioLine.isOpen();
   }
 
@@ -467,21 +406,9 @@ public class RadioPlayer {
     this.spectrum.feedPcm(buffer, length);
     this.equalizer.process(buffer, length);
 
-    try {
-      if (openAlSession != null) {
-        openAlSession.queuePcm(buffer, length);
-        openAlSession.startIfNeeded();
-        return;
-      }
-
-      if (audioLine != null && audioLine.isOpen()) {
-        // Immer schreiben – Lautstärke über MASTER_GAIN (auch bei 0 = Stille, Pacing bleibt)
-        audioLine.write(buffer, 0, length);
-      }
-    } catch (InterruptedException interrupted) {
-      Thread.currentThread().interrupt();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    if (audioLine != null && audioLine.isOpen()) {
+      // Immer schreiben – Lautstärke über MASTER_GAIN (auch bei 0 = Stille, Pacing bleibt)
+      audioLine.write(buffer, 0, length);
     }
   }
 
@@ -491,14 +418,6 @@ public class RadioPlayer {
   }
 
   private void cleanupAudioOutput() {
-    if (openAlSession != null) {
-      try {
-        openAlSession.close();
-      } catch (Exception ignored) {
-      }
-      openAlSession = null;
-    }
-
     if (audioLine != null) {
       try {
         audioLine.stop();

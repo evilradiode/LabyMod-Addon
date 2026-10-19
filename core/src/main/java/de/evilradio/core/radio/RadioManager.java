@@ -2,9 +2,6 @@ package de.evilradio.core.radio;
 
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.hudwidget.CurrentSongHudWidget;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class RadioManager {
 
@@ -62,11 +59,6 @@ public class RadioManager {
     }
 
     if (radioPlayer != null) {
-      radioPlayer.setSharedContextSupplier(this::fetchSharedOpenAlContext);
-      String soundDevice = this.addon.labyAPI().minecraft().options().getSoundDevice();
-      if(soundDevice != null && !soundDevice.isBlank()) {
-        radioPlayer.setOutputDeviceName(soundDevice);
-      }
       radioPlayer.play(stream.getUrl());
 
       if (addon.currentSongService() != null) {
@@ -129,39 +121,5 @@ public class RadioManager {
     if (radioPlayer != null) {
       radioPlayer.shutdown();
     }
-  }
-
-  private long fetchSharedOpenAlContext() {
-    if (addon == null || !OpenAlAudioSession.isAvailable()) {
-      return 0L;
-    }
-
-    var minecraft = addon.labyAPI().minecraft();
-    if (minecraft.isOnRenderThread()) {
-      try {
-        return OpenAlAudioSession.getCurrentContext();
-      } catch (Exception ignored) {
-        return 0L;
-      }
-    }
-
-    AtomicLong context = new AtomicLong(0L);
-    CountDownLatch latch = new CountDownLatch(1);
-    minecraft.executeOnRenderThread(() -> {
-      try {
-        context.set(OpenAlAudioSession.getCurrentContext());
-      } catch (Exception ignored) {
-      } finally {
-        latch.countDown();
-      }
-    });
-
-    try {
-      latch.await(250, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException ignored) {
-      Thread.currentThread().interrupt();
-    }
-
-    return context.get();
   }
 }
