@@ -92,7 +92,11 @@ public class MusicWishBoxActivity extends SimpleActivity {
       nameAgeContainer.addEntry(ageContainer);
 
       FlexibleContentWidget anonymousContainer = new FlexibleContentWidget().addId("anonymous-container");
-      anonymousContainer.addContent(ComponentWidget.i18n("evilradio.form.wishbox.anonymous").addId("anonymous-title"));
+      anonymousContainer.addContent(ComponentWidget.component(
+              Component.translatable("evilradio.form.wishbox.anonymous.name")
+                  .append(Component.text(" *", NamedTextColor.YELLOW))
+          )
+          .addId("anonymous-title"));
       CheckBoxWidget anonymousInput = new CheckBoxWidget().addId("anonymous-input");
       anonymousInput.setPressable(this::updateAnonymous);
       anonymousContainer.addContent(anonymousInput);
@@ -123,6 +127,17 @@ public class MusicWishBoxActivity extends SimpleActivity {
       this.wishInput = new TextFieldWidget().multiline(6).addId("greet-input");
       greetContainer.addContent(this.wishInput);
       content.addContent(greetContainer);
+
+      content.addContent(ComponentWidget.component(
+              Component.text("* ", NamedTextColor.RED)
+                  .append(Component.translatable("evilradio.form.wishbox.required", NamedTextColor.WHITE))
+          )
+          .addId("required-info"));
+      content.addContent(ComponentWidget.component(
+              Component.text("* ", NamedTextColor.YELLOW)
+                  .append(Component.translatable("evilradio.form.wishbox.anonymous.spamInfo", NamedTextColor.WHITE))
+          )
+          .addId("anonymous-spam-info"));
 
       sendButton = ButtonWidget.i18n("evilradio.form.wishbox.submit.button").addId("submit-button");
       sendButton.setPressable(this::submitWish);

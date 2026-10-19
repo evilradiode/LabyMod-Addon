@@ -14,7 +14,11 @@
         "name": "Name",
         "nameInfo": "Wenn leer, wird dein Minecraft Username anstelle deines Namens übermittelt.",
         "age": "Alter",
-        "anonymous": "Anonym",
+        "required": "Die mit * markierten Felder sind Pflichtfelder.",
+        "anonymous": {
+          "name": "Anonym",
+          "spamInfo": "Deine UUID und dein Username werden zwecks Spamschutz trotzdem übermittelt,\ndiese werden jedoch nicht angezeigt."
+        },
         "artist": {
           "name": "Interpret",
           "placeholder": "Name des Interprets/Bands"

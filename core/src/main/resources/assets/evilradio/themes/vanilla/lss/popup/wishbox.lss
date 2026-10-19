@@ -177,6 +177,18 @@
 
     }
 
+    .required-info {
+      font-size: 0.5;
+      margin: 5 0 0 0;
+      alignment-x: center;
+    }
+
+    .anonymous-spam-info {
+      font-size: 0.5;
+      margin: 5 0 0 0;
+      alignment-x: center;
+    }
+
     .button-container {
       orientation: horizontal;
       margin: 10 0 10 0;

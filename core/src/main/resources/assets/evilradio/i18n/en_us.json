@@ -14,7 +14,11 @@
         "name": "Name",
         "nameInfo": "If empty and not anonymous, your Minecraft Username will be submitted.",
         "age": "Age",
-        "anonymous": "Anonymous",
+        "required": "The with * marked fields are required.",
+        "anonymous": {
+          "name": "Anonym",
+          "spamInfo": "Your UUID and Username will be submitted for spam protection,\nbut will not be displayed."
+        },
         "artist": {
           "name": "Artist",
           "placeholder": "Name of the Artist/Band"
