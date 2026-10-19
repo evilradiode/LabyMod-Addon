@@ -402,8 +402,8 @@ public class ActivityListener implements Updatable {
     this.playPauseButton.updateIcon(startPlayback ? SpriteControls.STOP : SpriteControls.PLAY);
 
     if (startPlayback && this.addon.radioManager().getCurrentStream() == null) {
-      RadioStream lastStream = this.addon.radioStreamService().findStreamById(
-          this.addon.configuration().lastStreamId().get());
+      RadioStream lastStream = this.addon.radioStreamService().findStreamByName(
+          this.addon.configuration().lastStreamName().get());
       if (lastStream != null) {
         this.addon.radioManager().playStream(lastStream);
       } else {

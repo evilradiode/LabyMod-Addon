@@ -204,10 +204,6 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     return currentSongService;
   }
 
-  public CurrentSongHudWidget currentSongHudWidget() {
-    return currentSongHudWidget;
-  }
-
   public ScheduleService scheduleService() {
     return scheduleService;
   }
@@ -293,10 +289,10 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
   public void startLastStreamWithDelay(String context) {
     if (configuration().autoStartMode().get() == EvilRadioConfiguration.AutoStartMode.DISABLED) return;
     
-    int lastStreamId = configuration().lastStreamId().get();
-    if (lastStreamId < 0) return;
+    String lastStreamName = configuration().lastStreamName().get();
+    if (lastStreamName.isEmpty()) return;
     
-    RadioStream lastStream = this.radioStreamService.findStreamById(lastStreamId);
+    RadioStream lastStream = this.radioStreamService.findStreamByName(lastStreamName);
     if (lastStream == null || lastStream.getUrl() == null || lastStream.getUrl().isEmpty()) return;
 
     Task.builder(() -> {

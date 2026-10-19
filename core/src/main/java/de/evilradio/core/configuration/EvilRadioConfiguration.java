@@ -82,7 +82,7 @@ public class EvilRadioConfiguration extends AddonConfig {
   private final UsageStatisticsSubSettings usageStatistics = new UsageStatisticsSubSettings();
 
   @Exclude
-  private final ConfigProperty<Integer> lastStreamId = new ConfigProperty<>(-1);
+  private final ConfigProperty<String> lastStreamName = new ConfigProperty<>("");
 
   @SpriteSlot(y = 1, x = 4)
   @MethodOrder(after = "usageStatistics")
@@ -149,8 +149,8 @@ public class EvilRadioConfiguration extends AddonConfig {
     return this.usageStatistics;
   }
   
-  public ConfigProperty<Integer> lastStreamId() {
-    return this.lastStreamId;
+  public ConfigProperty<String> lastStreamName() {
+    return this.lastStreamName;
   }
 
   public ConfigProperty<Boolean> debugForceMashupLive() {

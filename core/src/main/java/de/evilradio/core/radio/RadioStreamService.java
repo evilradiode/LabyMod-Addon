@@ -4,7 +4,10 @@ import com.google.gson.JsonObject;
 import de.evilradio.core.EvilRadioAddon;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import net.labymod.api.util.io.web.request.Request;
 import net.labymod.api.util.logging.Logging;
@@ -15,7 +18,7 @@ public class RadioStreamService {
 
   private RadioStream lastSelectedStream;
 
-  private final List<RadioStream> streams = new ArrayList<>();
+  private final Map<String, RadioStream> streams = new LinkedHashMap<>();
   private final CopyOnWriteArrayList<Runnable> changeListeners = new CopyOnWriteArrayList<>();
   private final EvilRadioAddon addon;
 
@@ -36,6 +39,7 @@ public class RadioStreamService {
         .readTimeout(5000)
         .addHeader("User-Agent", this.addon.apiUserAgent())
         .addHeader("X-Addon-Version", this.addon.addonVersion())
+        .addHeader("X-Minecraft-Version", this.addon.labyAPI().minecraft().getVersion())
         .execute(response -> {
           if (response.hasException()) {
             logging.error("Failed to load streams", response.exception());
@@ -45,7 +49,7 @@ public class RadioStreamService {
             return;
           }
           JsonObject object = response.get();
-          List<RadioStream> loaded = new ArrayList<>();
+          Map<String, RadioStream> loaded = new HashMap<>();
           if (object.has("streams") && object.get("streams").isJsonArray()) {
             object.get("streams").getAsJsonArray().forEach(jsonElement -> {
               if (jsonElement.isJsonObject()) {
@@ -66,14 +70,14 @@ public class RadioStreamService {
                     iconWithLogo
                 );
                 radioStream.initialize();
-                loaded.add(radioStream);
+                loaded.put(streamObject.get("name").getAsString(), radioStream);
               }
             });
           }
 
           synchronized (this.streams) {
             this.streams.clear();
-            this.streams.addAll(loaded);
+            this.streams.putAll(loaded);
             this.sortStreamsByUsageLocked();
           }
           logging.info("Loaded " + loaded.size() + " radio streams");
@@ -117,31 +121,12 @@ public class RadioStreamService {
    */
   public List<RadioStream> streams() {
     synchronized (this.streams) {
-      return List.copyOf(this.streams);
-    }
-  }
-
-  public RadioStream findStreamById(int id) {
-    synchronized (this.streams) {
-      for (RadioStream stream : this.streams) {
-        if (stream.getId() == id) {
-          return stream;
-        }
-      }
-      return null;
+      return List.copyOf(this.streams.values());
     }
   }
 
   public RadioStream findStreamByName(String name) {
-    if(name == null) return null;
-    synchronized (this.streams) {
-      for (RadioStream stream : this.streams) {
-        if (stream.getName().equals(name)) {
-          return stream;
-        }
-      }
-      return null;
-    }
+    return this.streams.getOrDefault(name, null);
   }
 
   /**
@@ -177,18 +162,30 @@ public class RadioStreamService {
   private void sortStreamsByUsageLocked() {
     if (this.streams.isEmpty()) return;
 
+    Comparator<RadioStream> comparator;
+
     if (!this.addon.configuration().usageStatistics().enabled().get()) {
-      this.streams.sort(Comparator.comparingInt(RadioStream::getId));
-      return;
+      comparator = Comparator.comparingInt(RadioStream::getId);
+    } else {
+      comparator = (stream1, stream2) -> {
+        int usage1 = this.addon.configuration().usageStatistics().getStreamUsageCount(stream1.getId());
+        int usage2 = this.addon.configuration().usageStatistics().getStreamUsageCount(stream2.getId());
+        if (usage1 != usage2) {
+          return Integer.compare(usage2, usage1);
+        }
+        return Integer.compare(stream1.getId(), stream2.getId());
+      };
     }
 
-    this.streams.sort((stream1, stream2) -> {
-      int usage1 = this.addon.configuration().usageStatistics().getStreamUsageCount(stream1.getId());
-      int usage2 = this.addon.configuration().usageStatistics().getStreamUsageCount(stream2.getId());
-      if (usage1 != usage2) {
-        return Integer.compare(usage2, usage1);
-      }
-      return Integer.compare(stream1.getId(), stream2.getId());
-    });
+    List<Map.Entry<String, RadioStream>> entries = new ArrayList<>(this.streams.entrySet());
+
+    entries.sort(Map.Entry.comparingByValue(comparator));
+
+    this.streams.clear();
+
+    for (Map.Entry<String, RadioStream> entry : entries) {
+      this.streams.put(entry.getKey(), entry.getValue());
+    }
   }
+
 }
