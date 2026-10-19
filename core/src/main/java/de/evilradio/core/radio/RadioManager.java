@@ -47,7 +47,8 @@ public class RadioManager {
       return;
     }
 
-    currentStream = null;
+    // currentStream erst nach stop setzen – sonst flackert der Menü-Player kurz auf
+    // „nicht Mashup“ (MODE_SWITCH) und der Grußbox-Button bleibt weg.
     stopStream(false);
     currentStream = stream;
     this.addon.radioStreamService().setLastSelectedStream(stream);
