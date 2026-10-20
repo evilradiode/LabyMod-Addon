@@ -64,6 +64,7 @@ public class EvilRadioAddon extends LabyAddon<EvilRadioConfiguration> {
     Laby.references().revisionRegistry().register(new SimpleRevision("evilradio", new SemanticVersion(1, 0, 3), "2026-03-02"));
     Laby.references().revisionRegistry().register(new SimpleRevision("evilradio", new SemanticVersion(1, 0, 4), "2026-04-22"));
     Laby.references().revisionRegistry().register(new SimpleRevision("evilradio", new SemanticVersion(2, 0, 0), "2026-10-14"));
+    Laby.references().revisionRegistry().register(new SimpleRevision("evilradio", new SemanticVersion(2, 0, 1), "2026-10-20"));
   }
 
   @Override
