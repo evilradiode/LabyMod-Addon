@@ -53,22 +53,13 @@ public class RadioStreamSharedTag extends ComponentNameTag {
     this.icon = null;
     this.alignment = HorizontalAlignment.CENTER;
 
-    if (!this.addon.configuration().enabled().get()) {
-      return super.buildComponents(snapshot);
-    }
-    if (!(this.snapshot instanceof AvatarSnapshot avatar) || avatar.isDiscrete()) {
-      return super.buildComponents(snapshot);
-    }
-    if (!this.snapshot.has(EvilRadioKeys.USER)) {
-      return super.buildComponents(snapshot);
-    }
+    if (!this.addon.configuration().enabled().get()) return super.buildComponents(snapshot);
+    if (!(this.snapshot instanceof AvatarSnapshot avatar) || avatar.isDiscrete()) return super.buildComponents(snapshot);
+    if (!this.snapshot.has(EvilRadioKeys.USER)) return super.buildComponents(snapshot);
 
     EvilRadioUser evilRadioUser = this.snapshot.get(EvilRadioKeys.USER);
-    RadioStreamSharingController.SharedRadioStream sharedRadioStream =
-        evilRadioUser.getSharedRadioStream();
-    if (sharedRadioStream == null) {
-      return super.buildComponents(snapshot);
-    }
+    RadioStreamSharingController.SharedRadioStream sharedRadioStream = evilRadioUser.getSharedRadioStream();
+    if (sharedRadioStream == null) return super.buildComponents(snapshot);
 
     String streamId = sharedRadioStream.streamId();
     RadioStream radioStream = this.addon.radioStreamService().findStreamByName(streamId);
