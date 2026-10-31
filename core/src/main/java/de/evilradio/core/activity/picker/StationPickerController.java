@@ -74,7 +74,7 @@ public final class StationPickerController {
   public @Nullable RadioStream findMashupStream() {
     List<RadioStream> streams = this.addon.radioStreamService().streams();
     for (RadioStream stream : streams) {
-      if (stream != null && stream.getName() != null && stream.getName().equalsIgnoreCase("mashup")) {
+      if (isMashup(stream)) {
         return stream;
       }
     }
