@@ -358,7 +358,7 @@
       "liveHint": "Schalte jetzt den Mashup-Sender ein.",
       "listenButton": "[Zuhören]",
       "listenHover": "Klicken, um Mashup zu starten",
-      "listenStarted": "Mashup gestartet: %s",
+      "listenStarted": "Stream gestartet: %s",
       "listenAlreadyPlaying": "Mashup läuft bereits.",
       "listenUnavailable": "Mashup-Sender ist gerade nicht verfügbar.",
       "listenDisabled": "Evil-Radio ist deaktiviert.",
