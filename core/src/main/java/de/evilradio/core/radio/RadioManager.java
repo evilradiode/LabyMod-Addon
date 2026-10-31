@@ -7,11 +7,15 @@ public class RadioManager {
 
   private RadioStream currentStream;
   private RadioPlayer radioPlayer;
+  private RadioPlayer previewPlayer;
   private EvilRadioAddon addon;
 
   public RadioManager(EvilRadioAddon addon) {
     this.addon = addon;
     this.radioPlayer = new RadioPlayer();
+    this.previewPlayer = new RadioPlayer("PreviewPlayer-Thread", false);
+    // Radio nach Ende der Preview wieder hörbar machen
+    this.previewPlayer.setPlaybackEndListener(() -> this.radioPlayer.setMuted(false));
   }
 
   public RadioStream getCurrentStream() {
@@ -114,7 +118,32 @@ public class RadioManager {
     return radioPlayer != null ? radioPlayer.getVolume() : 0.5f;
   }
 
+  public void playPreview(String url) {
+    if (url == null || url.isEmpty()) return;
+    previewPlayer.setVolume(getVolume());
+    radioPlayer.setMuted(true);
+    previewPlayer.play(url);
+  }
+
+  public void stopPreview() {
+    previewPlayer.stop();
+    radioPlayer.setMuted(false);
+  }
+
+  public void togglePreview(String url) {
+    if (isPreviewPlaying(url)) {
+      stopPreview();
+    } else {
+      playPreview(url);
+    }
+  }
+
+  public boolean isPreviewPlaying(String url) {
+    return url != null && previewPlayer.isPlaying() && url.equals(previewPlayer.getCurrentStreamUrl());
+  }
+
   public void shutdown() {
+    previewPlayer.shutdown();
     stopStream();
     if (addon != null && addon.currentSongService() != null) {
       addon.currentSongService().shutdown();

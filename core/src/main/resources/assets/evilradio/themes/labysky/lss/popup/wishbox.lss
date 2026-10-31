@@ -137,6 +137,29 @@
         alignment-x: center;
       }
 
+      .artist-autocomplete-scroll {
+        width: 100%;
+        height: fit-content;
+        max-height: 75;
+        priority-layer: very_front;
+        interactable: true;
+        border-color: var(--background-color-border);
+        border-radius: var(--border-radius);
+        border-thickness: var(--border-thickness);
+        box-shadow: none;
+        renderer: "Card";
+
+        Scrollbar {
+          width: 3;
+        }
+
+        .artist-autocomplete {
+          height: fit-content;
+          space-between-entries: 0;
+        }
+
+      }
+
     }
 
     .song-container {
@@ -156,6 +179,30 @@
         height: 15;
         alignment-x: center;
       }
+
+      .song-autocomplete-scroll {
+        width: 100%;
+        height: fit-content;
+        max-height: 75;
+        priority-layer: very_front;
+        interactable: true;
+        border-color: var(--background-color-border);
+        border-radius: var(--border-radius);
+        border-thickness: var(--border-thickness);
+        box-shadow: none;
+        renderer: "Card";
+
+        Scrollbar {
+          width: 3;
+        }
+
+        .song-autocomplete {
+          height: fit-content;
+          space-between-entries: 0;
+        }
+
+      }
+
 
     }
 

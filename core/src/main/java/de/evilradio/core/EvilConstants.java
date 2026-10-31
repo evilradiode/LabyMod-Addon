@@ -8,6 +8,8 @@ public class EvilConstants {
   public static final String SCHEDULE_ENDPOINT = "https://api.evil-radio.de/sp";
   public static final String SCHEDULE_API_URL = "https://api.evil-radio.de/sp?opt=sendeplan";
 
+  public static final String DEEZER_SEARCH_ENDPOINT = "https://evil-radio.de/sendeplan/deezer-search?q=";
+
   public static final String TWITCH_URL = "https://www.twitch.tv/evilradiode";
 
 

@@ -1,0 +1,48 @@
+AutoComplete {
+  height: fit-content;
+  width: 80%;
+  margin: 3 0 1 3;
+  padding: 2 0 2 3;
+  renderer: "Card";
+  background-color: var(--surface-2);
+  border-color: var(--outline);
+  border-radius: var(--radius-card);
+
+  .autocomplete-content {
+    height: fit-content;
+    width: 100%;
+
+    .autocomplete-icon {
+      height: 16;
+      width: 16;
+      border-radius: 3;
+    }
+
+    .autocomplete-text {
+      height: fit-content;
+      width: fit-content;
+
+      Component {
+        font-size: 0.8;
+      }
+
+      .autocomplete-title-details {
+        font-size: 0.6;
+      }
+
+    }
+
+    .autocomplete-preview-button {
+      width: 14;
+      height: 14;
+      margin-right: 3;
+    }
+
+  }
+
+}
+
+AutoComplete:hover {
+  border-color: var(--selection);
+  background-color-transition-duration: 0;
+}

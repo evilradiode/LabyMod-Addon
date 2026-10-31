@@ -47,18 +47,33 @@ public class RadioPlayer {
   /** Wird bei jedem stop()/play() erhöht – alte Threads dürfen nicht weiterlaufen/cleanupen. */
   private final AtomicLong playbackEpoch = new AtomicLong(0L);
   private volatile float volume = 0.5f;
+  private volatile boolean muted;
   private volatile String currentStreamUrl;
   private final AudioSpectrumAnalyzer spectrum = new AudioSpectrumAnalyzer();
   private final AudioEqualizer equalizer = new AudioEqualizer();
+  private final String threadName;
+  /** false = Datei-Wiedergabe (z. B. Preview): Stream-Ende beendet die Wiedergabe statt Reconnect. */
+  private final boolean reconnectOnStreamEnd;
+  private volatile Runnable playbackEndListener;
 
   public RadioPlayer() {
-    this.executorService = Executors.newSingleThreadExecutor(r -> {
-      Thread t = new Thread(r, "RadioPlayer-Thread");
+    this("RadioPlayer-Thread", true);
+  }
+
+  public RadioPlayer(String threadName, boolean reconnectOnStreamEnd) {
+    this.threadName = threadName;
+    this.reconnectOnStreamEnd = reconnectOnStreamEnd;
+    this.executorService = createExecutor();
+    this.isPlaying = false;
+    this.shouldStop = false;
+  }
+
+  private ExecutorService createExecutor() {
+    return Executors.newSingleThreadExecutor(r -> {
+      Thread t = new Thread(r, this.threadName);
       t.setDaemon(true);
       return t;
     });
-    this.isPlaying = false;
-    this.shouldStop = false;
   }
 
   public void play(String streamUrl) {
@@ -74,11 +89,7 @@ public class RadioPlayer {
     if (playbackTask != null && !playbackTask.isDone()) {
       playbackTask.cancel(true);
       executorService.shutdownNow();
-      executorService = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "RadioPlayer-Thread");
-        t.setDaemon(true);
-        return t;
-      });
+      executorService = createExecutor();
     }
     cleanupAudioOutput();
 
@@ -183,6 +194,13 @@ public class RadioPlayer {
           bitstream.closeFrame();
           header = bitstream.readFrame();
           if (header == null) {
+            if (!this.reconnectOnStreamEnd) {
+              // Restpuffer ausspielen, sonst wird das Ende abgeschnitten
+              if (isOutputActive()) {
+                audioLine.drain();
+              }
+              break;
+            }
             throw new IOException("Stream end / no MP3 Header");
           }
 
@@ -190,6 +208,11 @@ public class RadioPlayer {
         } catch (Exception streamError) {
           if (!isPlaybackActive(epoch) || Thread.currentThread().isInterrupted()) {
             Thread.currentThread().interrupt();
+            break;
+          }
+
+          if (!this.reconnectOnStreamEnd) {
+            LOGGING.warn("Playback aborted: " + streamError.getMessage());
             break;
           }
 
@@ -239,6 +262,11 @@ public class RadioPlayer {
       if (this.playbackEpoch.get() == epoch) {
         cleanup();
         isPlaying = false;
+        currentStreamUrl = null;
+        Runnable listener = this.playbackEndListener;
+        if (listener != null) {
+          listener.run();
+        }
       } else {
         closeNetworkStream();
       }
@@ -316,7 +344,17 @@ public class RadioPlayer {
 
   public void setVolume(float volume) {
     this.volume = Math.clamp(volume, 0.0f, 1.0f);
-    applySourceDataLineVolume(toOutputGain(this.volume));
+    applySourceDataLineVolume(currentOutputGain());
+  }
+
+  /** Stummschalten ohne die eingestellte Lautstärke zu verlieren (z. B. während einer Preview). */
+  public void setMuted(boolean muted) {
+    this.muted = muted;
+    applySourceDataLineVolume(currentOutputGain());
+  }
+
+  private float currentOutputGain() {
+    return this.muted ? 0.0f : toOutputGain(this.volume);
   }
 
   /**
@@ -342,7 +380,7 @@ public class RadioPlayer {
       // ~0,5 s Vorhalt – weniger underrun-/Klick-Risiko als Default-Buffer
       int bufferBytes = Math.max(audioFormat.getFrameSize() * 1024 * 8, 32768);
       audioLine.open(audioFormat, bufferBytes);
-      applySourceDataLineVolume(toOutputGain(this.volume));
+      applySourceDataLineVolume(currentOutputGain());
       audioLine.start();
       return true;
     } catch (Exception e) {
@@ -387,6 +425,15 @@ public class RadioPlayer {
 
   public boolean isPlaying() {
     return isPlaying;
+  }
+
+  public String getCurrentStreamUrl() {
+    return currentStreamUrl;
+  }
+
+  /** Wird auf dem Player-Thread aufgerufen, wenn die Wiedergabe von selbst endet (nicht bei stop()). */
+  public void setPlaybackEndListener(Runnable playbackEndListener) {
+    this.playbackEndListener = playbackEndListener;
   }
 
   public AudioSpectrumAnalyzer spectrum() {

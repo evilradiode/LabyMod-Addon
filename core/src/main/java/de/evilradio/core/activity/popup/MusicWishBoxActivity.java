@@ -1,8 +1,11 @@
 package de.evilradio.core.activity.popup;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import de.evilradio.core.EvilConstants;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
+import de.evilradio.core.activity.widget.AutoCompleteWidget;
 import de.evilradio.core.song.CurrentSong;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
@@ -17,12 +20,18 @@ import net.labymod.api.client.gui.screen.widget.widgets.input.ButtonWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.CheckBoxWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.input.TextFieldWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.FlexibleContentWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.layout.ScrollWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.layout.list.HorizontalListWidget;
+import net.labymod.api.client.gui.screen.widget.widgets.layout.list.VerticalListWidget;
 import net.labymod.api.client.gui.screen.widget.widgets.renderer.IconWidget;
+import net.labymod.api.util.Debounce;
 import net.labymod.api.util.I18n;
 import net.labymod.api.util.StringUtil;
+import net.labymod.api.util.ThreadSafe;
 import net.labymod.api.util.io.web.request.Request;
 import net.labymod.api.util.io.web.request.Request.Method;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -38,8 +47,13 @@ public class MusicWishBoxActivity extends SimpleActivity {
   private TextFieldWidget nameInput;
 
   private TextFieldWidget ageInput;
+
   private TextFieldWidget artistInput;
+  private VerticalListWidget<AutoCompleteWidget> artistCompleteWidget;
+
   private TextFieldWidget songInput;
+  private VerticalListWidget<AutoCompleteWidget> songCompleteWidget;
+
   private TextFieldWidget wishInput;
 
   private boolean anonymous = false;
@@ -111,6 +125,8 @@ public class MusicWishBoxActivity extends SimpleActivity {
       ).addId("artist-title"));
       this.artistInput = new TextFieldWidget().placeholder(Component.translatable("evilradio.form.wishbox.artist.placeholder")).addId("artist-input");
       artistContainer.addContent(this.artistInput);
+      this.artistCompleteWidget = new VerticalListWidget<>().addId("artist-autocomplete");
+      artistContainer.addContent(new ScrollWidget(this.artistCompleteWidget).addId("artist-autocomplete-scroll"));
       content.addContent(artistContainer);
 
       FlexibleContentWidget songContainer = new FlexibleContentWidget().addId("song-container");
@@ -120,7 +136,12 @@ public class MusicWishBoxActivity extends SimpleActivity {
       ).addId("song-title"));
       this.songInput = new TextFieldWidget().placeholder(Component.translatable("evilradio.form.wishbox.song.placeholder")).addId("song-input");
       songContainer.addContent(this.songInput);
+      this.songCompleteWidget = new VerticalListWidget<>().addId("song-autocomplete");
+      songContainer.addContent(new ScrollWidget(this.songCompleteWidget).addId("song-autocomplete-scroll"));
       content.addContent(songContainer);
+
+      this.setupArtistAutoComplete();
+      this.setupSongAutoComplete();
 
       FlexibleContentWidget greetContainer = new FlexibleContentWidget().addId("greet-container");
       greetContainer.addContent(ComponentWidget.i18n("evilradio.form.wishbox.greet").addId("greet-title"));
@@ -149,7 +170,7 @@ public class MusicWishBoxActivity extends SimpleActivity {
       } else {
         if(!currentSong.isOnAir()) {
           content.addContent(ComponentWidget.i18n("evilradio.form.wishbox.submit.error.noModerator", NamedTextColor.GRAY).addId("error-message"));
-        } else if(!currentSong.isWishBoxEnabled()) {
+        } else {
           content.addContent(ComponentWidget.i18n("evilradio.form.wishbox.submit.error.moderatorDisabled", NamedTextColor.GRAY).addId("error-message"));
         }
       }
@@ -171,6 +192,156 @@ public class MusicWishBoxActivity extends SimpleActivity {
     container.addContent(content);
 
     this.document.addChild(container);
+  }
+
+  private boolean suppressAutoComplete = false;
+  private String selectedArtist;
+
+  private void setupArtistAutoComplete() {
+    if(this.artistInput == null || this.songInput == null || this.artistCompleteWidget == null) return;
+    this.artistInput.updateListener((query) -> {
+      if(this.suppressAutoComplete) return;
+      if(query.equals(this.selectedArtist)) return;
+      if(query.length() < 3) {
+        ThreadSafe.executeOnRenderThread(() ->this.artistCompleteWidget.getChildren().clear());
+        return;
+      }
+
+      Debounce.of("evilArtistAutoComplete", 2*1000, () -> {
+        this.addon.logger().info("Requesting auto complete data for query: {}", query);
+        Request.ofGson(JsonObject.class)
+            .url(EvilConstants.DEEZER_SEARCH_ENDPOINT + URLEncoder.encode(query, StandardCharsets.UTF_8))
+            .method(Method.GET)
+            .userAgent(this.addon.apiUserAgent())
+            .connectTimeout(5*1000)
+            .readTimeout(5*1000)
+            .async()
+            .execute(response -> {
+              if(!query.equals(this.artistInput.getText())) return;
+              ThreadSafe.executeOnRenderThread(() ->this.artistCompleteWidget.getChildren().clear());
+              if(response.hasException()) {
+                this.addon.logger().error("Failed to request auto complete data.", response.exception());
+                return;
+              }
+              JsonObject jsonObject = response.get();
+              this.addon.logger().info("Received auto complete data: {}", jsonObject);
+              if(!jsonObject.has("recordings")) return;
+              if(!jsonObject.get("recordings").isJsonArray()) return;
+              JsonArray recordings = jsonObject.get("recordings").getAsJsonArray();
+              if(recordings.isEmpty()) return;
+              recordings.forEach((recording) -> {
+                if(!recording.isJsonObject()) return;
+                JsonObject recordingObject = recording.getAsJsonObject();
+                ThreadSafe.executeOnRenderThread(() -> {
+                  AutoCompleteWidget widget = new AutoCompleteWidget(
+                      recordingObject.has("image") ? recordingObject.get("image").getAsString() : "",
+                      recordingObject.has("artist-credit") ?
+                          recordingObject.get("artist-credit").getAsJsonArray().get(0).getAsJsonObject().get("name").getAsString()
+                          : "Unknown",
+                      recordingObject.get("title").getAsString(),
+                      recordingObject.has("album_name") ? recordingObject.get("album_name").getAsString() : "",
+                      recordingObject.has("release_date") ? recordingObject.get("release_date").getAsString() : "Unknown",
+                      recordingObject.has("duration_ms") ? recordingObject.get("duration_ms").getAsLong() : 0L,
+                      recordingObject.has("preview") ? recordingObject.get("preview").getAsString() : ""
+                  );
+                  widget.setPressable(() -> {
+                    this.selectedArtist = widget.getArtist();
+                    this.selectedTitle = widget.getTitle();
+                    this.suppressAutoComplete = true;
+                    try {
+                      this.artistInput.setText(widget.getArtist());
+                      this.songInput.setText(widget.getTitle());
+                    } finally {
+                      this.suppressAutoComplete = false;
+                    }
+                    this.artistCompleteWidget.getChildren().clear();
+                    this.songCompleteWidget.getChildren().clear();
+                  });
+                  this.artistCompleteWidget.addChildInitialized(widget);
+                });
+              });
+            });
+      });
+
+    });
+  }
+
+  private String selectedTitle;
+
+  private void setupSongAutoComplete() {
+    if(this.artistInput == null || this.songInput == null || this.songCompleteWidget == null) return;
+    this.songInput.updateListener((query) -> {
+      if(this.suppressAutoComplete) return;
+      if(query.equals(this.selectedTitle)) return;
+      if(query.length() < 3) {
+        ThreadSafe.executeOnRenderThread(() ->this.songCompleteWidget.getChildren().clear());
+        return;
+      }
+
+      Debounce.of("evilSongAutoComplete", 2*1000, () -> {
+        this.addon.logger().info("Requesting auto complete data for query: {}", query);
+        Request.ofGson(JsonObject.class)
+            .url(EvilConstants.DEEZER_SEARCH_ENDPOINT + URLEncoder.encode(query, StandardCharsets.UTF_8))
+            .method(Method.GET)
+            .userAgent(this.addon.apiUserAgent())
+            .connectTimeout(5*1000)
+            .readTimeout(5*1000)
+            .async()
+            .execute(response -> {
+              if(!query.equals(this.songInput.getText())) return;
+              ThreadSafe.executeOnRenderThread(() ->this.songCompleteWidget.getChildren().clear());
+              if(response.hasException()) {
+                this.addon.logger().error("Failed to request auto complete data.", response.exception());
+                return;
+              }
+              JsonObject jsonObject = response.get();
+              this.addon.logger().info("Received auto complete data: {}", jsonObject);
+              if(!jsonObject.has("recordings")) return;
+              if(!jsonObject.get("recordings").isJsonArray()) return;
+              JsonArray recordings = jsonObject.get("recordings").getAsJsonArray();
+              if(recordings.isEmpty()) return;
+              recordings.forEach((recording) -> {
+                if(!recording.isJsonObject()) return;
+                JsonObject recordingObject = recording.getAsJsonObject();
+                ThreadSafe.executeOnRenderThread(() -> {
+                  AutoCompleteWidget widget = new AutoCompleteWidget(
+                      recordingObject.has("image") ? recordingObject.get("image").getAsString() : "",
+                      recordingObject.has("artist-credit") ?
+                          recordingObject.get("artist-credit").getAsJsonArray().get(0).getAsJsonObject().get("name").getAsString()
+                          : "Unknown",
+                      recordingObject.get("title").getAsString(),
+                      recordingObject.has("album_name") ? recordingObject.get("album_name").getAsString() : "",
+                      recordingObject.has("release_date") ? recordingObject.get("release_date").getAsString() : "Unknown",
+                      recordingObject.has("duration_ms") ? recordingObject.get("duration_ms").getAsLong() : 0L,
+                      recordingObject.has("preview") ? recordingObject.get("preview").getAsString() : ""
+                  );
+                  widget.setPressable(() -> {
+                    this.selectedArtist = widget.getArtist();
+                    this.selectedTitle = widget.getTitle();
+                    this.suppressAutoComplete = true;
+                    try {
+                      this.artistInput.setText(widget.getArtist());
+                      this.songInput.setText(widget.getTitle());
+                    } finally {
+                      this.suppressAutoComplete = false;
+                    }
+                    this.artistCompleteWidget.getChildren().clear();
+                    this.songCompleteWidget.getChildren().clear();
+                    this.addon.radioManager().stopPreview();
+                  });
+                  this.songCompleteWidget.addChildInitialized(widget);
+                });
+              });
+            });
+      });
+
+    });
+  }
+
+  @Override
+  public void onCloseScreen() {
+    this.addon.radioManager().stopPreview();
+    super.onCloseScreen();
   }
 
   private void updateAnonymous() {
