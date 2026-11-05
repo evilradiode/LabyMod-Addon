@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import de.evilradio.core.EvilConstants;
 import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.command.ListenMashupCommand;
+import de.evilradio.core.song.CurrentSong;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -85,13 +86,14 @@ public class ScheduleService {
 
   /**
    * Aktuell laufende Sendung: zuerst {@code onair} von heute, sonst Zeitfenster.
+   * Abgesagte Sendungen ({@code (Entfällt) …}) werden übersprungen – bleiben aber im Sendeplan.
    */
   public @Nullable ScheduleShow currentOnAirShow() {
     LocalDate today = LocalDate.now();
     ScheduleShow todayOnAir = null;
     ScheduleShow anyOnAir = null;
     for (ScheduleShow show : this.cachedShows) {
-      if (!show.onAir()) {
+      if (!show.onAir() || this.isUnavailableForLiveUi(show)) {
         continue;
       }
       if (anyOnAir == null) {
@@ -114,6 +116,7 @@ public class ScheduleService {
 
   /**
    * Nächste geplante Sendung von heute, die noch nicht begonnen hat.
+   * Abgesagte Sendungen ({@code (Entfällt) …}) zählen nicht als „nächste Show“ im Hauptmenü.
    */
   public @Nullable ScheduleShow nextUpcomingShowToday() {
     LocalDate today = LocalDate.now();
@@ -125,10 +128,7 @@ public class ScheduleService {
       if (showDate == null || !showDate.equals(today)) {
         continue;
       }
-      if (show.onAir()) {
-        continue;
-      }
-      if (this.isShowCancelled(show.startTime(), show.endTime())) {
+      if (show.onAir() || this.isUnavailableForLiveUi(show)) {
         continue;
       }
       LocalTime start = this.parseTime(show.startTime());
@@ -145,6 +145,9 @@ public class ScheduleService {
 
   private @Nullable ScheduleShow showAt(LocalDate date, LocalTime time) {
     for (ScheduleShow show : this.cachedShows) {
+      if (this.isUnavailableForLiveUi(show)) {
+        continue;
+      }
       LocalDate showDate = this.parseDate(show.date());
       if (showDate == null || !showDate.equals(date)) {
         continue;
@@ -443,6 +446,10 @@ public class ScheduleService {
    * Fenster: Startzeit bis +8 Minuten – bei 1-Minuten-Check zuverlässig, ohne Frühwarnung.
    */
   private boolean shouldSendNotification(ScheduleShow show) {
+    if (this.isUnavailableForLiveUi(show)) {
+      return false;
+    }
+
     LocalDate today = LocalDate.now();
     LocalTime now = LocalTime.now();
 
@@ -454,6 +461,14 @@ public class ScheduleService {
 
     long minutesSinceStart = ChronoUnit.MINUTES.between(startTime, now);
     return minutesSinceStart >= 0 && minutesSinceStart <= 8;
+  }
+
+  /**
+   * Kein Menü-Banner / keine Chat-Live-Nachricht – Sendeplan-Liste bleibt davon unberührt.
+   */
+  private boolean isUnavailableForLiveUi(ScheduleShow show) {
+    return CurrentSong.Show.isCancelledName(show.showName())
+        || this.isShowCancelled(show.startTime(), show.endTime());
   }
 
   private void sendLiveNotification(ScheduleShow show) {
