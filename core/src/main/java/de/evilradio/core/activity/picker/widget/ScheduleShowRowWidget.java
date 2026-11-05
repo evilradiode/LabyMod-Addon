@@ -5,6 +5,7 @@ import de.evilradio.core.EvilRadioAddon;
 import de.evilradio.core.EvilTextures;
 import de.evilradio.core.activity.popup.MusicWishBoxActivity;
 import de.evilradio.core.schedule.ScheduleService;
+import de.evilradio.core.song.CurrentSong;
 import net.labymod.api.Laby;
 import net.labymod.api.client.component.Component;
 import net.labymod.api.client.component.format.NamedTextColor;
@@ -41,6 +42,8 @@ public class ScheduleShowRowWidget extends DivWidget {
     super.initialize(parent);
     this.children.clear();
 
+    boolean cancelled = CurrentSong.Show.isCancelledName(this.show.showName());
+
     // Links: Zeit → Avatar → Name → Twitch/Grußbox
     DivWidget meta = new DivWidget().addId("schedule-meta");
     DivWidget metaStack = new DivWidget().addId("schedule-meta-stack");
@@ -53,8 +56,8 @@ public class ScheduleShowRowWidget extends DivWidget {
             Component.text(this.show.moderator()).color(NamedTextColor.GRAY))
         .addId("schedule-moderator"));
 
-    boolean showGrussbox = this.mashupLive && this.show.grussbox();
-    boolean showTwitch = this.show.twitch();
+    boolean showGrussbox = !cancelled && this.mashupLive && this.show.grussbox();
+    boolean showTwitch = !cancelled && this.show.twitch();
     if (showGrussbox || showTwitch) {
       metaStack.addId("with-badges");
       if (showGrussbox) {
@@ -84,13 +87,23 @@ public class ScheduleShowRowWidget extends DivWidget {
     meta.addChild(metaStack);
     this.addChild(meta);
 
-    // Rechts: Titel (+ ON AIR), darunter Banner
+    // Rechts: Titel (+ ON AIR / ENTFÄLLT), darunter Banner
+    String displayName = cancelled
+        ? CurrentSong.Show.stripCancelledPrefix(this.show.showName())
+        : this.show.showName();
+
     DivWidget main = new DivWidget().addId("schedule-main");
     main.addChild(ComponentWidget.component(
-            Component.text(this.show.showName()).color(NamedTextColor.WHITE))
+            Component.text(displayName).color(cancelled ? NamedTextColor.GRAY : NamedTextColor.WHITE))
         .addId("schedule-title"));
 
-    if (this.show.onAir()) {
+    // Gleiches Badge wie ON AIR (schedule-on-air) – nur anderer Text/Container-ID
+    if (cancelled) {
+      main.addChild(ComponentWidget.component(
+              Component.translatable("evilradio.widget.cancelled").color(NamedTextColor.RED))
+          .addId("schedule-on-air"));
+      this.addId("cancelled");
+    } else if (this.show.onAir()) {
       main.addChild(ComponentWidget.component(
               Component.translatable("evilradio.widget.onAir").color(NamedTextColor.RED))
           .addId("schedule-on-air"));

@@ -399,6 +399,22 @@ public final class CurrentSong {
       return name != null && CANCELLED_NAME.matcher(name.trim()).find();
     }
 
+    /**
+     * Entfernt das Präfix {@code (Entfällt)} für die Anzeige (Badge übernimmt den Hinweis).
+     */
+    public static String stripCancelledPrefix(String name) {
+      if (name == null) {
+        return null;
+      }
+      String trimmed = name.trim();
+      java.util.regex.Matcher matcher = CANCELLED_NAME.matcher(trimmed);
+      if (!matcher.find()) {
+        return trimmed;
+      }
+      String stripped = trimmed.substring(matcher.end()).trim();
+      return stripped.isEmpty() ? trimmed : stripped;
+    }
+
     public Show {
       stream = blankToNull(stream);
       name = blankToNull(name);

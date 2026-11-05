@@ -12,6 +12,12 @@ ScheduleShowRow.on-air {
   background-color: rgba(220, 40, 40, 0.12);
 }
 
+ScheduleShowRow.cancelled {
+  border-color: rgba(140, 140, 140, 0.5);
+  background-color: rgba(60, 60, 60, 0.35);
+  opacity: 0.72;
+}
+
 ScheduleShowRow.no-banner {
   height: 48;
 }
@@ -109,7 +115,7 @@ ScheduleShowRow .schedule-twitch.alone {
   top: 58;
 }
 
-/* Rechts: Titel (+ ON AIR), Banner */
+/* Rechts: Titel (+ ON AIR / ENTFÄLLT), Banner */
 ScheduleShowRow .schedule-main {
   left: 66;
   right: 0;
@@ -120,7 +126,7 @@ ScheduleShowRow .schedule-main {
 ScheduleShowRow .schedule-title {
   left: 0;
   top: 0;
-  right: 48;
+  right: 58;
   width: fit-content;
   height: fit-content;
   font-size: 0.6;
@@ -129,22 +135,29 @@ ScheduleShowRow .schedule-title {
   text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
 }
 
+/* Status-Badge (ON AIR + Entfällt) – height:fit-content statt 5, sonst wird Text abgeschnitten */
 ScheduleShowRow .schedule-on-air {
   right: 0;
   top: 0;
   width: fit-content;
-  height: 5;
-  font-size: 0.4;
+  height: fit-content;
+  font-size: 0.55;
   text-shadow: 1 1 2 rgba(0, 0, 0, 0.85);
-  background-color: rgba(180, 30, 30, 0.45);
+  background-color: rgba(180, 30, 30, 0.55);
   border: 1;
-  padding: 0 2 0 2;
+  border-color: rgba(255, 90, 90, 0.55);
+  padding: 1 3 1 3;
 }
 
 ScheduleShowRow.no-banner .schedule-title {
   top: 50%;
   alignment-y: center;
   right: 0;
+}
+
+ScheduleShowRow.no-banner.cancelled .schedule-title,
+ScheduleShowRow.no-banner.on-air .schedule-title {
+  right: 58;
 }
 
 /*
